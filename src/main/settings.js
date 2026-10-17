@@ -9,7 +9,7 @@ const { app, safeStorage } = require('electron');
 const SECRET_KEYS = [
   'anthropicKey', 'openaiKey', 'geminiKey', 'perplexityKey', 'telegramBotToken',
   'notionApiKey', 'googleApiKey', 'slackBotToken', 'discordBotToken', 'githubToken',
-  'linearApiKey', 'stripeApiKey',
+  'linearApiKey', 'stripeApiKey', 'instagramPassword', 'instagramSessionId',
 ];
 const CHOICES = {
   theme: ['dark', 'light', 'system'],
@@ -68,6 +68,10 @@ const DEFAULTS = {
   defaultNotesPlatform: 'obsidian', // obsidian | notion | markdown
 
   // Superpowers
+  instagramUsername: 'mave.ai',
+  instagramStrictNoFollow: true,  // enforce strict zero-following policy on Instagram
+  instagramDeduceReelIntent: true,// auto-deduce why user sent reels and ask if they want it built
+  instagramAutoLearnTrends: true, // absorb viral trends into long-term memory
   telegramEnabled: false,
   telegramChatId: '',
   webPort: 4040,

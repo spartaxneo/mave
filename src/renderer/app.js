@@ -483,6 +483,17 @@
     $('tg-chat-id').addEventListener('change', () => update({ telegramChatId: $('tg-chat-id').value.trim() }));
   }
 
+  if ($('insta-username')) {
+    $('insta-username').value = s.instagramUsername || 'mave.ai';
+    $('insta-username').addEventListener('change', () => update({ instagramUsername: $('insta-username').value.trim() }));
+  }
+  if ($('insta-deduce-intent')) {
+    UI.switchControl($('insta-deduce-intent'), s.instagramDeduceReelIntent !== false, (v) => update({ instagramDeduceReelIntent: v }));
+  }
+  if ($('insta-learn-trends')) {
+    UI.switchControl($('insta-learn-trends'), s.instagramAutoLearnTrends !== false, (v) => update({ instagramAutoLearnTrends: v }));
+  }
+
   if ($('lan-url-copy')) {
     $('lan-url-copy').addEventListener('click', () => {
       navigator.clipboard.writeText($('lan-url-link').textContent);

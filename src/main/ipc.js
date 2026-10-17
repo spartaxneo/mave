@@ -271,6 +271,37 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     }
   });
 
+  // Instagram Social Brain & Reels Intent Handlers
+  handle('instagram:get-profile', () => {
+    const { getInstagramSocialBrain } = require('./social/instagram');
+    const brain = getInstagramSocialBrain({ settings });
+    return brain.getProfile();
+  });
+  handle('instagram:update-profile', (patch) => {
+    const { getInstagramSocialBrain } = require('./social/instagram');
+    const brain = getInstagramSocialBrain({ settings });
+    return brain.updateProfile(patch);
+  });
+  handle('instagram:analyze-reel', async (reelUrl, userComment) => {
+    const { getInstagramSocialBrain } = require('./social/instagram');
+    const brain = getInstagramSocialBrain({ settings });
+    const metadata = await brain.fetchReelMetadata(reelUrl);
+    const deduction = brain.deduceIntent(metadata, userComment);
+    const reply = brain.generateHumanReply(metadata, deduction, userComment);
+    return { ok: true, metadata, deduction, reply };
+  });
+  handle('instagram:get-rules', () => {
+    const { getInstagramSocialBrain } = require('./social/instagram');
+    const brain = getInstagramSocialBrain({ settings });
+    return brain.getRules();
+  });
+  handle('instagram:teach-rule', (trigger, intentType, actionPrompt) => {
+    const { getInstagramSocialBrain } = require('./social/instagram');
+    const brain = getInstagramSocialBrain({ settings });
+    const rule = brain.teachCustomRule(trigger, intentType, actionPrompt);
+    return { ok: true, rule };
+  });
+
   handle('routines:briefing', async () => {
     try {
       const { ExecutiveBriefing } = require('./routines/circadian');

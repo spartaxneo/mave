@@ -854,7 +854,32 @@ class Controller {
       } catch {}
     }
 
-    // 0c. Live connected devices query
+    // 0c. Instagram Reel Perception & Intent Deduction
+    try {
+      const { getInstagramSocialBrain } = require('./social/instagram');
+      const instaBrain = getInstagramSocialBrain({ settings: this.settings, logger: this.logger });
+      if (instaBrain.containsReelUrl(text)) {
+        this.recordThought('Detected Instagram Reel. Analyzing content and deducing user intent...');
+        const metadata = await instaBrain.fetchReelMetadata(text);
+        const deduction = instaBrain.deduceIntent(metadata, text);
+        const humanReply = instaBrain.generateHumanReply(metadata, deduction, text);
+
+        this.activity.add('info', `Analyzed shared Instagram Reel (${metadata.author}). Deduced intent: ${deduction.intentType}`);
+
+        if (source === 'remote-web' || source === 'remote-telegram' || source === 'telegram') {
+          this.panelLog('assistant', humanReply);
+          this.setState('idle');
+        } else {
+          const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+          await this.presentReply(humanReply, null, display.id);
+        }
+        return { ok: true, text: humanReply, thoughts: this.thoughts };
+      }
+    } catch (err) {
+      if (this.logger) this.logger.error('Instagram reel deduction note', err.message);
+    }
+
+    // 0d. Live connected devices query
     if (/^(?:who all|which|what|show|list)?\s*(?:all\s*)?devices (?:are\s*)?connected(?:\s*with mave|\s*right now|\s*now)?\??$/i.test(text) ||
         /^who is connected(?:\s*with mave|\s*right now)?\??$/i.test(text)) {
       try {
