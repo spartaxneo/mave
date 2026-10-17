@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mave · Meta Muse Companion</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: transparent;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "SF Pro Rounded", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 12px;
+    }
+
+    #pet-container {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      -webkit-app-region: drag;
+      cursor: grab;
+      filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45));
+    }
+    #pet-container:active {
+      cursor: grabbing;
+    }
+
+    /* Comfy Speech Bubble */
+    #speech-bubble {
+      position: absolute;
+      top: -34px;
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(12px);
+      color: #F8FAFC;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 14px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 500;
+      max-width: 170px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      transform: translateY(6px) scale(0.95);
+      transition: all 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      -webkit-app-region: no-drag;
+      z-index: 10;
+    }
+    #speech-bubble.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    #speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 5px 5px 0;
+      border-style: solid;
+      border-color: rgba(15, 23, 42, 0.94) transparent;
+      display: block;
+      width: 0;
+    }
+
+    /* ========================================================= */
+    /* MUSE OF META: LIVING ETHEREAL GLOWING ORB & CUTE SPRITE   */
+    /* ========================================================= */
+    #muse-wrapper {
+      position: relative;
+      width: 86px;
+      height: 86px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      animation: muse-float 3.4s infinite ease-in-out;
+    }
+
+    /* Outer Radiant Atmospheric Glow */
+    .muse-aura {
+      position: absolute;
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      filter: blur(18px);
+      opacity: 0.85;
+      transition: all 0.6s ease;
+      z-index: 1;
+      animation: aura-pulse 3s infinite alternate ease-in-out;
+    }
+
+    /* Fluid Organic Morphing Core Orb */
+    .muse-orb {
+      position: relative;
+      width: 76px;
+      height: 76px;
+      border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fluid-morph 8s infinite alternate ease-in-out;
+      box-shadow: inset 0 2px 10px rgba(255, 255, 255, 0.6), inset 0 -6px 14px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Celestial Orbital Particle Rings */
+    .muse-ring {
+      position: absolute;
+      width: 88px;
+      height: 38px;
+      border: 1.5px solid rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 3;
+      transform: rotateX(70deg) rotateZ(20deg);
+      animation: ring-spin 6s linear infinite;
+      opacity: 0.65;
+    }
+    .muse-ring-2 {
+      width: 92px;
+      height: 34px;
+      border: 1px dashed rgba(255, 255, 255, 0.3);
+      transform: rotateX(65deg) rotateZ(-35deg);
+      animation: ring-spin-reverse 9s linear infinite;
+    }
+
+    /* Kawaii Face SVG */
+    .muse-face {
+      position: absolute;
+      width: 52px;
+      height: 34px;
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .eyes-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 42px;
+    }
+    .eye {
+      width: 10px;
+      height: 13px;
+      background: #1E1B4B;
+      border-radius: 50%;
+      position: relative;
+      transition: all 0.2s ease;
+      animation: eye-blink 3.8s infinite;
+    }
+    .eye::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 3.5px;
+      height: 4.5px;
+      background: #FFFFFF;
+      border-radius: 50%;
+    }
+    .blush-row {
+      display: flex;
+      justify-content: space-between;
+      width: 48px;
+      margin-top: -2px;
+    }
+    .blush {
+      width: 8px;
+      height: 4px;
+      background: rgba(244, 63, 94, 0.45);
+      border-radius: 50%;
+      filter: blur(1px);
+    }
+    .mouth {
+      width: 6px;
+      height: 3px;
+      border-bottom: 2px solid #1E1B4B;
+      border-radius: 0 0 6px 6px;
+      margin-top: -1px;
+    }
+
+    /* Cyber Visor for Coding Mode */
+    .cyber-visor {
+      position: absolute;
+      top: 6px;
+      width: 46px;
+      height: 12px;
+      background: linear-gradient(90deg, rgba(6, 182, 212, 0.8), rgba(16, 185, 129, 0.8));
+      border: 1px solid #A7F3D0;
+      border-radius: 6px;
+      box-shadow: 0 0 10px #10B981;
+      display: none;
+    }
+
+    /* ========================================================= */
+    /* USER CUSTOMIZABLE PALETTES & THEMES                       */
+    /* ========================================================= */
+    #pet-container.size-compact { transform: scale(0.85); transform-origin: center bottom; }
+    #pet-container.size-normal { transform: scale(1.0); }
+    #pet-container.size-large { transform: scale(1.15); transform-origin: center bottom; }
+
+    #muse-wrapper:hover .eye {
+      height: 4px;
+      border-radius: 0 0 10px 10px;
+      background: #4338CA;
+    }
+    #muse-wrapper:hover .blush {
+      opacity: 0.9;
+      transform: scale(1.3);
+    }
+
+    /* 1. Theme: Sunset (Warm Ethereal Peach/Lilac) */
+    .theme-sunset.mode-idle .muse-aura, .theme-sunset:not([class*="mode-"]) .muse-aura {
+      background: radial-gradient(circle, #F472B6 0%, #C084FC 50%, transparent 70%);
+      box-shadow: 0 0 45px rgba(244, 114, 182, 0.65);
+    }
+    .theme-sunset.mode-idle .muse-orb, .theme-sunset:not([class*="mode-"]) .muse-orb {
+      background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 40%, #A1C4FD 100%);
+    }
+
+    /* 2. Theme: Cyber (Neon Matrix Emerald/Cyan) */
+    .theme-cyber.mode-idle .muse-aura, .theme-cyber:not([class*="mode-"]) .muse-aura {
+      background: radial-gradient(circle, #10B981 0%, #06B6D4 50%, transparent 70%);
+      box-shadow: 0 0 45px rgba(16, 185, 129, 0.65);
+    }
+    .theme-cyber.mode-idle .muse-orb, .theme-cyber:not([class*="mode-"]) .muse-orb {
+      background: linear-gradient(135deg, #34D399 0%, #06B6D4 40%, #3B82F6 100%);
+    }
+
+    /* 3. Theme: Nebula (Deep Cosmic Violet & Starlight) */
+    .theme-nebula.mode-idle .muse-aura, .theme-nebula:not([class*="mode-"]) .muse-aura {
+      background: radial-gradient(circle, #8B5CF6 0%, #6366F1 50%, #EC4899 80%, transparent 100%);
+      box-shadow: 0 0 50px rgba(139, 92, 246, 0.7);
+    }
+    .theme-nebula.mode-idle .muse-orb, .theme-nebula:not([class*="mode-"]) .muse-orb {
+      background: linear-gradient(135deg, #C084FC 0%, #8B5CF6 50%, #3B82F6 100%);
+    }
+
+    /* 4. Theme: Sakura (Soft Kawaii Cherry Blossom Pink) */
+    .theme-sakura.mode-idle .muse-aura, .theme-sakura:not([class*="mode-"]) .muse-aura {
+      background: radial-gradient(circle, #FB7185 0%, #F472B6 50%, transparent 70%);
+      box-shadow: 0 0 45px rgba(251, 113, 133, 0.65);
+    }
+    .theme-sakura.mode-idle .muse-orb, .theme-sakura:not([class*="mode-"]) .muse-orb {
+      background: linear-gradient(135deg, #FFF1F2 0%, #FECDD3 40%, #FDA4AF 100%);
+    }
+
+    /* 5. Theme: Ocean (Refreshing Aqua Azure & Deep Teal) */
+    .theme-ocean.mode-idle .muse-aura, .theme-ocean:not([class*="mode-"]) .muse-aura {
+      background: radial-gradient(circle, #38BDF8 0%, #0284C7 50%, transparent 70%);
+      box-shadow: 0 0 45px rgba(56, 189, 248, 0.65);
+    }
+    .theme-ocean.mode-idle .muse-orb, .theme-ocean:not([class*="mode-"]) .muse-orb {
+      background: linear-gradient(135deg, #E0F2FE 0%, #38BDF8 40%, #0369A1 100%);
+    }
+
+    /* 6. Theme: Golden (Solar Starlight Gold & Warm Honey) */
+    .theme-golden.mode-idle .muse-aura, .theme-golden:not([class*="mode-"]) .muse-aura {
+      background: radial-gradient(circle, #FBBF24 0%, #F59E0B 50%, transparent 70%);
+      box-shadow: 0 0 45px rgba(251, 191, 36, 0.65);
+    }
+    .theme-golden.mode-idle .muse-orb, .theme-golden:not([class*="mode-"]) .muse-orb {
+      background: linear-gradient(135deg, #FEF3C7 0%, #FCD34D 40%, #F59E0B 100%);
+    }
+
+    /* Default Cozy Idle Fallback */
+    .mode-idle .muse-aura {
+      background: radial-gradient(circle, #F472B6 0%, #C084FC 50%, transparent 70%);
+      box-shadow: 0 0 45px rgba(244, 114, 182, 0.6);
+    }
+    .mode-idle .muse-orb {
+      background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 40%, #A1C4FD 100%);
+    }
+
+    /* 2. Coding / Development Mode (Matrix Cyan & Emerald) */
+    .mode-coding .muse-aura {
+      background: radial-gradient(circle, #10B981 0%, #06B6D4 50%, transparent 70%);
+      box-shadow: 0 0 50px rgba(16, 185, 129, 0.7);
+    }
+    .mode-coding .muse-orb {
+      background: linear-gradient(135deg, #34D399 0%, #06B6D4 50%, #3B82F6 100%);
+    }
+    .mode-coding .cyber-visor {
+      display: block;
+    }
+    .mode-coding .eye {
+      opacity: 0.2;
+    }
+
+    /* 3. Deep Thinking & Proofs (Cosmic Violet & Starlight) */
+    .mode-thinking .muse-aura {
+      background: radial-gradient(circle, #8B5CF6 0%, #6366F1 50%, #F59E0B 80%, transparent 100%);
+      box-shadow: 0 0 55px rgba(139, 92, 246, 0.75);
+    }
+    .mode-thinking .muse-orb {
+      background: linear-gradient(135deg, #C084FC 0%, #6366F1 50%, #F59E0B 100%);
+      animation: thinking-tilt 2s infinite ease-in-out;
+    }
+
+    /* 4. Research & Reports (Sunset Amber & Amethyst) */
+    .mode-research .muse-aura {
+      background: radial-gradient(circle, #F59E0B 0%, #EC4899 50%, transparent 70%);
+      box-shadow: 0 0 50px rgba(245, 158, 11, 0.7);
+    }
+    .mode-research .muse-orb {
+      background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 40%, #EC4899 80%, #8B5CF6 100%);
+    }
+
+    /* 5. Active Action / Computer Use (Electric Sky & Coral) */
+    .mode-action .muse-aura {
+      background: radial-gradient(circle, #38BDF8 0%, #F43F5E 60%, transparent 80%);
+      box-shadow: 0 0 55px rgba(56, 189, 248, 0.8);
+    }
+    .mode-action .muse-orb {
+      background: linear-gradient(135deg, #A5F3FC 0%, #38BDF8 50%, #F43F5E 100%);
+      animation: active-jump 0.5s infinite alternate ease-in-out;
+    }
+
+    /* 6. Night / Sleep Mode (Moonlit Indigo) */
+    .mode-sleep .muse-aura {
+      background: radial-gradient(circle, #4338CA 0%, #1E1B4B 60%, transparent 80%);
+      box-shadow: 0 0 30px rgba(67, 56, 202, 0.4);
+    }
+    .mode-sleep .muse-orb {
+      background: linear-gradient(135deg, #818CF8 0%, #312E81 70%, #0F172A 100%);
+    }
+    .mode-sleep .eye {
+      height: 3px;
+      border-radius: 0 0 8px 8px;
+      background: #CBD5E1;
+      animation: none;
+    }
+    .mode-sleep .mouth {
+      display: none;
+    }
+
+    /* Animations */
+    @keyframes muse-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+    @keyframes aura-pulse {
+      0% { transform: scale(0.94); opacity: 0.7; }
+      100% { transform: scale(1.1); opacity: 0.95; }
+    }
+    @keyframes fluid-morph {
+      0% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+      50% { border-radius: 40% 60% 70% 30% / 40% 70% 30% 60%; }
+      100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+    }
+    @keyframes ring-spin {
+      from { transform: rotateX(70deg) rotateZ(0deg); }
+      to { transform: rotateX(70deg) rotateZ(360deg); }
+    }
+    @keyframes ring-spin-reverse {
+      from { transform: rotateX(65deg) rotateZ(360deg); }
+      to { transform: rotateX(65deg) rotateZ(0deg); }
+    }
+    @keyframes eye-blink {
+      0%, 94%, 98%, 100% { transform: scaleY(1); }
+      96% { transform: scaleY(0.1); }
+    }
+    @keyframes thinking-tilt {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(-8deg) scale(1.04); }
+    }
+    @keyframes active-jump {
+      0% { transform: translateY(0) scale(1, 0.95); }
+      100% { transform: translateY(-8px) scale(0.95, 1.05); }
+    }
+
+    /* Fallback Emoji Sprite (for classic skins) */
+    #pet-emoji {
+      display: none;
+      font-size: 56px;
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.4));
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* ChatGPT Companion Dots Mode */
+    .dots-companion {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      height: 100%;
+    }
+    .companion-dot {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      box-shadow: 0 0 14px rgba(99, 102, 241, 0.75);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .companion-dot.d1 { background: linear-gradient(135deg, #38bdf8, #6366f1); animation: dotPulse 1.2s infinite ease-in-out; }
+    .companion-dot.d2 { background: linear-gradient(135deg, #a855f7, #ec4899); animation: dotPulse 1.2s infinite ease-in-out 0.2s; }
+    .companion-dot.d3 { background: linear-gradient(135deg, #10b981, #06b6d4); animation: dotPulse 1.2s infinite ease-in-out 0.4s; }
+    .companion-dot.d4 { background: linear-gradient(135deg, #f59e0b, #ef4444); animation: dotPulse 1.2s infinite ease-in-out 0.6s; }
+    @keyframes dotPulse {
+      0%, 100% { transform: scale(1) translateY(0); filter: brightness(1); }
+      50% { transform: scale(1.35) translateY(-6px); filter: brightness(1.5); }
+    }
+
+    /* Floating Hearts / Sparkles on Petting */
+    .heart-effect {
+      position: absolute;
+      font-size: 19px;
+      color: #F43F5E;
+      animation: float-up 0.9s forwards ease-out;
+      pointer-events: none;
+      z-index: 20;
+    }
+    @keyframes float-up {
+      0% { opacity: 1; transform: translate(0, 0) scale(0.8); }
+      100% { opacity: 0; transform: translate(0, -42px) scale(1.4); }
+    }
+
+    /* Comfy Status Pill */
+    #status-pill {
+      margin-top: 6px;
+      background: rgba(15, 23, 42, 0.86);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+      padding: 3px 10px;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #E2E8F0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+      transition: all 0.2s ease;
+    }
+    #status-pill:hover {
+      background: rgba(30, 41, 59, 0.95);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: scale(1.05);
+    }
+    #status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #8B5CF6;
+      box-shadow: 0 0 6px currentColor;
+    }
+    #task-mode-badge {
+      color: #A78BFA;
+      font-weight: 800;
+    }
+
+    /* Interaction Action Bar on Hover */
+    #action-bar {
+      display: flex;
+      gap: 6px;
+      margin-top: 5px;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: all 0.2s ease;
+      -webkit-app-region: no-drag;
+      z-index: 15;
+    }
+    #pet-container:hover #action-bar {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .pet-btn {
+      background: rgba(30, 41, 59, 0.92);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #F8FAFC;
+      border-radius: 8px;
+      width: 25px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s ease;
+    }
+    .pet-btn:hover {
+      background: #8B5CF6;
+      border-color: #C084FC;
+      transform: scale(1.15);
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.6);
+    }
+  </style>
+</head>
+<body>
+  <div id="pet-container">
+    <div id="speech-bubble">I'm your Muse ✨ Here to help!</div>
+    
+    <!-- Meta Muse Living Avatar -->
+    <div id="muse-wrapper" class="mode-idle">
+      <div class="muse-aura"></div>
+      <div class="muse-ring"></div>
+      <div class="muse-ring muse-ring-2"></div>
+      <div class="muse-orb">
+        <div class="muse-face">
+          <div class="cyber-visor"></div>
+          <div class="eyes-row">
+            <div class="eye"></div>
+            <div class="eye"></div>
+          </div>
+          <div class="blush-row">
+            <div class="blush"></div>
+            <div class="blush"></div>
+          </div>
+          <div class="mouth"></div>
+        </div>
+      </div>
+      <div id="pet-emoji">🦊</div>
+      <div class="dots-companion" id="dots-container">
+        <span class="companion-dot d1"></span>
+        <span class="companion-dot d2"></span>
+        <span class="companion-dot d3"></span>
+        <span class="companion-dot d4"></span>
+      </div>
+    </div>
+
+    <!-- Comfy Status Pill -->
+    <div id="status-pill" title="Click to cycle companion task mode">
+      <div id="status-dot"></div>
+      <span id="task-mode-badge">COZY</span>
+      <span id="status-text">Ready</span>
+    </div>
+
+    <!-- Quick Interaction Action Bar -->
+    <div id="action-bar">
+      <button class="pet-btn" id="btn-mode" title="Change Mode">✨</button>
+      <button class="pet-btn" id="btn-pet" title="Pet Muse">💖</button>
+      <button class="pet-btn" id="btn-feed" title="Snack">🍓</button>
+      <button class="pet-btn" id="btn-play" title="Play & Level Up">⭐</button>
+    </div>
+  </div>
+
+  <script>
+    const SPECIES_CONFIG = {
+      meta_muse: { name: 'Muse', type: 'muse' },
+      chatgpt_dots: { name: 'Dots', type: 'dots' },
+      cyber_fox: { name: 'Kitsune', type: 'emoji', emoji: '🦊' },
+      mini_robot: { name: 'Byte', type: 'emoji', emoji: '🤖' },
+      pixel_cat: { name: 'Mochi', type: 'emoji', emoji: '🐱' },
+      baby_dragon: { name: 'Ignis', type: 'emoji', emoji: '🐉' },
+      shiba_inu: { name: 'Doge', type: 'emoji', emoji: '🐕' },
+      ghost: { name: 'Spooky', type: 'emoji', emoji: '👻' },
+    };
+
+    const TASK_MODES = {
+      idle: { badge: 'COZY', color: '#EC4899', message: "I'm with you ✨ Relax and create" },
+      coding: { badge: 'CODEX', color: '#10B981', message: "Coding mode active ⚡ Antigravity rules on" },
+      thinking: { badge: 'THINKER', color: '#8B5CF6', message: "Reasoning deeply through the problem... 🧠" },
+      research: { badge: 'SCHOLAR', color: '#F59E0B', message: "Consulting ChatGPT & Claude perspectives 📚" },
+      action: { badge: 'ACTIVE', color: '#06B6D4', message: "Navigating & executing actions 🎯" },
+      sleep: { badge: 'DREAM', color: '#6366F1', message: "Cozy rest mode 🌙 Zzz..." },
+    };
+
+    let currentSpecies = 'meta_muse';
+    let currentTaskMode = 'idle';
+    let currentAgentState = 'idle';
+    let currentTheme = 'sunset';
+    let currentSize = 'normal';
+    let petName = 'Muse';
+    let autoMorphEnabled = true;
+
+    const museWrapper = document.getElementById('muse-wrapper');
+    const museOrb = document.querySelector('.muse-orb');
+    const petEmoji = document.getElementById('pet-emoji');
+    const dotsContainer = document.getElementById('dots-container');
+    const bubble = document.getElementById('speech-bubble');
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const modeBadge = document.getElementById('task-mode-badge');
+    const petContainer = document.getElementById('pet-container');
+
+    // Kawaii Web Audio Synthesizer (Zero asset dependencies, soothing tones)
+    let audioCtx = null;
+    function playCuteChime(type = 'chime') {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+
+        if (type === 'chime') {
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.14); // C6
+          gain.gain.setValueAtTime(0.06, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'purr') {
+          osc.frequency.setValueAtTime(260, now);
+          osc.frequency.exponentialRampToValueAtTime(340, now + 0.18);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else if (type === 'magic') {
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+          osc.frequency.exponentialRampToValueAtTime(1320, now + 0.2);
+          gain.gain.setValueAtTime(0.07, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.38);
+        }
+      } catch { /* audio context may be blocked by autoplay */ }
+    }
+
+    function setSpecies(species) {
+      currentSpecies = species in SPECIES_CONFIG ? species : 'meta_muse';
+      const cfg = SPECIES_CONFIG[currentSpecies];
+
+      if (cfg.type === 'muse') {
+        museOrb.style.display = 'flex';
+        document.querySelector('.muse-aura').style.display = 'block';
+        document.querySelector('.muse-ring').style.display = 'block';
+        document.querySelector('.muse-ring-2').style.display = 'block';
+        petEmoji.style.display = 'none';
+        dotsContainer.style.display = 'none';
+      } else if (cfg.type === 'dots') {
+        museOrb.style.display = 'none';
+        document.querySelector('.muse-aura').style.display = 'none';
+        document.querySelector('.muse-ring').style.display = 'none';
+        document.querySelector('.muse-ring-2').style.display = 'none';
+        petEmoji.style.display = 'none';
+        dotsContainer.style.display = 'flex';
+      } else {
+        museOrb.style.display = 'none';
+        document.querySelector('.muse-aura').style.display = 'none';
+        document.querySelector('.muse-ring').style.display = 'none';
+        document.querySelector('.muse-ring-2').style.display = 'none';
+        dotsContainer.style.display = 'none';
+        petEmoji.style.display = 'block';
+        petEmoji.textContent = cfg.emoji || '🦊';
+      }
+    }
+
+    function setTheme(theme) {
+      const validThemes = ['sunset', 'cyber', 'nebula', 'sakura', 'ocean', 'golden'];
+      currentTheme = validThemes.includes(theme) ? theme : 'sunset';
+      applyWrapperClasses();
+    }
+
+    function setSize(size) {
+      const validSizes = ['compact', 'normal', 'large'];
+      currentSize = validSizes.includes(size) ? size : 'normal';
+      if (petContainer) {
+        petContainer.className = `size-${currentSize}`;
+      }
+    }
+
+    function setPetName(name) {
+      if (name && typeof name === 'string' && name.trim()) {
+        petName = name.trim();
+      }
+    }
+
+    function applyWrapperClasses() {
+      museWrapper.className = `theme-${currentTheme} mode-${currentTaskMode}`;
+    }
+
+    function setTaskMode(mode, customMessage = null) {
+      if (!autoMorphEnabled && mode !== 'idle') {
+        // If auto-morph is disabled by user, preserve user custom theme palette
+        currentTaskMode = mode in TASK_MODES ? mode : 'idle';
+        const mCfg = TASK_MODES[currentTaskMode];
+        modeBadge.textContent = mCfg.badge;
+        statusDot.style.backgroundColor = mCfg.color;
+        statusDot.style.color = mCfg.color;
+        applyWrapperClasses();
+        speak(customMessage || mCfg.message);
+        return;
+      }
+
+      currentTaskMode = mode in TASK_MODES ? mode : 'idle';
+      const mCfg = TASK_MODES[currentTaskMode];
+
+      // Update CSS class on Muse wrapper for gradient, glow & theme morphing
+      applyWrapperClasses();
+      modeBadge.textContent = mCfg.badge;
+      statusDot.style.backgroundColor = mCfg.color;
+      statusDot.style.color = mCfg.color;
+
+      speak(customMessage || mCfg.message);
+    }
+
+    function speak(text, duration = 3800) {
+      if (!text) return;
+      bubble.textContent = text;
+      bubble.classList.add('visible');
+      clearTimeout(bubble._timer);
+      bubble._timer = setTimeout(() => bubble.classList.remove('visible'), duration);
+    }
+
+    function updateState(state, message = null, taskMode = null) {
+      currentAgentState = state || 'idle';
+      statusText.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+
+      if (taskMode) {
+        setTaskMode(taskMode, message);
+      } else {
+        // Auto-infer task mode from state if not explicit
+        if (state === 'acting' || state === 'working') {
+          setTaskMode('action', message || 'Working on computer actions...');
+        } else if (state === 'thinking' || state === 'processing') {
+          setTaskMode('thinking', message || 'Thinking deeply...');
+        } else if (state === 'idle') {
+          setTaskMode('idle', message);
+        } else if (message) {
+          speak(message);
+        }
+      }
+    }
+
+    function spawnHeart(emoji = '💖') {
+      const heart = document.createElement('div');
+      heart.className = 'heart-effect';
+      heart.textContent = emoji;
+      heart.style.left = `${Math.random() * 60 + 35}px`;
+      heart.style.top = `${Math.random() * 20 + 20}px`;
+      document.getElementById('pet-container').appendChild(heart);
+      setTimeout(() => heart.remove(), 900);
+    }
+
+    // Interactivity: Clicking status pill or mode button cycles modes
+    const modeKeys = ['idle', 'coding', 'thinking', 'research', 'action', 'sleep'];
+    function cycleMode() {
+      const nextIndex = (modeKeys.indexOf(currentTaskMode) + 1) % modeKeys.length;
+      playCuteChime('magic');
+      setTaskMode(modeKeys[nextIndex]);
+      spawnHeart('✨');
+    }
+
+    document.getElementById('status-pill').onclick = (e) => {
+      e.stopPropagation();
+      cycleMode();
+    };
+
+    document.getElementById('btn-mode').onclick = (e) => {
+      e.stopPropagation();
+      cycleMode();
+    };
+
+    document.getElementById('btn-pet').onclick = (e) => {
+      e.stopPropagation();
+      playCuteChime('purr');
+      spawnHeart('💖');
+      speak(`Purr... You're amazing! ❤️`);
+    };
+
+    document.getElementById('btn-feed').onclick = (e) => {
+      e.stopPropagation();
+      playCuteChime('chime');
+      spawnHeart('🍓');
+      speak("Yummy berry snack! 🍓 Happiness 100%");
+    };
+
+    document.getElementById('btn-play').onclick = (e) => {
+      e.stopPropagation();
+      playCuteChime('magic');
+      spawnHeart('⭐');
+      speak("Level up! Level 2 Companion ⭐");
+    };
+
+    // Clicking Muse itself triggers a loving reaction
+    museWrapper.onclick = () => {
+      playCuteChime('purr');
+      spawnHeart('✨');
+      speak(`I'm ${petName}! Right here beside you.`);
+    };
+
+    // Initialize default Meta Muse
+    setSpecies('meta_muse');
+    setTheme('sunset');
+    setSize('normal');
+    setTaskMode('idle', "I'm your Muse ✨ Ready whenever you are!");
+
+    // Listen to IPC events from Electron main process
+    if (window.electronAPI && window.electronAPI.on) {
+      window.electronAPI.on('pet:state', (event, data) => {
+        if (data.species) setSpecies(data.species);
+        updateState(data.state, data.speechBubble, data.taskMode);
+      });
+      window.electronAPI.on('pet:config', (event, data) => {
+        if (data.species) setSpecies(data.species);
+        if (data.theme) setTheme(data.theme);
+        if (data.size) setSize(data.size);
+        if (data.name) setPetName(data.name);
+        if (data.autoMorph !== undefined) autoMorphEnabled = Boolean(data.autoMorph);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -76,9 +76,39 @@ class AudioService extends EventEmitter {
 
   /** Start making a sentence's audio now (Bigfoot's voice), so it's ready by the time it's its turn. */
   prepare(text, voice = null) {
-    if (this.settings.get('ttsProvider') !== 'kokoro') return null;
-    const p = this.kokoro.say(text, voice || this.settings.get('voice'), this.settings.get('speechRate'));
-    p.catch(() => {}); // reported when it's played
+    if (!this.settings.get('speakResponses')) return null;
+    const provider = this.settings.get('ttsProvider');
+    if (provider !== 'kokoro' && provider !== 'auto' && provider !== 'openai') return null;
+
+    const chosenVoice = voice || this.settings.get('voice');
+    const rate = this.settings.get('speechRate') || 1.0;
+    const apiKey = this.settings.get('openaiKey');
+    const endpoint = this.settings.get('openaiEndpoint');
+
+    const chatGptVoices = new Set(['nova', 'alloy', 'shimmer', 'echo', 'onyx', 'fable']);
+    const isChatGptVoice = chatGptVoices.has(chosenVoice);
+    const shouldUseOpenAI = (provider === 'openai' && apiKey) || (provider === 'auto' && isChatGptVoice && apiKey);
+
+    if (shouldUseOpenAI) {
+      const { synthesizeOpenAITTS } = require('./local/human_voice');
+      const p = synthesizeOpenAITTS({
+        text,
+        apiKey,
+        voice: isChatGptVoice ? chosenVoice : 'alloy',
+        speed: rate,
+        endpoint,
+      }).then((res) => ({ buffer: res.buffer, type: res.format || 'audio/mpeg' }))
+        .catch((err) => {
+          if (this.logger && this.logger.warn) this.logger.warn('OpenAI TTS failed, falling back to Kokoro:', err.message);
+          return this.kokoro.say(text, chosenVoice, rate).then((buf) => ({ buffer: buf, type: 'audio/wav' }));
+        });
+      p.catch(() => {});
+      return p;
+    }
+
+    const p = this.kokoro.say(text, chosenVoice, rate)
+      .then((buf) => (Buffer.isBuffer(buf) ? { buffer: buf, type: 'audio/wav' } : buf));
+    p.catch(() => {});
     return p;
   }
 
@@ -87,7 +117,7 @@ class AudioService extends EventEmitter {
    * works. It leaves the reply's speech alone: the reply's first words simply follow it.
    */
   acknowledge() {
-    if (!this.settings.get('speakResponses') || this.settings.get('ttsProvider') !== 'kokoro') return;
+    if (!this.settings.get('speakResponses') || this.settings.get('ttsProvider') === 'system') return;
     const file = require('./kokoro').ackFile(this.settings.get('voice'), this.settings.get('speechRate'));
     if (!file) return;
     try {
@@ -112,7 +142,7 @@ class AudioService extends EventEmitter {
 
   /** Load Bigfoot's voice ahead of the first reply. */
   warmVoice() {
-    if (this.settings.get('ttsProvider') === 'kokoro' && this.settings.get('speakResponses')) this.kokoro.warm();
+    if (this.settings.get('ttsProvider') !== 'system' && this.settings.get('speakResponses')) this.kokoro.warm();
   }
 
   /**
@@ -134,10 +164,13 @@ class AudioService extends EventEmitter {
         try {
           let any = false;
           for (const next of made) {
-            const audio = await next;
+            const res = await next;
             if (!this.speaking) return 'none';
-            if (!audio) continue; // nothing pronounceable
-            await this.call('play', { audio, type: 'audio/wav' }, 120000);
+            if (!res) continue;
+            const audio = Buffer.isBuffer(res) ? res : (res.buffer || res);
+            const type = res.type || (Buffer.isBuffer(res) ? 'audio/wav' : 'audio/mpeg');
+            if (!audio || !audio.length) continue;
+            await this.call('play', { audio, type }, 120000);
             any = true;
           }
           return any ? 'bigfoot' : 'none';

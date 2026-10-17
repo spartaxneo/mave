@@ -87,22 +87,294 @@ function runtimeFor(arch = process.arch) {
   return { ...r, url: `${GH}/${r.name}`, tag: RUNTIME_TAG, runtime: true };
 }
 
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+function customModelsPath() {
+  try {
+    const { app } = require('electron');
+    if (app && app.getPath) return path.join(app.getPath('userData'), 'custom-models.json');
+  } catch { /* not in electron */ }
+  const mavePath = path.join(os.homedir(), '.mave', 'custom-models.json');
+  if (fs.existsSync(mavePath)) return mavePath;
+  const bfPath = path.join(os.homedir(), '.bigfoot', 'custom-models.json');
+  if (fs.existsSync(bfPath)) return bfPath;
+  return mavePath;
+}
+
+let customModelsCache = null;
+
+function loadCustomModels() {
+  try {
+    const p = customModelsPath();
+    if (fs.existsSync(p)) {
+      const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+      if (Array.isArray(data)) {
+        customModelsCache = data;
+        return data;
+      }
+    }
+  } catch { /* empty */ }
+  return customModelsCache ? [...customModelsCache] : [];
+}
+
+function saveCustomModel(model) {
+  const models = loadCustomModels().filter((m) => m.id !== model.id);
+  models.push(model);
+  customModelsCache = models;
+  const p = customModelsPath();
+  try {
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, JSON.stringify(models, null, 2), 'utf8');
+  } catch { /* empty */ }
+  return model;
+}
+
+function removeCustomModel(id) {
+  const before = loadCustomModels();
+  const filtered = before.filter((m) => m.id !== id);
+  customModelsCache = filtered;
+  if (filtered.length !== before.length) {
+    const p = customModelsPath();
+    try {
+      fs.mkdirSync(path.dirname(p), { recursive: true });
+      fs.writeFileSync(p, JSON.stringify(filtered, null, 2), 'utf8');
+    } catch { /* empty */ }
+    return true;
+  }
+  return false;
+}
+
+function scanCustomModels(extraDirs = []) {
+  const customModels = [];
+  const imageModels = [];
+  const visitedPaths = new Set();
+
+  const candidates = [
+    'E:\\AI-Models',
+    'E:\\AI-Models\\open-generative-ai-models',
+    'D:\\AI-Models',
+    'C:\\AI-Models',
+    path.join(os.homedir(), 'models'),
+    path.join(os.homedir(), '.ollama', 'models'),
+    path.join(os.homedir(), '.cache', 'lm-studio', 'models'),
+    path.join(os.homedir(), 'Downloads'),
+    ...extraDirs,
+  ];
+
+  function scanDir(dir, depth = 0) {
+    if (depth > 2 || !dir) return;
+    try {
+      if (!fs.existsSync(dir)) return;
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const ent of entries) {
+        const fullPath = path.join(dir, ent.name);
+        if (ent.isDirectory()) {
+          scanDir(fullPath, depth + 1);
+        } else if (ent.isFile()) {
+          const lower = ent.name.toLowerCase();
+          if (lower.endsWith('.gguf') && !lower.startsWith('mmproj-')) {
+            if (visitedPaths.has(fullPath)) continue;
+            visitedPaths.add(fullPath);
+            const stat = fs.statSync(fullPath);
+            const sizeGB = Math.round((stat.size / (1024 ** 3)) * 10) / 10;
+            const baseId = ent.name.replace(/\.gguf$/i, '').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+            const cleanLabel = ent.name.replace(/\.gguf$/i, '').replace(/[-_]/g, ' ');
+            const modelDef = {
+              id: `custom-${baseId}`,
+              size: `${sizeGB}GB`,
+              label: cleanLabel,
+              memoryGB: Math.max(4, Math.round(sizeGB * 1.25)),
+              custom: true,
+              modelPath: fullPath,
+              bytes: stat.size,
+              available: true,
+            };
+            customModels.push(modelDef);
+            saveCustomModel(modelDef);
+          } else if (lower.endsWith('.safetensors')) {
+            if (visitedPaths.has(fullPath)) continue;
+            visitedPaths.add(fullPath);
+            const stat = fs.statSync(fullPath);
+            const sizeGB = Math.round((stat.size / (1024 ** 3)) * 10) / 10;
+            imageModels.push({
+              name: ent.name,
+              path: fullPath,
+              size: `${sizeGB}GB`,
+              bytes: stat.size,
+            });
+          }
+        }
+      }
+    } catch { /* skip unreadable */ }
+  }
+
+  for (const c of candidates) {
+    scanDir(c, 0);
+  }
+
+  for (const m of loadCustomModels()) {
+    if (!customModels.some((x) => x.id === m.id)) {
+      customModels.push(m);
+    }
+  }
+
+  return { customModels, imageModels };
+}
+
+function allModels() {
+  return [...MODELS, ...loadCustomModels()];
+}
+
 function modelById(id) {
-  return MODELS.find((m) => m.id === id) || null;
+  return allModels().find((m) => m.id === id) || null;
 }
 
 function filesFor(id, arch) {
   const m = modelById(id);
   if (!m) throw new Error(`Unknown local model ${id}`);
+  if (m.custom) return [runtimeFor(arch)];
   return [runtimeFor(arch), ...m.files];
 }
 
 function downloadBytes(id, arch) {
+  const m = modelById(id);
+  if (!m) throw new Error(`Unknown local model ${id}`);
+  if (m.custom) return 0;
   return filesFor(id, arch).reduce((n, f) => n + f.size, 0);
 }
 
+function scanColibriModels() {
+  const colibriDirs = ['D:\\Bigfoot\\colibri-models', 'C:\\Bigfoot\\colibri-models', path.join(os.homedir(), 'colibri-models')];
+  const models = [];
+  const seen = new Set();
+  for (const cDir of colibriDirs) {
+    if (!fs.existsSync(cDir)) continue;
+    try {
+      const entries = fs.readdirSync(cDir, { withFileTypes: true });
+      for (const ent of entries) {
+        if (!ent.isDirectory()) continue;
+        const mPath = path.join(cDir, ent.name);
+        const hasModel = fs.existsSync(path.join(mPath, 'config.json')) || fs.existsSync(path.join(mPath, '.colibri-download.json'));
+        if (hasModel && !seen.has(ent.name)) {
+          seen.add(ent.name);
+          let label = ent.name;
+          let size = 'MoE';
+          let note = 'Mixture-of-Experts (Colibri Engine)';
+          if (ent.name === 'deepseek-v4-flash') {
+            label = 'DeepSeek V4 Flash (284B MoE)';
+            size = '284B MoE · 167 GB';
+            note = 'Ultra-fast 284B MoE engine via Colibri (github.com/JustVugg/colibri)';
+          } else if (ent.name === 'qwen36-35b') {
+            label = 'Qwen 3.6 35B (35B MoE)';
+            size = '35B MoE · 23 GB';
+            note = 'Frontier 35B MoE engine via Colibri (github.com/JustVugg/colibri)';
+          }
+          models.push({
+            id: `colibri-${ent.name}`,
+            rawModel: ent.name,
+            engine: 'colibri',
+            engineRepo: 'https://github.com/JustVugg/colibri',
+            label,
+            size,
+            modelPath: mPath,
+            available: true,
+            note,
+          });
+        }
+      }
+    } catch { /* skip */ }
+  }
+  return models;
+}
+
+function scanOllamaModels() {
+  const manifestDirs = [
+    'E:\\.ollama\\models\\manifests\\registry.ollama.ai\\library',
+    'D:\\.ollama\\models\\manifests\\registry.ollama.ai\\library',
+    path.join(os.homedir(), '.ollama', 'models', 'manifests', 'registry.ollama.ai', 'library'),
+  ];
+  const models = [];
+  const seen = new Set();
+  for (const mDir of manifestDirs) {
+    if (!fs.existsSync(mDir)) continue;
+    try {
+      const entries = fs.readdirSync(mDir, { withFileTypes: true });
+      for (const ent of entries) {
+        if (!ent.isDirectory()) continue;
+        const sub = path.join(mDir, ent.name);
+        const tags = fs.readdirSync(sub);
+        for (const tag of tags) {
+          const modelTag = `${ent.name}:${tag}`;
+          if (!seen.has(modelTag)) {
+            seen.add(modelTag);
+            models.push({
+              id: `ollama-${ent.name}-${tag}`,
+              rawModel: modelTag,
+              engine: 'ollama',
+              label: `Ollama · ${ent.name}:${tag}`,
+              size: tag.includes('8b') ? '8B' : tag,
+              modelPath: path.join(sub, tag),
+              available: true,
+              note: 'Ollama Model Library',
+            });
+          }
+        }
+      }
+    } catch { /* skip */ }
+  }
+  return models;
+}
+
+function scanAirLLMModels() {
+  const models = [
+    {
+      id: 'airllm-Qwen-Qwen3-32B',
+      rawModel: 'Qwen/Qwen3-32B',
+      engine: 'airllm',
+      engineRepo: 'https://github.com/lyogavin/airllm',
+      label: 'Qwen3 32B (AirLLM Layer Streaming)',
+      size: '32B · ~3.5GB VRAM',
+      available: true,
+      note: 'Layer-wise streaming inference on RTX 5060 (8GB)',
+    },
+    {
+      id: 'airllm-meta-llama-Meta-Llama-3-70B-Instruct',
+      rawModel: 'meta-llama/Meta-Llama-3-70B-Instruct',
+      engine: 'airllm',
+      engineRepo: 'https://github.com/lyogavin/airllm',
+      label: 'Llama 3 70B Instruct (AirLLM 4-bit)',
+      size: '70B · ~4GB VRAM',
+      available: true,
+      note: '70B model running layer-wise in 4-8GB VRAM',
+    },
+    {
+      id: 'airllm-Qwen-Qwen2.5-72B-Instruct',
+      rawModel: 'Qwen/Qwen2.5-72B-Instruct',
+      engine: 'airllm',
+      engineRepo: 'https://github.com/lyogavin/airllm',
+      label: 'Qwen 2.5 72B Instruct (AirLLM 4-bit)',
+      size: '72B · ~4.2GB VRAM',
+      available: true,
+      note: '72B powerhouse model running with 4-bit block compression',
+    },
+    {
+      id: 'airllm-deepseek-ai-DeepSeek-V3',
+      rawModel: 'deepseek-ai/DeepSeek-V3',
+      engine: 'airllm',
+      engineRepo: 'https://github.com/lyogavin/airllm',
+      label: 'DeepSeek V3 671B (AirLLM MoE Stream)',
+      size: '671B MoE · ~12GB',
+      available: true,
+      note: 'Frontier 671B MoE with layer and expert offloading',
+    },
+  ];
+  return models;
+}
+
 /** @param {{ ramGB: number, vramGB: number, dedicated: boolean, freeDiskGB?: number }} hw */
-function recommend(hw) {
+function recommend(hw, extraDirs = []) {
   const ram = Number(hw.ramGB) || 0;
   const vram = hw.dedicated ? Number(hw.vramGB) || 0 : 0;
   const usableRam = Math.max(0, ram - 3) * 0.8; // Windows and other apps need the rest
@@ -131,7 +403,27 @@ function recommend(hw) {
     if (!diskOk) { fits = false; note = 'Not enough disk space'; }
     return { id: m.id, size: m.size, label: m.label, bytes, recommended: m.id === pick, available: fits, note };
   });
-  return { pick, options };
+
+  const { customModels, imageModels } = scanCustomModels(extraDirs);
+  const customOptions = customModels.map((cm) => {
+    const fits = loads(cm);
+    return {
+      id: cm.id,
+      size: cm.size,
+      label: cm.label,
+      bytes: cm.bytes || 0,
+      modelPath: cm.modelPath,
+      custom: true,
+      available: fits,
+      note: fits ? 'Installed on disk' : 'Tight on memory',
+    };
+  });
+
+  const colibriModels = scanColibriModels();
+  const ollamaModels = scanOllamaModels();
+  const airllmModels = scanAirLLMModels();
+
+  return { pick, options, customOptions, imageModels, colibriModels, ollamaModels, airllmModels };
 }
 
-module.exports = { MODELS, RETIRED, RUNTIME_TAG, WHISPER_TAG, SPEECH, MATH, VOICE, runtimeFor, modelById, filesFor, downloadBytes, recommend, GB };
+module.exports = { MODELS, RETIRED, RUNTIME_TAG, WHISPER_TAG, SPEECH, MATH, VOICE, runtimeFor, modelById, allModels, loadCustomModels, saveCustomModel, removeCustomModel, scanCustomModels, scanColibriModels, scanOllamaModels, scanAirLLMModels, filesFor, downloadBytes, recommend, GB };

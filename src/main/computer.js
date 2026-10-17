@@ -74,6 +74,24 @@ class ComputerExecutor {
   }
 
   async run(screen, name, input, signal) {
+    if (screen && screen.isRemote) {
+      if (name === 'screenshot') return [await screen.screenshot()];
+      if (name === 'zoom') {
+        if (!Array.isArray(input.region) || input.region.length !== 4) throw new Error('region must be [x0, y0, x1, y1]');
+        return [await screen.zoom(input.region.map(Number))];
+      }
+      if (name === 'cursor_position') return 'X=0, Y=0 (Remote Device Screen)';
+      if (name === 'wait') {
+        await sleep(Math.min(Number(input.duration) || 1, MAX_WAIT_S) * 1000, signal);
+        return 'OK';
+      }
+      if (typeof screen.executeRemoteAction === 'function') {
+        const out = await screen.executeRemoteAction(name, input, signal);
+        await sleep(SETTLE_MS, signal);
+        return out || 'OK';
+      }
+    }
+
     if (name === 'screenshot') return [await screen.screenshot()];
     if (name === 'zoom') {
       if (!Array.isArray(input.region) || input.region.length !== 4) throw new Error('region must be [x0, y0, x1, y1]');

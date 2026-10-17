@@ -1,6 +1,10 @@
 'use strict';
 
-const { shell } = require('electron');
+let shell = null;
+try {
+  ({ shell } = require('electron'));
+} catch { /* Node testing */ }
+const fs = require('fs');
 const { spawn, execFile } = require('child_process');
 
 const CACHE_MS = 5 * 60 * 1000;
@@ -12,7 +16,7 @@ function startApps() {
   return new Promise((resolve) => {
     execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
       '[Console]::OutputEncoding=[Text.Encoding]::UTF8; Get-StartApps | Select-Object Name,AppID | ConvertTo-Json -Compress'],
-    { windowsHide: true, timeout: 20000, maxBuffer: 8 * 1024 * 1024 }, (_err, stdout) => {
+    { windowsHide: true, timeout: 4000, maxBuffer: 8 * 1024 * 1024 }, (_err, stdout) => {
       let list = [];
       try {
         list = JSON.parse(stdout);
@@ -36,6 +40,8 @@ const WEB_APPS = {
   figma: 'https://www.figma.com', notion: 'https://www.notion.so', slack: 'https://app.slack.com', discord: 'https://discord.com/app',
   'microsoft teams': 'https://teams.microsoft.com', teams: 'https://teams.microsoft.com', 'apple music': 'https://music.apple.com',
   'prime video': 'https://www.primevideo.com', chatgpt: 'https://chatgpt.com', claude: 'https://claude.ai',
+  instagram: 'https://www.instagram.com', firebase: 'https://console.firebase.google.com', github: 'https://github.com',
+  twitter: 'https://x.com', x: 'https://x.com', reddit: 'https://www.reddit.com', linkedin: 'https://www.linkedin.com',
 };
 const ALIASES = {
   chrome: 'google chrome', edge: 'microsoft edge', explorer: 'file explorer', files: 'file explorer',
@@ -66,17 +72,32 @@ async function openApp(name) {
       child.unref();
       setTimeout(resolve, 150);
     });
-    return best.app.Name;
+    return { success: true, name: best.app.Name };
   }
-  // Executables on PATH or registered App Paths, e.g. "notepad", "mspaint".
-  if (!(await shell.openPath(name))) return name;
-  const web = WEB_APPS[normalize(name)];
-  if (web) {
-    await shell.openExternal(web);
-    return { web: true, name, url: web };
+  // Executables on PATH or registered App Paths, e.g. "notepad", "mspaint"
+  const onPath = await new Promise((resolve) => {
+    if (fs.existsSync(name)) return resolve(name);
+    execFile('where.exe', [name], { windowsHide: true, timeout: 1500 }, (err, stdout) => {
+      if (!err && stdout) {
+        const first = stdout.trim().split(/\r?\n/)[0];
+        if (first && fs.existsSync(first)) return resolve(first);
+      }
+      resolve(null);
+    });
+  });
+
+  if (onPath && shell && shell.openPath) {
+    const err = await shell.openPath(onPath);
+    if (!err) return { success: true, name };
   }
+  const norm = normalize(name);
+  let appInfo = null;
+  try {
+    const { APP_CATALOG } = require('../../diagnostics/troubleshooter');
+    appInfo = APP_CATALOG[norm] || APP_CATALOG[norm.replace(/\s+/g, '')];
+  } catch { /* fallback */ }
   const close = ranked.filter((r) => r.score > 0).slice(0, 5).map((r) => r.app.Name);
-  throw new Error(`No installed app matches "${name}".${close.length ? ` Closest: ${close.join(', ')}.` : ''}`);
+  return { success: false, notInstalled: true, name, appInfo, closest: close };
 }
 
 module.exports = [
@@ -90,13 +111,20 @@ module.exports = [
       additionalProperties: false,
     },
     async run({ name }, ctx) {
-      await ctx.confirm('read', { title: 'Open an app?', message: `Open ${name}`, confirm: 'Open' });
-      const opened = await openApp(String(name));
-      await ctx.sleep(1200);
-      if (opened && opened.web) {
-        return `${opened.name} isn't installed on this PC, so its web version (${opened.url}) was opened in the browser instead. Tell the user, then take a screenshot to continue there.`;
+      if (ctx && ctx.confirm) {
+        await ctx.confirm('read', { title: 'Open an app?', message: `Open ${name}`, confirm: 'Open' });
       }
-      return `Opened ${opened}. If you need to work in it next, take a screenshot first to see it.`;
+      const opened = await openApp(String(name));
+      if (ctx && ctx.sleep) await ctx.sleep(400);
+      if (opened && !opened.success) {
+        const err = new Error(`Application "${name}" is not installed on this Windows PC.${opened.closest && opened.closest.length ? ` Closest found: ${opened.closest.join(', ')}.` : ''}`);
+        err.code = 'APP_NOT_INSTALLED';
+        err.appName = (opened.appInfo && opened.appInfo.name) || name;
+        err.appInfo = opened.appInfo;
+        err.closest = opened.closest;
+        throw err;
+      }
+      return `Opened ${typeof opened === 'string' ? opened : opened.name || name}.`;
     },
   },
   {

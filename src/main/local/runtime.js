@@ -76,11 +76,12 @@ function freePort() {
 // swap and loading takes many minutes. There the working memory is smaller and compressed.
 const lowMemory = () => os.totalmem() < 12 * 1024 ** 3;
 
-function contextSize() {
-  if (os.totalmem() >= 24 * 1024 ** 3) return 16384;
-  // 8192 even with less memory: the 8-bit cache makes it about 150 MB more than 6144, and the
-  // instructions and tools take about 4,900 of it.
-  return 8192;
+function contextSize(hw) {
+  const vram = hw && hw.dedicated ? hw.vramGB : 0;
+  if (vram >= 12) return 32768; // 32k context on 12 GB+ dedicated GPUs
+  if (vram >= 8) return 24576; // 24k context on 8 GB GPUs (RTX 4060, RTX 5060 Laptop)
+  if (vram >= 6) return 16384; // 16k context on 6 GB GPUs
+  return 16384; // 16k context on CPUs and lower VRAM systems
 }
 
 /** KV cache in 8 bits (half the memory, no visible quality loss) and a small prompt cache. */
@@ -88,7 +89,7 @@ function memoryArgs() {
   return lowMemory()
     // --no-repack: llama.cpp otherwise keeps a second, CPU-optimized copy of the weights.
     ? ['--flash-attn', 'on', '--cache-type-k', 'q8_0', '--cache-type-v', 'q8_0', '--cache-ram', '256', '--no-repack']
-    : ['--cache-ram', '2048'];
+    : ['--flash-attn', 'on', '--cache-type-k', 'q8_0', '--cache-type-v', 'q8_0', '--cache-ram', '1024'];
 }
 
 class LocalRuntime extends EventEmitter {
@@ -105,8 +106,8 @@ class LocalRuntime extends EventEmitter {
     this.tuning = tuningFor(null);
     this.restarts = [];
     this.noLock = false;
-    manager.on('removing', () => this.stop());
-    // A new model replaces the loaded one straight away; no restart needed.
+    this.ctxOverride = null;
+    this.cpuFallback = false;
     manager.on('removing', () => this.stop());
     manager.on('installed', () => { this.stop(); this.pruneCache(null); this.preload(); }); // old model's saved prompts too
   }
@@ -161,7 +162,12 @@ class LocalRuntime extends EventEmitter {
   /** Resolves to { baseUrl, apiKey, model, ctx }. */
   async ensure() {
     this.touch();
-    if (this.endpoint) return this.endpoint;
+    const installed = this.manager.installedId();
+    if (this.endpoint) {
+      if (this.endpoint.model === installed) return this.endpoint;
+      if (this.logger) this.logger.info(`Switching local runtime from ${this.endpoint.model} to ${installed}`);
+      this.stop();
+    }
     if (!this.starting) {
       this.starting = this.launch().finally(() => { this.starting = null; });
     }
@@ -214,7 +220,16 @@ class LocalRuntime extends EventEmitter {
     if (this.proc) {
       const p = this.proc;
       this.proc = null;
-      try { p.kill(); } catch { /* already gone */ }
+      try {
+        if (process.platform === 'win32' && p.pid) {
+          const { execFileSync } = require('child_process');
+          execFileSync('taskkill', ['/pid', String(p.pid), '/T', '/F'], { stdio: 'ignore' });
+        } else {
+          p.kill();
+        }
+      } catch {
+        try { p.kill(); } catch { /* already gone */ }
+      }
     }
     this.emit('state', 'stopped');
   }
@@ -229,29 +244,33 @@ class LocalRuntime extends EventEmitter {
       throw new RuntimeError('No local AI model is installed. Download one in Settings › Models.', 'Set up your local AI');
     }
     this.stopping = false;
+    let hw = null;
     try {
-      this.tuning = tuningFor(await hardware.detect());
+      hw = await hardware.detect();
+      this.tuning = tuningFor(hw);
     } catch { /* keep the conservative defaults */ }
     const port = await freePort();
     const apiKey = crypto.randomBytes(24).toString('hex');
-    const ctx = contextSize();
+    const baseCtx = contextSize(hw);
+    const ctx = this.ctxOverride != null ? this.ctxOverride : baseCtx;
+    const cpuOnly = this.cpuFallback || this.tuning.cpuOnly;
     const args = [
-      '--model', files.model, '--mmproj', files.mmproj,
+      '--model', files.model, ...(files.mmproj ? ['--mmproj', files.mmproj] : []),
       '--host', '127.0.0.1', '--port', String(port), '--api-key', apiKey,
       '--alias', files.id, '--ctx-size', String(ctx), '--parallel', '1',
       '--jinja', '--no-webui',
       '--image-max-tokens', String(this.tuning.imageTokens),
-      '--cache-reuse', '256', // reuse cached context even after older screenshots are dropped
-      '--batch-size', '512', // same speed (the compute chunk is 512 anyway), but progress is reported every 512 tokens
+      '--cache-reuse', '128', // reuse cached context even after smaller edits or turns
+      '--batch-size', '512', // compute chunk for prompt evaluation
       '--threads', String(threadCount()), '--threads-batch', String(batchThreadCount()),
       '--slot-save-path', this.cacheDir(),
       ...memoryArgs(),
-      ...(this.tuning.cpuOnly ? ['--device', 'none'] : []),
-      ...(this.tuning.lock && !this.noLock ? ['--load-mode', 'mmap+mlock'] : []),
+      ...(cpuOnly ? ['--device', 'none', '-ngl', '0'] : ['-ngl', '99']),
+      ...(!cpuOnly && this.tuning.lock && !this.noLock ? ['--load-mode', 'mmap+mlock'] : []),
     ];
     this.log = [];
     this.emit('state', 'starting');
-    if (this.logger) this.logger.info(`Starting the local AI: ${files.label}, ${ctx} context`);
+    if (this.logger) this.logger.info(`Starting the local AI: ${files.label}, ${ctx} context${cpuOnly ? ' (CPU)' : ''}`);
     const proc = spawn(files.server, args, { cwd: files.cwd, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     this.proc = proc;
     try { os.setPriority(proc.pid, os.constants.priority.PRIORITY_BELOW_NORMAL); } catch { /* not critical */ }
@@ -287,9 +306,30 @@ class LocalRuntime extends EventEmitter {
       await Promise.race([this.waitHealthy(baseUrl, apiKey), exited]);
     } catch (err) {
       if (this.proc === proc) this.stop();
-      if (!this.noLock && /mlock|lock memory|VirtualLock|working set/i.test(this.log.join('\n'))) {
+      const logText = this.log.join('\n');
+      if (!this.noLock && /mlock|lock memory|VirtualLock|working set/i.test(logText)) {
         this.noLock = true; // Windows wouldn't lock the memory: load normally instead
         return this.launch();
+      }
+      const isOOM = /out of memory|failed to allocate|ErrorOutOfDeviceMemory|cudaMalloc failed|failed to allocate buffer/i.test(logText);
+      if (isOOM) {
+        if (ctx > 24576) {
+          this.ctxOverride = 24576;
+          if (this.logger) this.logger.warn(`GPU out of memory at ${ctx} context; automatically retrying with 24576 context`);
+          return this.launch();
+        } else if (ctx > 16384) {
+          this.ctxOverride = 16384;
+          if (this.logger) this.logger.warn(`GPU out of memory at ${ctx} context; automatically retrying with 16384 context`);
+          return this.launch();
+        } else if (ctx > 8192) {
+          this.ctxOverride = 8192;
+          if (this.logger) this.logger.warn(`GPU out of memory at ${ctx} context; automatically retrying with 8192 context`);
+          return this.launch();
+        } else if (!this.cpuFallback) {
+          this.cpuFallback = true;
+          if (this.logger) this.logger.warn('GPU out of memory; automatically falling back to CPU execution');
+          return this.launch();
+        }
       }
       if (this.logger) this.logger.error('Local AI failed to start', err.message, this.log.slice(-8).join('\n'));
       this.failed = err.message;

@@ -5,15 +5,22 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 const INVOKE = new Set([
   'settings:get', 'settings:update', 'provider:test', 'models:list', 'provider:active',
-  'voices:list', 'voice:preview', 'voice:stop', 'mic:status', 'mic:test', 'wake:status',
+  'voices:list', 'voice:preview', 'voice:stop', 'speech:speak', 'mic:status', 'mic:test', 'wake:status',
   'task:run', 'task:stop', 'conversation:reset', 'select:start', 'region:clear',
   'app:open-settings', 'app:open-onboarding', 'app:quit', 'app:open-logs', 'app:open-plugins', 'app:open-link', 'app:info',
   'onboarding:finish', 'window:close', 'window:minimize', 'panel:resize', 'approval:answer',
   'terminal:open', 'terminal:get', 'terminal:clear', 'terminal:reveal',
   'term:shells', 'term:list', 'term:create', 'term:replay', 'term:close', 'term:open-url',
   'local:hardware', 'local:status', 'local:start', 'local:pause', 'local:resume', 'local:cancel',
+  'local:custom-scan', 'local:pick-file', 'local:remove-custom',
+  'superpowers:status', 'pet:feed', 'pet:summon', 'telegram:connect', 'knowledge:reindex', 'routines:briefing',
   'toolbar:pick', 'math:read', 'math:ink', 'math:system', 'math:calc', 'math:share', 'ink:stop', 'tool:exit', 'ink:share', 'ink:reveal', 'loader:status', 'loader:retry',
   'plugins:list', 'plugins:pick', 'plugins:install', 'plugins:remove',
+  'diagnostics:fix', 'diagnostics:errors', 'diagnostics:clear',
+  'governance:get-state', 'governance:set-active-user', 'governance:save-customization',
+  'governance:admin-verify-pin', 'governance:admin-update-user', 'governance:admin-create-user',
+  'governance:admin-delete-user', 'governance:admin-update-rules', 'governance:admin-set-device-power',
+  'governance:admin-change-pin',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',
@@ -21,6 +28,7 @@ const SEND = new Set([
 ]);
 const RECEIVE = new Set([
   'cursor', 'state', 'bubble', 'bubble-live', 'fly', 'banner', 'welcome', 'settings', 'log', 'log-live', 'log-image', 'usage', 'level',
+  'thought', 'recommendations',
   'engine:cmd', 'approval:show', 'buddy:visible', 'annotate', 'select', 'region', 'terminal:line',
   'local:progress', 'local:runtime', 'toolbar:show', 'ink', 'voice-mode', 'loader', 'tools-blocked', 'term:data', 'term:exit', 'term:list', 'term:focus',
 ]);

@@ -12,7 +12,7 @@ const path = require('path');
 const MAX_BUFFER = 400 * 1024; // what's kept per terminal, for replay and for the AI to read
 const FLUSH_MS = 8;
 const ANSI = /\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]|\r(?!\n)/g;
-const LOCAL_URL = /\bhttps?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(?::\d{2,5})?(?:\/[^\s'"<>)\]]*)?/gi;
+const LOCAL_URL = /\bhttps?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]):[0-9]{2,5}(?:\/[^\s'"<>)\]]*)?/gi;
 
 const strip = (s) => String(s).replace(ANSI, '');
 

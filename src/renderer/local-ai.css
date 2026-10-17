@@ -53,3 +53,29 @@
 .lai-banner .lai-progress { background: linear-gradient(180deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.03)); border-color: rgba(51, 128, 255, 0.3); }
 .lai-banner.done .lai-progress { background: rgba(52, 211, 153, 0.08); border-color: rgba(52, 211, 153, 0.3); }
 .lai-banner.done .lai-bar i { background: var(--success); }
+
+.lai-sec-head { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; margin-bottom: 6px; }
+.lai-sec-title { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
+.lai-custom-wrap, .lai-image-wrap { display: flex; flex-direction: column; gap: 6px; }
+.lai-custom-list { display: flex; flex-direction: column; gap: 6px; }
+.lai-custom-card {
+  display: flex; align-items: center; justify-content: space-between; padding: 10px 14px;
+  background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--r-lg);
+  transition: border-color var(--fast), background var(--fast);
+}
+.lai-custom-card.active { border-color: rgba(52, 211, 153, 0.4); background: rgba(52, 211, 153, 0.05); }
+.lai-custom-card.image-card { border-color: rgba(147, 51, 234, 0.25); background: rgba(147, 51, 234, 0.03); }
+.lai-c-left { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.lai-c-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lai-c-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.lai-c-size { font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.lai-c-path { font-size: 11px; color: var(--text-3); font-family: var(--font-mono, monospace); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px; }
+.lai-c-right { display: flex; align-items: center; gap: 6px; margin-left: 12px; }
+.lai-tag.active { background: rgba(52, 211, 153, 0.18); color: #34d399; font-weight: 600; }
+.lai-tag.img-tag { background: rgba(168, 85, 247, 0.18); color: #c084fc; font-weight: 600; }
+.lai-tag.colibri-tag { background: rgba(245, 158, 11, 0.18); color: #fbbf24; font-weight: 600; }
+.lai-tag.ollama-tag { background: rgba(59, 130, 246, 0.18); color: #60a5fa; font-weight: 600; }
+.lai-custom-card.colibri-card { border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.03); }
+.lai-sub-note { font-size: 11px; color: var(--text-3); font-weight: 400; text-transform: none; letter-spacing: normal; display: block; margin-top: 1px; }
+.lai-empty-note { font-size: 12px; color: var(--text-3); padding: 8px 12px; font-style: italic; }
+

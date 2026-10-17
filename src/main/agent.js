@@ -32,12 +32,43 @@ const pngItem = (png) => ({ type: 'image', data: png.toString('base64') });
  * A reply that announces actions without taking any: "I'll use open_url to…", "Let me open…",
  * "First, I'll…". A plain answer or a question back to the user isn't a plan.
  */
-function isPlanInsteadOfAction(text) {
+const INFORMATIONAL_QUESTIONS = /\b(what (?:can you|are you able to|do you|all you can|is|are|should|would)|what's|how (?:can you|could you|are you|do you|does|to|would you)|who (?:are you|is|made you)|tell me (?:about|what|why|how)|explain|help me (?:understand|with)|list (?:your|all)|why (?:is|do|does|are)|describe|can you (?:be better|improve|help|give|explain)|improve|be better|advice|feedback|opinion|thoughts on|who are you)\b/i;
+
+function isConversationalTask(task = '') {
+  const t = String(task || '').trim();
+  if (!t) return false;
+  if (INFORMATIONAL_QUESTIONS.test(t)) {
+    if (/^(?:open|launch|start|run|click|type|press|scroll|download|install|play|send|delete|write)\b/i.test(t)) {
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+function isPlanInsteadOfAction(text, task = '') {
+  if (isConversationalTask(task)) return false;
   const t = String(text || '');
   if (!t.trim() || /\?\s*$/.test(t.trim())) return false;
-  const intent = /\b(I['’]?ll|I will|let me|I['’]?m going to|I am going to|first,? I|I can (?:help you )?(?:do|open|search|click|type|draw|use)|I need to (?:open|use|click|take))\b/i;
+  const intent = /\b(I['’]?ll|I will|let me|I['’]?m going to|I am going to|first,? I|I need to (?:open|use|click|take))\b/i;
   const tooling = /\b(open_app|open_url|annotate|edit_drawing|run_command|screenshot|the \w+ (?:tool|function)|open (?:a |the )?(?:new )?(?:tab|browser|app|chrome|notepad|window)|search|click|type|draw)\b/i;
   return intent.test(t) && tooling.test(t);
+}
+
+const ACTION_INTENT_PATTERN = /\b(?:open|launch|start|run|click|press|type|write|create|send|delete|install|search|find|navigate|execute|download|clear|close)\b/i;
+const CLAIMED_COMPLETION_PATTERN = /\b(?:I (?:have|already|just)?\s*(?:opened|clicked|typed|sent|created|written|ran|executed|installed|downloaded|deleted|navigated)|Done!?\b|Here (?:it is|is the file)|I've (?:opened|clicked|typed|sent|created|written|finished|completed))\b/i;
+
+function isFalseCompletionHallucination(text, task = '', hasExecutedAction = false) {
+  if (hasExecutedAction) return false;
+  if (isConversationalTask(task)) return false;
+  const t = String(task || '').trim();
+  const reply = String(text || '').trim();
+  if (!t || !reply) return false;
+
+  if (ACTION_INTENT_PATTERN.test(t) && CLAIMED_COMPLETION_PATTERN.test(reply)) {
+    return true;
+  }
+  return false;
 }
 
 class Agent {
@@ -64,12 +95,14 @@ class Agent {
     this.abort = null;
     this.running = false;
     this.approvedWindows = new Set();
+    this.conversationHistory = []; // Multi-turn dialogue history (like ChatGPT)
   }
 
   reset() {
     if (this.running) return false;
     this.provider = null;
     this.approvedWindows.clear();
+    this.conversationHistory = [];
     return true;
   }
 
@@ -91,15 +124,30 @@ class Agent {
     const id = llm.resolveProvider(s, { online });
     const key = [id, id && s.get(llm.PROVIDERS[id].modelSetting), s.get('assistantName'), s.get('effort'), this.plugins.version].join('|');
     if (this.provider && this.providerKey === key) return this.provider;
+    const tools = (id === 'local' || id === 'ollama')
+      ? this.plugins.definitionsForTask('', id)
+      : this.plugins.definitions();
     this.provider = llm.createProvider(s, {
       system: systemPrompt(s.get('assistantName')),
-      tools: this.plugins.definitions(),
+      tools,
       screen: this.target.sent,
       runtime: this.runtime,
       online,
     });
     this.providerKey = key;
     if ('onText' in this.provider && this.hooks.stream) this.provider.onText = (text) => this.hooks.stream(text);
+
+    // Carry over conversational history across turns and model switches (like ChatGPT)
+    if (this.conversationHistory && this.conversationHistory.length > 0) {
+      const recent = this.conversationHistory.slice(-8);
+      for (const turn of recent) {
+        if (turn.role === 'user') {
+          this.provider.addUserMessage(turn.content);
+        } else if (turn.role === 'assistant') {
+          this.provider.messages.push({ role: 'assistant', content: turn.content });
+        }
+      }
+    }
     const chosen = s.get('provider');
     if (id !== chosen && llm.PROVIDERS[chosen]) {
       const why = llm.PROVIDERS[chosen].cloud && !online
@@ -134,6 +182,22 @@ class Agent {
     try {
       for (const call of calls) {
         if (this.abort.signal.aborted) break;
+        try {
+          const { getGovernanceManager } = require('./security/governance');
+          const gov = getGovernanceManager();
+          let actionType = null;
+          const name = call.name;
+          if (name === 'run_command' || name === 'terminal' || name === 'start_process' || name === 'shell') actionType = 'terminal';
+          else if (call.computer || ['click_element', 'type_into', 'drag_element', 'mouse_click', 'key', 'type', 'click', 'mouse_move', 'scroll_screen'].includes(name)) actionType = 'screen_control';
+          if (actionType) {
+            const perm = gov.isActionPermitted(actionType, this.currentUserId || gov.activeUserId, this.currentDeviceId || 'host_pc');
+            if (!perm.allowed) {
+              this.hooks.terminal('error', `[Parental Governance Guard] ${perm.reason}`);
+              results.push(`Action Blocked by Parental Governance: ${perm.reason}`);
+              continue;
+            }
+          }
+        } catch {}
         this.hooks.action(call.name, call.input);
         const content = call.computer
           ? await this.runComputer(call.name, call.input, this.abort.signal)
@@ -181,7 +245,7 @@ class Agent {
   }
 
   /** Run one request from the user. Resolves to { status, text, point }. */
-  async run(task, { region = null, drawing = false } = {}) {
+  async run(task, { region = null, drawing = false, image = null, speaker = null, userId = null, deviceId = null } = {}) {
     if (drawing) task = `${task}\n\n(I drew on the screen; my drawing shows in your screenshots. Use edit_drawing to correct or improve it if I ask.)`;
     if (this.running) throw new AgentError('I’m already working on something. Press Esc to stop it first.', 'Still working');
     if (!this.target) throw new AgentError('No screen is selected.');
@@ -190,9 +254,75 @@ class Agent {
     this.costs.startTask();
     this.hooks.terminal('task', task);
     this.task = task;
-    this.visual = Boolean(region || drawing);
+    this.visual = Boolean(region || drawing || image);
+
+    let effectiveUserId = userId;
+    let effectiveDeviceId = deviceId || 'host_pc';
+    let governanceDirectives = '';
     try {
+      const { getGovernanceManager } = require('./security/governance');
+      const gov = getGovernanceManager();
+      if (!effectiveUserId) {
+        effectiveUserId = gov.activeUserId;
+        if (speaker && speaker.name) {
+          const matched = gov.getUsers().find(u =>
+            u.name.toLowerCase().includes(speaker.name.toLowerCase()) ||
+            speaker.name.toLowerCase().includes(u.name.toLowerCase()) ||
+            (u.role && u.role.toLowerCase() === (speaker.role || '').toLowerCase())
+          );
+          if (matched) effectiveUserId = matched.id;
+        }
+      }
+      this.currentUserId = effectiveUserId;
+      this.currentDeviceId = effectiveDeviceId;
+      governanceDirectives = gov.generatePromptDirectives(effectiveUserId, effectiveDeviceId);
+    } catch { /* no governance */ }
+
+    try {
+      if (this.settings.get('autoModelRouting') !== false) {
+        try {
+          const router = require('./local/router');
+          const currentId = this.settings.get('localModel');
+          const manager = this.runtime ? this.runtime.manager : null;
+          const decision = router.selectModelForTask(task, currentId, manager);
+
+          let colibriReady = false;
+          try {
+            const { colibriService } = require('./local/colibri');
+            colibriReady = await colibriService.isHealthy();
+          } catch { /* colibri not loaded */ }
+
+          if (image || decision.tier3 === 'vision') {
+            const visionModel = 'qwen3-vl-8b';
+            if (this.settings.get('provider') !== 'local' || this.settings.get('localModel') !== visionModel) {
+              this.hooks.terminal('info', `[Auto-Router: Tier 1 (Eyes)] Routing to ${visionModel} (VRAM Vision)`);
+              this.settings.update({ provider: 'local', localModel: visionModel });
+            }
+          } else if ((decision.tier3 === 'mid' || decision.tier3 === 'brain') && colibriReady) {
+            const colibriTarget = decision.suggestedModel || 'qwen36-35b';
+            const tierLabel = decision.tier3 === 'brain' ? 'Tier 3 (Sol Brain)' : 'Tier 2 (Workhorse)';
+            if (this.settings.get('provider') !== 'colibri' || this.settings.get('colibriModel') !== colibriTarget) {
+              this.hooks.terminal('info', `[Auto-Router: ${tierLabel}] Routing to Colibri (${colibriTarget})`);
+              this.settings.update({ provider: 'colibri', colibriModel: colibriTarget });
+            }
+          } else if (decision.tier3 === 'airllm') {
+            const airllmTarget = decision.suggestedModel || 'airllm-meta-llama-Meta-Llama-3-70B-Instruct';
+            if (this.settings.get('provider') !== 'airllm' || this.settings.get('airllmModel') !== airllmTarget) {
+              this.hooks.terminal('info', `[Auto-Router: AirLLM Stream] Hardware memory exceeded or layer-streaming requested. Routing to AirLLM (${airllmTarget})`);
+              this.settings.update({ provider: 'airllm', airllmModel: airllmTarget });
+            }
+          } else if (decision.changed && decision.targetId) {
+            this.hooks.terminal('info', `[Auto-Router] Selected ${decision.tier.toUpperCase()} model (${decision.targetId}) based on task complexity`);
+            this.settings.update({ localModel: decision.targetId });
+          }
+        } catch { /* routing fallback */ }
+
+      }
       let provider = this.ensureProvider();
+      if ((provider.id === 'local' || provider.id === 'ollama') && typeof provider.updateTools === 'function') {
+        const taskTools = this.plugins.definitionsForTask(task, provider.id);
+        provider.updateTools(taskTools);
+      }
       this.hooks.terminal('info', `Using ${llm.describe(this.settings, provider.id)}`);
       let request = null;
       if (region) {
@@ -209,17 +339,28 @@ class Agent {
             this.hooks.terminal('error', `Couldn’t draw the outline on the screenshot: ${err.message}`);
           }
         }
+        const speakerInfo = (speaker && speaker.name) ? `\n(Recognized Speaker via Voice Biometrics: ${speaker.name}${speaker.role ? ` [Role: ${speaker.role}]` : ''})` : '';
+        const govNote = governanceDirectives ? `\n${governanceDirectives}` : '';
         request = (p) => {
           const box = (p.fromScreen ? p.fromScreen(r) : r).join(', ');
           const how = traced
             ? `I traced around something on the screen; it's outlined in blue in the first image (bounding box [${box}] in your coordinate space)`
             : `I highlighted the area [${box}] of the first image, in your coordinate space`;
-          p.addUserMessage(`${task}\n\n(${how}. The second image is a close-up of that area. My question is about what I marked; identify it first if that helps.)`,
+          p.addUserMessage(`${task}${speakerInfo}${govNote}\n\n(${how}. The second image is a close-up of that area. My question is about what I marked; identify it first if that helps.)`,
             [full.toString('base64'), crop.toString('base64')]);
+        };
+      } else if (image) {
+        const imgBase64 = Buffer.isBuffer(image) ? image.toString('base64') : String(image).replace(/^data:image\/[a-z]+;base64,/, '');
+        const speakerInfo = (speaker && speaker.name) ? `\n(Recognized Speaker via Voice Biometrics: ${speaker.name}${speaker.role ? ` [Role: ${speaker.role}]` : ''})` : '';
+        const govNote = governanceDirectives ? `\n${governanceDirectives}` : '';
+        request = (p) => {
+          p.addUserMessage(`${task || 'Analyze this camera capture or photo in detail.'}${speakerInfo}${govNote}\n\n(This photo was captured from the user's remote device camera. Describe and answer the request.)`, [imgBase64]);
         };
       } else {
         let screenNote = '';
-        if (this.ui && ON_SCREEN.test(task)) {
+        const explicitScreenRef = /\b(?:screen|display|window|desktop|app|button|menu|cursor|icon|interface)\b/i.test(task);
+        const shouldReadScreen = ON_SCREEN.test(task) && (!isConversationalTask(task) || explicitScreenRef);
+        if (this.ui && shouldReadScreen) {
           try {
             const snap = await this.ui.read(this.target);
             screenNote = `\n\n(${this.ui.describe(snap, task, { limit: this.listLimit(provider), point: this.modelPoint(provider) })})`;
@@ -227,12 +368,38 @@ class Agent {
             this.hooks.terminal('error', `Couldn’t read the screen: ${err.message}`);
           }
         }
-        request = (p) => p.addUserMessage(task + screenNote);
+        let memoryNote = '';
+        if (speaker && speaker.name) {
+          memoryNote += `\n\n(Recognized Speaker via Voice Biometrics: ${speaker.name}${speaker.role ? ` [Role: ${speaker.role}]` : ''}${speaker.confidence ? ` [Confidence: ${Math.round(speaker.confidence * 100)}%]` : ''}. Address the speaker appropriately and maintain family-aware context.)`;
+        }
+        try {
+          const { getMemoryStore, getUserProfileSummary } = require('./memory');
+          const summary = getMemoryStore().contextSummary(task);
+          if (summary) memoryNote += `\n\n(Relevant persistent memories:\n${summary})`;
+          if (/\b(who am i|about me|know about me|know me|\bme\b)\b/i.test(task)) {
+            memoryNote += `\n\n(User and system context: ${getUserProfileSummary()})`;
+          }
+        } catch { /* no memories */ }
+        const govNote = governanceDirectives ? `\n${governanceDirectives}` : '';
+        const now = new Date();
+        const timeNote = `\n\n(Current system time: ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}, ${now.toLocaleTimeString('en-US')})`;
+        const anchorNote = `\n\n[Mave Task Anchor: "${task}"] Stick strictly to this user request. Do NOT divert to unrelated apps, websites, suggestions, or placeholders found on screen.`;
+        request = (p) => p.addUserMessage(task + screenNote + memoryNote + govNote + timeNote + anchorNote);
       }
       if (provider.startTask) provider.startTask(); // keep earlier turns lean (local model)
       request(provider);
       try {
-        return await this.loop(provider, this.abort.signal);
+        const result = await this.loop(provider, this.abort.signal);
+        if (result && result.status === 'done' && result.text) {
+          this.conversationHistory.push({ role: 'user', content: task });
+          this.conversationHistory.push({ role: 'assistant', content: result.text });
+          if (this.conversationHistory.length > 20) this.conversationHistory = this.conversationHistory.slice(-20);
+          try {
+            const { getMemoryStore } = require('./memory');
+            getMemoryStore().autoExtractTaste(task, result.text);
+          } catch { /* ignore non-fatal memory update */ }
+        }
+        return result;
       } catch (err) {
         if (!this.canFallBackOffline(provider, err) || this.abort.signal.aborted) throw err;
         this.hooks.notice('You’re offline, so I’m switching to the local AI.');
@@ -241,7 +408,17 @@ class Agent {
         this.hooks.terminal('info', `Using ${llm.describe(this.settings, provider.id)}`);
         if (provider.startTask) provider.startTask();
         request(provider);
-        return await this.loop(provider, this.abort.signal);
+        const result = await this.loop(provider, this.abort.signal);
+        if (result && result.status === 'done' && result.text) {
+          this.conversationHistory.push({ role: 'user', content: task });
+          this.conversationHistory.push({ role: 'assistant', content: result.text });
+          if (this.conversationHistory.length > 20) this.conversationHistory = this.conversationHistory.slice(-20);
+          try {
+            const { getMemoryStore } = require('./memory');
+            getMemoryStore().autoExtractTaste(task, result.text);
+          } catch { /* ignore non-fatal memory update */ }
+        }
+        return result;
       }
     } catch (err) {
       if (err instanceof StoppedError || (this.abort && this.abort.signal.aborted)) return { status: 'stopped', text: '' };
@@ -255,6 +432,8 @@ class Agent {
   async loop(provider, signal) {
     const maxTurns = this.settings.get('maxTurns');
     let nudges = 0;
+    let falseCompletionNudges = 0;
+    let hasExecutedAction = false;
     let lastKey = '';
     let repeats = 0;
     for (let turn = 0; turn < maxTurns; turn++) {
@@ -275,13 +454,44 @@ class Agent {
           provider.addUserMessage('Your last response was cut off by the length limit. Continue.');
           continue;
         }
+        // False completion hallucination: model claimed it performed an action task without calling tools
+        if (isFalseCompletionHallucination(step.text, this.task, hasExecutedAction)) {
+          if (falseCompletionNudges < 2) {
+            falseCompletionNudges++;
+            if (this.hooks.discard) this.hooks.discard();
+            this.hooks.terminal('info', 'The model claimed completion without executing action tools; requiring physical action.');
+            provider.addUserMessage(`You stated that you performed the action ("${step.text.slice(0, 80)}..."), but no computer action was actually executed. Call the appropriate tool now to perform the user's task: "${this.task}".`);
+            continue;
+          }
+        }
         // A plan with no tool call ("I'll open Chrome, then…"): have the model do it instead.
-        if (provider.id === 'local' && nudges < 2 && isPlanInsteadOfAction(step.text)) {
-          nudges++;
-          if (this.hooks.discard) this.hooks.discard(); // don't keep or speak the narration
-          this.hooks.terminal('info', 'The model described a plan instead of acting; asking it to act.');
-          provider.addUserMessage('Don’t describe it: do it now by calling the tools. At most one short sentence of text.');
-          continue;
+        if (provider.id === 'local' && isPlanInsteadOfAction(step.text, this.task)) {
+          if (nudges < 2) {
+            nudges++;
+            if (this.hooks.discard) this.hooks.discard(); // don't keep or speak the narration
+            this.hooks.terminal('info', 'The model described a plan instead of acting; asking it to act.');
+            provider.addUserMessage('Don’t describe it: do it now by calling the tools. At most one short sentence of text.');
+            continue;
+          }
+          if (this.settings.get('autoModelRouting') !== false) {
+            try {
+              const router = require('./local/router');
+              const currentId = this.settings.get('localModel');
+              const manager = this.runtime ? this.runtime.manager : null;
+              if (router.shouldEscalate({ currentModelId: currentId, nudges }, manager)) {
+                const { heavy } = router.getModelTiers(manager);
+                if (heavy && heavy.id !== currentId) {
+                  this.hooks.terminal('info', `[Auto-Router] Model stalled on planning. Escalating to ${heavy.label || heavy.id} for deeper reasoning...`);
+                  this.settings.update({ localModel: heavy.id });
+                  this.provider = null;
+                  provider = this.ensureProvider();
+                  nudges = 0;
+                  provider.addUserMessage('An earlier lighter model stalled while planning. Think through this step and call the right tool now.');
+                  continue;
+                }
+              }
+            } catch { /* continue */ }
+          }
         }
         const { text, point } = extractPoint(step.text);
         return { status: 'done', text, point: point && this.localPoint(point) };
@@ -292,6 +502,25 @@ class Agent {
       repeats = key === lastKey ? repeats + 1 : 0;
       lastKey = key;
       if (repeats >= 2) {
+        if (provider.id === 'local' && this.settings.get('autoModelRouting') !== false) {
+          try {
+            const router = require('./local/router');
+            const currentId = this.settings.get('localModel');
+            const manager = this.runtime ? this.runtime.manager : null;
+            if (router.shouldEscalate({ currentModelId: currentId, repeats }, manager)) {
+              const { heavy } = router.getModelTiers(manager);
+              if (heavy && heavy.id !== currentId) {
+                this.hooks.terminal('info', `[Auto-Router] Model repeating actions. Escalating to ${heavy.label || heavy.id} for deeper reasoning...`);
+                this.settings.update({ localModel: heavy.id });
+                this.provider = null;
+                provider = this.ensureProvider();
+                repeats = 0;
+                provider.addUserMessage('An earlier lighter model repeated this step. Move to the next distinct step or complete the task.');
+                continue;
+              }
+            }
+          } catch { /* continue */ }
+        }
         provider.addToolResults(step.calls.map((call) => ({ call, content: 'Not executed: repeated.', isError: true })));
         return { status: 'done', text: 'I kept repeating the same step, so I stopped. Try asking in different words.', point: null };
       }
@@ -302,7 +531,23 @@ class Agent {
       }
 
       this.hooks.state('acting');
-      provider.addToolResults(await this.runCalls(step.calls, step.stop === 'max_tokens', signal, provider));
+      const toolResults = await this.runCalls(step.calls, step.stop === 'max_tokens', signal, provider);
+      for (const r of toolResults) {
+        if (!r.isError) {
+          const n = r.call.name;
+          if (r.call.computer || ['click_element', 'type_into', 'scroll_screen', 'drag_element', 'mouse_click', 'key', 'type', 'open_app', 'open_url', 'run_command', 'write_file', 'terminal', 'shell', 'edit_drawing'].includes(n)) {
+            hasExecutedAction = true;
+          }
+        }
+      }
+      // Re-anchor active goal in intermediate tool results to prevent attention drift on complex screens
+      if (toolResults.length && this.task && !isConversationalTask(this.task)) {
+        const last = toolResults[toolResults.length - 1];
+        if (last && typeof last.content === 'string') {
+          last.content += `\n\n[Active Goal Anchor: "${this.task}"] Focus solely on this objective. Do not divert to unrelated screen elements, tabs, recommendations, or suggested prompts.`;
+        }
+      }
+      provider.addToolResults(toolResults);
     }
     return { status: 'max_turns', text: `I stopped after ${maxTurns} steps. Say "continue" if you want me to keep going.` };
   }
@@ -313,6 +558,69 @@ class Agent {
     } catch {
       return null;
     }
+  }
+
+  checkGoalDivert(call, task = '') {
+    const t = String(task || '').trim().toLowerCase();
+    const name = call.name;
+    const input = call.input || {};
+
+    // 1. Social media & entertainment unrequested divert guard
+    const UNREQUESTED_DIVERT_PATTERNS = [
+      { name: 'Instagram', regex: /\b(?:instagram|insta)\b/i, keywords: /\b(?:instagram|insta|reel|reels|story|stories|dm)\b/i },
+      { name: 'TikTok', regex: /\btiktok\b/i, keywords: /\btiktok\b/i },
+      { name: 'Netflix', regex: /\bnetflix\b/i, keywords: /\b(?:netflix|movie|film|series|watch)\b/i },
+      { name: 'YouTube', regex: /\b(?:youtube\.com|youtube)\b/i, keywords: /\b(?:youtube|video|watch|stream|song|channel)\b/i },
+      { name: 'Facebook', regex: /\bfacebook\b/i, keywords: /\b(?:facebook|fb)\b/i },
+      { name: 'Twitter / X', regex: /\b(?:twitter\.com|x\.com)\b/i, keywords: /\b(?:twitter|tweet|x\.com)\b/i },
+      { name: 'Twitch', regex: /\btwitch\b/i, keywords: /\b(?:twitch|stream)\b/i },
+      { name: 'Reddit', regex: /\breddit\b/i, keywords: /\b(?:reddit|subreddit|post)\b/i },
+    ];
+
+    const targetUrl = String(input.url || '');
+    const targetAppName = String(input.name || '');
+    const isNavigation = name === 'open_url' || name === 'open_app' || name.startsWith('use_');
+
+    if (isNavigation) {
+      for (const divert of UNREQUESTED_DIVERT_PATTERNS) {
+        const matches = (name === `use_${divert.name.toLowerCase()}`)
+          || (name === 'open_url' && divert.regex.test(targetUrl))
+          || (name === 'open_app' && divert.regex.test(targetAppName));
+        if (matches && !divert.keywords.test(t)) {
+          return `The user did NOT request opening or using ${divert.name}. Stick strictly to the user's task: "${task}".`;
+        }
+      }
+    }
+
+    // 2. Conversational inquiry protection: If the user asked a conversational question (e.g. "how can you be better"),
+    // prevent launching apps or browsing unrequested sites instead of answering.
+    if (isConversationalTask(task)) {
+      if (name === 'open_app' || name === 'open_url' || name.startsWith('use_')) {
+        return `The user asked a conversational question ("${task}"), not to open external apps or websites. Provide a thoughtful answer directly in chat.`;
+      }
+    }
+
+    // 3. Web placeholder / suggested prompt adoption check
+    if (name === 'type_into' && input.text) {
+      const typed = String(input.text).trim().toLowerCase();
+      const placeholders = [
+        'what is the current weather',
+        'current weather in new york',
+        'weather in new york',
+        'write an essay',
+        'summarize an article',
+        'help me write',
+        'brainstorm names',
+        'plan a trip'
+      ];
+      for (const ph of placeholders) {
+        if (typed.includes(ph) && !t.includes(ph) && !t.includes('weather') && !t.includes('new york')) {
+          return `"${input.text}" is an on-screen web placeholder/suggestion, NOT the user's request. Your task is "${task}". Please type the user's requested query instead.`;
+        }
+      }
+    }
+
+    return null;
   }
 
   // tool calls
@@ -328,6 +636,43 @@ class Agent {
       if (signal.aborted) { results.push({ call, content: STOPPED_TEXT, isError: true }); continue; }
       if (truncated) { results.push({ call, content: TRUNCATED_TEXT, isError: true }); continue; }
       if (failed) { results.push({ call, content: HALT_TEXT, isError: true }); continue; }
+
+      const divertWarning = this.checkGoalDivert(call, this.task);
+      if (divertWarning) {
+        this.hooks.terminal('error', `[Anti-Divert Guard] ${divertWarning}`);
+        results.push({ call, content: `Action Blocked by Safety Guard: ${divertWarning}. You must stick strictly to the user's objective: "${this.task}".`, isError: true });
+        continue;
+      }
+
+      // Parental Governance & Power Tier Enforcement
+      try {
+        const { getGovernanceManager } = require('./security/governance');
+        const gov = getGovernanceManager();
+        let actionType = null;
+        const name = call.name;
+        if (name === 'run_command' || name === 'terminal' || name === 'start_process' || name === 'shell') {
+          actionType = 'terminal';
+        } else if (call.computer || ['click_element', 'type_into', 'drag_element', 'mouse_click', 'key', 'type', 'click', 'mouse_move', 'scroll_screen'].includes(name)) {
+          actionType = 'screen_control';
+        } else if (name === 'manage_credential_vault' || name.includes('vault') || name.includes('password')) {
+          actionType = 'vault_access';
+        } else if (name === 'search_screen_memory' || name.includes('screen_memory') || name.includes('total_recall')) {
+          actionType = 'screen_memory';
+        } else if (name.startsWith('remote_hands_') || name.startsWith('artemis_') || name.startsWith('iphone_use_')) {
+          actionType = 'remote_hands';
+        } else if (name.includes('purchase') || name.includes('payment') || name.includes('checkout')) {
+          actionType = 'purchase';
+        }
+
+        if (actionType) {
+          const perm = gov.isActionPermitted(actionType, this.currentUserId || gov.activeUserId, this.currentDeviceId || 'host_pc');
+          if (!perm.allowed) {
+            this.hooks.terminal('error', `[Parental Governance Guard] ${perm.reason}`);
+            results.push({ call, content: `Action Blocked by Parental Governance: ${perm.reason}`, isError: true });
+            continue;
+          }
+        }
+      } catch { /* continue if governance check fails */ }
 
       this.hooks.action(call.name, call.input);
       try {
@@ -468,4 +813,4 @@ function toUserError(err) {
   return new AgentError(err && err.message ? err.message : String(err));
 }
 
-module.exports = { Agent, AgentError, extractPoint, toUserError, isPlanInsteadOfAction };
+module.exports = { Agent, AgentError, extractPoint, toUserError, isPlanInsteadOfAction, isConversationalTask, isFalseCompletionHallucination };

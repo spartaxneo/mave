@@ -115,6 +115,93 @@ class PluginRegistry {
       .map(({ name, description, input_schema }) => ({ name, description, input_schema }));
   }
 
+  /**
+   * Filter tools dynamically so that local models (e.g. Qwen3-VL 8B) receive a focused,
+   * high-speed subset of relevant tools (~15-28 tools) rather than all 150+ tools,
+   * preventing context size exhaustion and speeding up prefill from 30s to <1s.
+   */
+  filterToolsForTask(task = '', allDefs = null) {
+    const defs = allDefs || this.definitions();
+    const coreNames = new Set([
+      'click_element', 'type_into', 'scroll_screen', 'drag_element', 'highlight_element',
+      'read_screen', 'open_app', 'open_url', 'run_command', 'web_search', 'read_webpage',
+      'write_file', 'read_file', 'list_files', 'annotate', 'edit_drawing', 'terminal'
+    ]);
+
+    const selected = [];
+    const selectedNames = new Set();
+
+    // 1. Core tools always included
+    for (const def of defs) {
+      if (coreNames.has(def.name)) {
+        selected.push(def);
+        selectedNames.add(def.name);
+      }
+    }
+
+    // 2. Keyword/intent-based domain tool inclusion
+    const t = String(task || '').toLowerCase();
+    if (t) {
+      const domainKeywords = {
+        'artemis': ['android', 'artemis', 'phone', 'tablet'],
+        'iphone': ['iphone', 'ios', 'apple', 'wda'],
+        'mavedrop': ['airdrop', 'share', 'mavedrop', 'transfer', 'send file', 'sync', 'clipboard'],
+        'household': ['appliance', 'ac', 'thermostat', 'vacuum', 'purifier', 'chore', 'household', 'light', 'plug', 'home'],
+        'camera': ['camera', 'look', 'point', 'room', 'see', 'vision', 'photo'],
+        'emergency': ['emergency', 'alert', 'fall', 'contact', 'safety', 'danger', 'hazard'],
+        'market': ['market', 'tam', 'competitor', 'business', 'pitch', 'grant', 'review', 'analysis', 'startup', 'honest'],
+        'agent': ['agent', 'team', 'playbook', 'cli', 'openmaus', 'subagent', 'antigravity', 'codex', 'claude', 'grok'],
+        'audio': ['sound', 'audio', 'tone', 'music', 'speaker', 'play', 'synth'],
+        'pet': ['pet', 'codex', 'feed', 'cat', 'dog', 'buddy'],
+        'memory': ['remember', 'profile', 'who am i', 'recall', 'taste', 'know me'],
+        'chatgpt': ['chatgpt', 'gpt', 'openai', 'intelligence', 'ask chatgpt'],
+        'claude': ['claude', 'anthropic'],
+        'perplexity': ['perplexity', 'citations', 'research online'],
+        'gmail': ['gmail', 'email', 'mail', 'inbox', 'draft', 'send email'],
+        'drive': ['drive', 'google drive', 'docs', 'sheets', 'gdrive'],
+        'calendar': ['calendar', 'meeting', 'agenda', 'schedule', 'event'],
+        'microsoft': ['microsoft', 'office', 'outlook', 'teams', 'onedrive'],
+        'slack': ['slack', 'channel', 'mention'],
+        'discord': ['discord', 'server'],
+        'notion': ['notion', 'workspace'],
+        'notes': ['note', 'notes', 'obsidian', 'notion', 'dossier', 'document'],
+        'github': ['github', 'repo', 'pr', 'pull request', 'issue', 'commit'],
+        'linear': ['linear', 'jira', 'asana', 'trello', 'ticket', 'sprint'],
+        'cloud': ['cloud', 'vercel', 'firebase', 'supabase', 'aws', 'netlify', 'deploy'],
+        'finance': ['finance', 'stripe', 'paypal', 'wise', 'invoice', 'expense'],
+        'todo': ['todo', 'todoist', 'task', 'checklist', 'reminder'],
+        'pipeline': ['pipeline', 'cross service', 'workflow', 'automate', 'connect']
+      };
+
+      for (const def of defs) {
+        if (selectedNames.has(def.name)) continue;
+        const desc = (def.description || '').toLowerCase();
+        const name = def.name.toLowerCase();
+
+        for (const [domain, kws] of Object.entries(domainKeywords)) {
+          if (kws.some((kw) => t.includes(kw))) {
+            if (name.includes(domain) || kws.some((kw) => name.includes(kw) || desc.includes(kw))) {
+              selected.push(def);
+              selectedNames.add(def.name);
+              break;
+            }
+          }
+        }
+        if (selected.length >= 28) break;
+      }
+    }
+
+    return selected;
+  }
+
+  definitionsForTask(task = '', providerId = 'local') {
+    const all = this.definitions();
+    if (providerId === 'local' || providerId === 'ollama') {
+      return this.filterToolsForTask(task, all);
+    }
+    return all;
+  }
+
   list() {
     return [...this.tools.values()].map((t) => ({ name: t.name, source: this.sources.get(t.name), description: t.description }));
   }

@@ -6,12 +6,18 @@ const path = require('path');
 const ICON_DIR = path.join(__dirname, '..', 'renderer', 'assets');
 
 function createTray({ windows, settings, controller, agent }) {
-  const image = nativeImage.createFromPath(path.join(ICON_DIR, 'tray.png'));
-  const hiDpi = nativeImage.createFromPath(path.join(ICON_DIR, 'tray@2x.png'));
-  if (!hiDpi.isEmpty()) image.addRepresentation({ scaleFactor: 2, buffer: hiDpi.toPNG() });
+  let image = nativeImage.createFromPath(path.join(ICON_DIR, 'tray.png'));
+  if (process.platform === 'win32') {
+    const appIcon = nativeImage.createFromPath(path.join(ICON_DIR, 'icon.png'));
+    if (!appIcon.isEmpty()) image = appIcon.resize({ width: 24, height: 24 });
+  } else {
+    const hiDpi = nativeImage.createFromPath(path.join(ICON_DIR, 'tray@2x.png'));
+    if (!hiDpi.isEmpty()) image.addRepresentation({ scaleFactor: 2, buffer: hiDpi.toPNG() });
+  }
   const tray = new Tray(image);
   tray.setToolTip(`${settings.get('assistantName')} · Ready`);
   tray.on('click', () => windows.openMain('home'));
+  tray.on('double-click', () => windows.openMain('home'));
   tray.on('right-click', () => {
     const name = settings.get('assistantName');
     tray.popUpContextMenu(Menu.buildFromTemplate([
@@ -19,7 +25,7 @@ function createTray({ windows, settings, controller, agent }) {
       { label: 'Select an Area to Ask About', click: () => controller.startPanelSelection() },
       { type: 'separator' },
       { label: 'Settings…', click: () => windows.openSettings() },
-      { label: 'Bigfoot Terminal', click: () => windows.openTerminal() },
+      { label: `${name} Terminal`, click: () => windows.openTerminal() },
       { type: 'separator' },
       { label: `Show ${name} Next to Cursor`, type: 'checkbox', checked: settings.get('showBuddy'), click: (item) => settings.update({ showBuddy: item.checked }) },
       { label: `Answer to “Hey ${name}”`, type: 'checkbox', checked: settings.get('wakeWord'), click: (item) => settings.update({ wakeWord: item.checked }) },

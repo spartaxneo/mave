@@ -20,7 +20,10 @@ function webPreferences(extra = {}) {
 
 /** Hide a window from screen capture so Claude never sees Bigfoot's own UI in screenshots. */
 function protect(win) {
-  // BIGFOOT_ALLOW_CAPTURE=1 is for visual QA only: it lets screenshots include the overlay.
+  // On Windows, setContentProtection(true) on transparent/layered windows triggers a DWM bug
+  // that renders the window completely invisible to the user. On Windows, windows.hidePanel()
+  // already hides Bigfoot's UI whenever the agent interacts with the screen.
+  if (process.platform === 'win32') return;
   if (process.env.BIGFOOT_ALLOW_CAPTURE !== '1') win.setContentProtection(true);
 }
 
@@ -41,6 +44,7 @@ class WindowManager {
     this.onEngineClosed = onEngineClosed;
     this.approvalQueue = Promise.resolve();
     this.cancelApproval = null;
+    this.petWindow = null;
   }
 
   send(win, channel, payload) { send(win, channel, payload); }
@@ -191,8 +195,12 @@ class WindowManager {
     const width = Math.min(960, wa.width - 40);
     const height = Math.min(680, wa.height - 40);
     this.main = new BrowserWindow({
-      width, height, minWidth: 560, minHeight: 480, center: true, show: false, frame: false, transparent: true,
-      resizable: true, fullscreenable: false, maximizable: false, backgroundColor: '#00000000', title: 'Bigfoot',
+      width, height, minWidth: 560, minHeight: 480, center: true, show: false,
+      frame: true,
+      autoHideMenuBar: true,
+      transparent: false,
+      resizable: true, fullscreenable: true, maximizable: true,
+      backgroundColor: '#101211', title: 'Mave',
       icon: ICON, webPreferences: webPreferences(),
     });
     protect(this.main); // Bigfoot's own window never appears in the screenshots it sends
@@ -208,9 +216,11 @@ class WindowManager {
 
   /** Show the main window at a page: 'onboarding', 'home', 'terminal', or a settings section. */
   openMain(route = 'home') {
+    console.log(`[windows] openMain called with route: "${route}"`);
     if (!this.main || this.main.isDestroyed()) this.createMain();
     const win = this.main;
     const firstShow = !win.isVisible();
+    console.log(`[windows] main window ID: ${win.id}, firstShow: ${firstShow}, isLoading: ${win.webContents.isLoading()}`);
     if (route === 'onboarding') {
       if (this.mainPage !== 'onboarding') {
         this.mainPage = 'onboarding';
@@ -223,19 +233,22 @@ class WindowManager {
       send(win, 'settings', { section: route });
     }
     const reveal = () => {
+      console.log('[windows] reveal() invoked for main window');
       if (win.isDestroyed()) return;
       if (win.isMinimized()) win.restore();
       win.show();
       win.focus();
-      if (firstShow) {
-        // Windows won't let a background app steal focus, so briefly pin the window on top.
-        win.setAlwaysOnTop(true);
-        win.moveTop();
-        setTimeout(() => { if (!win.isDestroyed()) win.setAlwaysOnTop(false); }, 1200);
-      }
+      win.setAlwaysOnTop(true);
+      win.moveTop();
+      setTimeout(() => { if (!win.isDestroyed()) win.setAlwaysOnTop(false); }, 3000);
     };
-    if (win.webContents.isLoading()) win.webContents.once('did-finish-load', reveal);
-    else reveal();
+    win.webContents.on('did-fail-load', (e, code, desc) => console.error('[windows] main did-fail-load:', code, desc));
+    win.webContents.on('console-message', (e, level, message, line, sourceId) => {
+      if (level >= 2) console.log(`[renderer error] ${message} (${sourceId}:${line})`);
+    });
+    win.once('ready-to-show', reveal);
+    win.webContents.once('did-finish-load', reveal);
+    reveal();
     return win;
   }
 
@@ -305,6 +318,69 @@ class WindowManager {
     send(this.main, 'settings', view);
     this.broadcast('settings', view);
   }
+
+  // Desktop Pet Companion (Codex Pets)
+  createPetWindow(size = 'normal') {
+    if (this.petWindow && !this.petWindow.isDestroyed()) return this.petWindow;
+    const { workArea: wa } = screen.getPrimaryDisplay();
+    let W = 160;
+    let H = 160;
+    if (size === 'compact') { W = 130; H = 130; }
+    else if (size === 'large') { W = 190; H = 190; }
+    const win = new BrowserWindow({
+      width: W, height: H, x: wa.x + wa.width - W - 20, y: wa.y + wa.height - H - 20,
+      frame: false, transparent: true, resizable: false, alwaysOnTop: true, show: false,
+      skipTaskbar: true, fullscreenable: false, minimizable: false, maximizable: false,
+      backgroundColor: '#00000000', title: 'Mave Pet Companion',
+      hasShadow: false,
+      webPreferences: webPreferences(),
+    });
+    protect(win); // Never appears in screenshots captured by vision agent
+    win.setAlwaysOnTop(true, 'screen-saver');
+    win.loadFile(path.join(RENDERER, 'pet.html'));
+    this.petWindow = win;
+    win.on('closed', () => { this.petWindow = null; });
+    return win;
+  }
+
+  showPet(size = 'normal') {
+    const win = this.createPetWindow(size);
+    win.showInactive();
+  }
+
+  hidePet() {
+    if (this.petWindow && !this.petWindow.isDestroyed()) {
+      this.petWindow.hide();
+    }
+  }
+
+  togglePet() {
+    if (this.petWindow && !this.petWindow.isDestroyed() && this.petWindow.isVisible()) {
+      this.hidePet();
+      return false;
+    }
+    this.showPet();
+    return true;
+  }
+
+  updatePetState(state, speechBubble = null, species = null, taskMode = null) {
+    if (this.petWindow && !this.petWindow.isDestroyed()) {
+      send(this.petWindow, 'pet:state', { state, speechBubble, species, taskMode });
+    }
+  }
+
+  updatePetConfig(config) {
+    if (this.petWindow && !this.petWindow.isDestroyed()) {
+      if (config.size) {
+        let W = 160, H = 160;
+        if (config.size === 'compact') { W = 130; H = 130; }
+        else if (config.size === 'large') { W = 190; H = 190; }
+        this.petWindow.setSize(W, H);
+      }
+      send(this.petWindow, 'pet:config', config);
+    }
+  }
 }
+
 
 module.exports = { WindowManager, send };

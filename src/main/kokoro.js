@@ -9,8 +9,20 @@ const { Worker } = require('worker_threads');
 let app = null;
 try { ({ app } = require('electron')); } catch { /* tests */ }
 
-/** The voices offered: Kokoro's makers rate Heart and Bella their best, then Emma; Michael and Fenrir lead the male voices. */
+/** The voices offered: ChatGPT Neural voices, Studio Blended Kokoro voices, and Native Kokoro voices. */
 const VOICES = [
+  // ChatGPT Real Voices (Neural Low-Latency)
+  { id: 'nova', name: 'Nova (ChatGPT)', gender: 'female', note: 'ChatGPT voice · warm, expressive & human' },
+  { id: 'alloy', name: 'Alloy (ChatGPT)', gender: 'female', note: 'ChatGPT voice · balanced, clear & natural' },
+  { id: 'shimmer', name: 'Shimmer (ChatGPT)', gender: 'female', note: 'ChatGPT voice · gentle, pleasant & emotional' },
+  { id: 'echo', name: 'Echo (ChatGPT)', gender: 'male', note: 'ChatGPT voice · smooth, warm & conversational' },
+  { id: 'onyx', name: 'Onyx (ChatGPT)', gender: 'male', note: 'ChatGPT voice · deep, authoritative & resonant' },
+  { id: 'fable', name: 'Fable (ChatGPT)', gender: 'male', note: 'ChatGPT voice · British narrative & expressive' },
+  // Studio Blended Kokoro Local Voices
+  { id: 'blend_muse', name: 'Meta Muse', gender: 'female', note: 'Studio blended (Heart+Bella) · warm & human' },
+  { id: 'blend_serena', name: 'Serena', gender: 'female', note: 'Studio blended (Heart+Emma) · calm & articulate' },
+  { id: 'blend_orion', name: 'Orion', gender: 'male', note: 'Studio blended (Michael+Fenrir) · smooth & deep' },
+  // Native Kokoro Local Voices
   { id: 'af_heart', name: 'Heart', gender: 'female', note: 'Warm and natural' },
   { id: 'af_bella', name: 'Bella', gender: 'female', note: 'Bright and lively' },
   { id: 'bf_emma', name: 'Emma', gender: 'female', note: 'British, calm' },
@@ -29,7 +41,9 @@ const ACK_TEXT = 'On it.';
 function ackFile(voice, speed) {
   if (Math.abs(Number(speed) - 1) > 0.01) return null;
   const file = path.join(voiceDir(), 'previews', `ack-${voice}.wav`);
-  return fs.existsSync(file) ? file : null;
+  if (fs.existsSync(file)) return file;
+  const fallback = path.join(voiceDir(), 'previews', 'ack-af_heart.wav');
+  return fs.existsSync(fallback) ? fallback : null;
 }
 
 /** The ready-made preview for this voice, if the name and speed match it. */
@@ -53,6 +67,7 @@ class Kokoro {
     this.worker = null;
     this.pending = new Map();
     this.nextId = 1;
+    this.cache = new Map();
   }
 
   start() {

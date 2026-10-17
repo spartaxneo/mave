@@ -8,3 +8,8 @@ vendor/
 src/main/native/*.exe
 src/main/plugins/lib/icons.json
 build-err.txt
+__pycache__/
+*.py[cod]
+vault.enc
+vault.key
+.env

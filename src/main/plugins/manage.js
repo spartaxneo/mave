@@ -16,7 +16,25 @@ const BUILTIN_GROUPS = {
   'builtin/shell.js': 'Run commands',
   'builtin/screen.js': 'Read and use the screen',
   'builtin/web.js': 'Search and read the web',
+  'builtin/audio.js': 'System audio and listening',
+  'builtin/media.js': 'Generative media and synthesis',
+  'builtin/memory.js': 'Long-term memory',
+  'builtin/models.js': 'Custom AI models',
+  'builtin/media_control.js': 'Media and audio control',
+  'builtin/system.js': 'System diagnostics and hardware',
+  'builtin/remote.js': 'Phone and remote control',
+  'builtin/browser.js': 'PinchTab browser automation (Chrome)',
+  'builtin/meta_orchestrator.js': 'Human strategy, Codex/Antigravity and ChatGPT+Claude dual-model orchestration',
+  'builtin/core_household.js': 'Ghost AI Core Computer: Home appliances and household chores',
+  'builtin/mobile_devices.js': 'Google Artemis Android, iPhone-Use and MaveDrop AirDrop sharing',
+  'builtin/vision_perception.js': 'Point-and-Ask spatial vision and camera perception',
+  'builtin/security_shield.js': 'Autonomous emergency dispatch and security shield',
+  'builtin/cli_agent_bridge.js': 'Local developer CLI agents (Antigravity, Codex, Claude, Grok, Muse)',
+  'builtin/team_playbooks.js': 'Multi-agent team playbooks and rosters (OpenMausBot parity)',
+  'builtin/remote_hands.js': 'Distributed Hands: Remote device control & permission management',
+  'builtin/parental_governance.js': 'Parental Admin Governance, Rules Engine & User Power Matrix',
 };
+
 
 class PluginManager {
   constructor({ registry, dir, logger, onChange = () => {} }) {

@@ -15,7 +15,9 @@ const SAMPLING = { temperature: 0.2, top_p: 0.8, top_k: 20, repeat_penalty: 1.05
 // Small local models tend to describe a plan instead of carrying it out; say plainly not to.
 const ACTION_NOTE = `
 
-Acting: when the user asks you to do something, call the right tool in this same reply. Never describe what you will do, never explain how, never list steps: just call the tool. Say at most one short sentence. To search the web, call open_url with https://www.google.com/search?q= and the search words. The screen is given to you as a list of numbered elements ([12] button "Sign in"): act with click_element, type_into and scroll_screen using those numbers, never by guessing coordinates. If what you need isn't listed, call read_screen with find and a few words, or scroll_screen. Use the computer tool's zoom only to look at a picture. To draw something on the screen (a bird, a heart…), call edit_drawing with action "add", shape "picture" and the subject (if there is no picture of it, shape "svg" with SVG you write). To neaten the user's drawing, call edit_drawing with action "tidy". If the user only asks a question or chats, answer in one or two short sentences, with no lists.`;
+Acting: when the user asks you to perform an action on their computer, call the right tool in this same reply. Never describe what you will do without doing it: just call the tool. When performing actions, say at most one short sentence. To search the web, call open_url with https://www.google.com/search?q= and the search words. The screen is given to you as a list of numbered elements ([12] button "Sign in"): act with click_element, type_into and scroll_screen using those numbers, never by guessing coordinates. If what you need isn't listed, call read_screen with find and a few words, or scroll_screen. Use the computer tool's zoom only to look at a picture. To draw something on the screen (a bird, a heart…), call edit_drawing with action "add", shape "picture" and the subject (if there is no picture of it, shape "svg" with SVG you write). To neaten the user's drawing, call edit_drawing with action "tidy".
+
+When answering questions, explaining concepts, or describing what you can do: provide a clear, comprehensive, and well-structured answer using markdown and bullet points. Never call any tools when the user is simply asking a question or asking what you can do.`;
 
 const GRID_NOTE = `
 
@@ -47,6 +49,7 @@ class LocalProvider extends OpenAIProvider {
    */
   trimImages() {
     this.trimLists();
+    if (this.messages.length > 14) this.compactHistory();
     let count = 0;
     for (const m of this.messages) if (Array.isArray(m.content)) count += m.content.filter((p) => p.type === 'image_url').length;
     if (count <= this.keepImages) return;
@@ -70,6 +73,24 @@ class LocalProvider extends OpenAIProvider {
     for (const m of holders.slice(0, -2)) {
       m.content = typeof m.content === 'string' ? cut(m.content) : m.content.map((p) => (p.type === 'text' ? { ...p, text: cut(p.text) } : p));
     }
+  }
+
+  /**
+   * Compact conversation history when total turns grow too large for the local context window.
+   * Keeps system prompt [0], original user request [1], and the latest recent turns.
+   */
+  compactHistory() {
+    if (this.messages.length <= 4) return;
+    const system = this.messages[0];
+    const initial = this.messages[1];
+    const recent = this.messages.slice(-4);
+    this.messages = [
+      system,
+      initial,
+      { role: 'user', content: '[Earlier tool interactions completed successfully; continuing task with latest screen and state.]' },
+      ...recent,
+    ];
+    this.trimImages();
   }
 
   /**
@@ -158,6 +179,10 @@ class LocalProvider extends OpenAIProvider {
     if (!res.ok) {
       let detail = '';
       try { const b = await res.json(); detail = (b.error && (b.error.message || JSON.stringify(b.error))) || ''; } catch { /* not JSON */ }
+      if (/exceeds the available context size/i.test(detail) && this.messages.length > 4) {
+        this.compactHistory();
+        return this.requestBody(signal);
+      }
       throw new ProviderError(`${this.label} rejected the request${detail ? `: ${detail}` : ` (${res.status})`}`, 'Request rejected');
     }
     try {
@@ -272,16 +297,16 @@ class LocalProvider extends OpenAIProvider {
       const t = text(m);
       if (!t) continue;
       if (m.role === 'user' && !/^(?:Screen after|Don’t describe it|Your last response|\[older screenshot)/.test(t)) {
-        turns.push({ role: 'user', content: t.replace(/\n\n\((?:I traced|I highlighted|I drew|On screen:)[\s\S]*$/, '').slice(0, 500) });
+        turns.push({ role: 'user', content: t.replace(/\n\n\((?:I traced|I highlighted|I drew|On screen:)[\s\S]*$/, '').slice(0, 1000) });
       } else if (m.role === 'assistant' && !(m.tool_calls && m.tool_calls.length)) {
-        turns.push({ role: 'assistant', content: t.slice(0, 500) });
+        turns.push({ role: 'assistant', content: t.slice(0, 1000) });
       }
     }
     // Two user turns in a row (a stopped request never got its answer): keep the later one.
     const clean = turns.filter((m, i) => !(m.role === 'user' && turns[i + 1] && turns[i + 1].role === 'user'));
     while (clean.length && clean[0].role !== 'user') clean.shift();
     while (clean.length && clean[clean.length - 1].role === 'user') clean.pop(); // asked, never answered (stopped)
-    this.messages = [this.messages[0], ...clean.slice(-6)];
+    this.messages = [this.messages[0], ...clean.slice(-10)];
     this.keepImages = 4;
   }
 

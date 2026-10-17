@@ -73,13 +73,17 @@
     if (!recording) return;
     recording.chunks.push(downsample(input, e.inputBuffer.sampleRate));
     if (rms > SPEECH_RMS) {
+      if (!recording.heardSpeech) recording.firstSpeechAt = now;
       recording.heardSpeech = true;
       recording.lastSpeechAt = now;
     }
     if (recording.vad && !recording.ended) {
       const quietFor = now - recording.lastSpeechAt;
       const elapsed = now - recording.startedAt;
-      if ((recording.heardSpeech && quietFor > END_SILENCE_MS) || (!recording.heardSpeech && !recording.patient && elapsed > NO_SPEECH_MS)) {
+      // Adaptive silence threshold: 750ms for fluent speech (matching ChatGPT Voice), 900ms for short utterances
+      const speechDuration = recording.heardSpeech ? (recording.lastSpeechAt - (recording.firstSpeechAt || recording.startedAt)) : 0;
+      const silenceCutoff = speechDuration > 350 ? 750 : 900;
+      if ((recording.heardSpeech && quietFor > silenceCutoff) || (!recording.heardSpeech && !recording.patient && elapsed > NO_SPEECH_MS)) {
         recording.ended = true;
         api.send('engine:vad', recording.heardSpeech ? 'silence' : 'no-speech');
       }
@@ -124,7 +128,7 @@
   async function recordStart({ vad, patient }) {
     await openMic();
     const now = performance.now();
-    recording = { chunks: [], vad: Boolean(vad), patient: Boolean(patient), startedAt: now, lastSpeechAt: now, heardSpeech: false, ended: false };
+    recording = { chunks: [], vad: Boolean(vad), patient: Boolean(patient), startedAt: now, lastSpeechAt: now, firstSpeechAt: 0, heardSpeech: false, ended: false };
     const limit = () => {
       if (!recording || recording.ended) return;
       // Waiting patiently: drop the silence so far instead of ending, so memory stays flat.

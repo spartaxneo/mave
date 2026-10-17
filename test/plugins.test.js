@@ -172,8 +172,8 @@ test('the AI never works inside Bigfoot\'s own folders, and new projects go else
   const was = electron.app;
   electron.app = { getAppPath: () => appDir, getPath: (k) => (k === 'exe' ? path.join(os.tmpdir(), 'Programs', 'Bigfoot', 'Bigfoot.exe') : path.join(os.tmpdir(), 'Roaming', 'Bigfoot')) };
   try {
-    assert.throws(() => assertNotBigfoot(path.join(os.tmpdir(), 'Programs', 'Bigfoot', 'resources', 'x.js')), /Bigfoot's own folder/);
-    assert.throws(() => assertWritable(path.join(os.tmpdir(), 'Roaming', 'Bigfoot', 'settings.json')), /Bigfoot's own folder/);
+    assert.throws(() => assertNotBigfoot(path.join(os.tmpdir(), 'Programs', 'Bigfoot', 'resources', 'x.js')), /(?:Mave|Bigfoot)'s own folder/);
+    assert.throws(() => assertWritable(path.join(os.tmpdir(), 'Roaming', 'Bigfoot', 'settings.json')), /(?:Mave|Bigfoot)'s own folder/);
     assert.doesNotThrow(() => assertNotBigfoot(path.join(os.homedir(), 'Projects', 'todo-app')));
   } finally {
     electron.app = was;

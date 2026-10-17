@@ -31,15 +31,33 @@ const hardware = require('./local/hardware');
 
 const CURSOR_POLL_MS = 16;
 
-// QA only: a separate profile lets a test copy run beside an installed Bigfoot.
-if (process.env.BIGFOOT_PROFILE_DIR) app.setPath('userData', process.env.BIGFOOT_PROFILE_DIR);
+const fs = require('fs');
+
+// Inherit legacy Bigfoot profile/data if migrating to Mave
+try {
+  const legacyDir = path.join(app.getPath('appData'), 'bigfoot');
+  const maveDir = path.join(app.getPath('appData'), 'mave');
+  if (fs.existsSync(legacyDir)) {
+    if (!fs.existsSync(maveDir)) fs.mkdirSync(maveDir, { recursive: true });
+    for (const f of ['settings.json', 'memory.json', 'telegram-config.json']) {
+      const src = path.join(legacyDir, f);
+      const dst = path.join(maveDir, f);
+      if (fs.existsSync(src) && !fs.existsSync(dst)) fs.copyFileSync(src, dst);
+    }
+  }
+} catch { /* ignore */ }
+
+// QA only: a separate profile lets a test copy run beside an installed Mave.
+if (process.env.MAVE_PROFILE_DIR || process.env.BIGFOOT_PROFILE_DIR) {
+  app.setPath('userData', process.env.MAVE_PROFILE_DIR || process.env.BIGFOOT_PROFILE_DIR);
+}
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.setAppUserModelId('com.bigfoot.app');
+  app.setAppUserModelId('com.mave.app');
   app.whenReady().then(start).catch((err) => {
-    dialog.showErrorBox('Bigfoot couldn’t start', String((err && err.stack) || err));
+    dialog.showErrorBox('Mave couldn’t start', String((err && err.stack) || err));
     app.exit(1);
   });
 }
@@ -57,6 +75,8 @@ async function start() {
   const local = new LocalModelManager({ dir: path.join(app.getPath('userData'), 'local-ai'), settings, logger, isOnline });
   const runtime = new LocalRuntime({ manager: local, logger, settings });
   const speech = new SpeechService({ logger });
+  global.__maveSpeech = speech;
+  global.__bigfootSpeech = speech;
 
   const plugins = new PluginRegistry(logger);
   plugins.loadBuiltins();
@@ -95,6 +115,7 @@ async function start() {
       progress: (text) => {
         windows.broadcast('bubble', { text, ttl: 4000 });
         controller.panelLog('progress', text);
+        if (controller.recordThought) controller.recordThought(text);
         activity.add('think', text);
       },
       action: (name, inp) => {
@@ -102,7 +123,9 @@ async function start() {
         // steps aside only when the AI starts using the mouse or keyboard, never for a chat.
         if ((COMPUTER_ACTIONS.includes(name) && !READ_ONLY.has(name)) || SCREEN_ACTIONS.has(name)) windows.hidePanel();
         logger.audit('action', { name, input: name === 'type' || name === 'write_file' ? { chars: String(inp.text || inp.content || '').length, path: inp.path } : inp });
-        controller.panelLog('action', actionLabel(name, inp));
+        const label = actionLabel(name, inp);
+        controller.panelLog('action', label);
+        if (controller.recordThought) controller.recordThought(`Action: ${label}`);
         activity.add('action', `${name} ${actionArgs(name, inp)}`.trim());
         controller.sendUsage();
       },
@@ -118,6 +141,40 @@ async function start() {
     },
   });
   controller = new Controller({ windows, settings, agent, audio, input, costs, activity, logger, local, runtime, speech, terminals, isOnline });
+  global.__maveController = controller;
+  global.__bigfootController = controller;
+
+  // Auto-start remote phone controllers (Mobile Web Controller & Telegram Bot)
+  try {
+    const { MobileWebServer } = require('./remote/web');
+    const { TelegramBridge, loadTelegramConfig } = require('./remote/telegram');
+
+    const mobileServer = new MobileWebServer({ controller, logger, port: 4040 });
+    mobileServer.start().then((url) => {
+      logger.info(`Mobile Web Controller live at ${url}`);
+    }).catch((err) => {
+      logger.error('Mobile Web Controller failed to start', err.message);
+    });
+
+    const tgConfig = loadTelegramConfig();
+    const tgToken = process.env.TELEGRAM_BOT_TOKEN || tgConfig.token;
+    if (tgToken) {
+      const bridge = new TelegramBridge({
+        token: tgToken,
+        authorizedChatId: tgConfig.authorizedChatId || null,
+        controller,
+        logger,
+      });
+      bridge.verifyToken().then((botInfo) => {
+        bridge.start();
+        logger.info(`Telegram Bot @${botInfo.username} connected and listening`);
+      }).catch((err) => {
+        logger.error('Telegram Bot auto-start failed', err.message);
+      });
+    }
+  } catch (err) {
+    logger.error('Remote controllers initialization error', err);
+  }
 
   process.on('uncaughtException', (err) => {
     logger.error('Uncaught exception', err);
@@ -134,8 +191,8 @@ async function start() {
 
   local.on('progress', (snap) => windows.send(windows.main, 'local:progress', snap));
   local.on('installed', (id) => {
-    activity.add('info', `Local AI installed: ${id}. Bigfoot now works offline.`);
-    controller.notify('Your local AI is ready', 'Bigfoot can now work fully offline.');
+    activity.add('info', `Local AI installed: ${id}. Mave now works offline.`);
+    controller.notify('Your local AI is ready', 'Mave can now work fully offline.');
   });
   runtime.on('state', (s) => {
     windows.send(windows.main, 'local:runtime', s);
@@ -153,7 +210,7 @@ async function start() {
     windows.broadcast('loader', status);
     windows.send(windows.main, 'loader', status);
     windows.setToolsBlocked(controller.aiNotReady());
-    if (windows.tray) windows.tray.setToolTip(status.ai.state === 'loading' ? `Bigfoot · Loading the AI (${status.ai.percent}%)` : 'Bigfoot');
+    if (windows.tray) windows.tray.setToolTip(status.ai.state === 'loading' ? `Mave · Loading the AI (${status.ai.percent}%)` : 'Mave');
   };
   runtime.on('progress', sendLoader);
   runtime.on('state', sendLoader);
@@ -197,11 +254,56 @@ async function start() {
     if ('assistantName' in changed || 'wakeWord' in changed) controller.refreshWakeWord();
     if ('toolTray' in changed) syncToolTray();
     if ('keepAiLoaded' in changed) runtime.applyKeepLoaded();
+    if ('desktopPetEnabled' in changed) {
+      if (changed.desktopPetEnabled) windows.showPet(settings.get('desktopPetSize'));
+      else windows.hidePet();
+    }
+    if ('desktopPetSpecies' in changed || 'desktopPetTheme' in changed || 'desktopPetSize' in changed || 'desktopPetName' in changed || 'desktopPetAutoMorph' in changed) {
+      try {
+        const { getPetManager } = require('./pet/manager');
+        const pm = getPetManager();
+        if (pm && ('desktopPetSpecies' in changed || 'desktopPetName' in changed)) {
+          pm.setSpecies(settings.get('desktopPetSpecies'), settings.get('desktopPetName'));
+        }
+        windows.updatePetConfig({
+          species: settings.get('desktopPetSpecies'),
+          theme: settings.get('desktopPetTheme'),
+          size: settings.get('desktopPetSize'),
+          name: settings.get('desktopPetName'),
+          autoMorph: settings.get('desktopPetAutoMorph'),
+        });
+      } catch {}
+    }
   });
 
   windows.createEngine();
   windows.syncOverlays();
   createTray({ windows, settings, controller, agent });
+
+  try {
+    const { getPetManager } = require('./pet/manager');
+    const pm = getPetManager();
+    if (pm) {
+      pm.on('state-changed', (data) => {
+        windows.updatePetState(data.state, data.speechBubble, data.pet?.species, data.taskMode);
+      });
+      pm.on('pet-updated', (pet) => {
+        windows.updatePetState(pet.state, pet.speechBubble, pet.species, pet.taskMode);
+      });
+      if (settings.get('desktopPetEnabled')) {
+        setTimeout(() => {
+          windows.showPet(settings.get('desktopPetSize'));
+          windows.updatePetConfig({
+            species: settings.get('desktopPetSpecies'),
+            theme: settings.get('desktopPetTheme'),
+            size: settings.get('desktopPetSize'),
+            name: settings.get('desktopPetName'),
+            autoMorph: settings.get('desktopPetAutoMorph'),
+          });
+        }, 1200);
+      }
+    }
+  } catch {}
   for (const event of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(event, () => windows.syncOverlays());
 
   let lastCursor = null;
@@ -309,6 +411,15 @@ function actionLabel(name, inp) {
     scroll_screen: `Scrolled ${i.direction}`,
     drag_element: `Dragged element ${i.id} to ${i.to}`,
     highlight_element: `Highlighted element ${i.id}`,
+    chatgpt_intelligence: `Consulted ChatGPT (${i.model || 'gpt-4o'})`,
+    gmail_search: `Searched Gmail for "${i.query}"`,
+    gmail_draft_email: `Drafted Gmail to ${i.to}`,
+    drive_search: `Searched Google Drive for "${i.query}"`,
+    drive_sync_to_vault: `Synced Drive document to Knowledge Vault`,
+    notes_search: `Searched Notes for "${i.query}"`,
+    notes_create: `Created note "${i.title}"`,
+    notes_append: `Updated note "${i.title}"`,
+    cross_service_pipeline: `Ran cross-service workflow: ${i.workflow}`,
   };
   return labels[name] || name.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 }

@@ -118,7 +118,7 @@ window.UI = (() => {
       card.className = 'voice-card';
       card.tabIndex = 0;
       card.setAttribute('role', 'radio');
-      card.innerHTML = `<img class="voice-avatar" alt="" src="assets/voices/${v.id}.svg"><span class="voice-text"><span class="voice-name"></span><span class="voice-note"></span></span><span class="voice-wave" aria-hidden="true">${'<i></i>'.repeat(7)}</span><button class="voice-play" type="button" aria-label="Play ${v.name}">${ICON_PLAY}</button>`;
+      card.innerHTML = `<img class="voice-avatar" alt="" src="assets/voices/${v.id}.svg" onerror="this.onerror=null; this.src='assets/icon.png';"><span class="voice-text"><span class="voice-name"></span><span class="voice-note"></span></span><span class="voice-wave" aria-hidden="true">${'<i></i>'.repeat(7)}</span><button class="voice-play" type="button" aria-label="Play ${v.name}">${ICON_PLAY}</button>`;
       card.querySelector('.voice-name').textContent = v.name;
       card.querySelector('.voice-note').textContent = `${v.gender === 'female' ? 'Female' : 'Male'} · ${v.note}`;
       const pick = () => { select(v.id); onPick(v.id); };

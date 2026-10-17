@@ -8,40 +8,133 @@
   <link rel="stylesheet" href="settings.css">
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="local-ai.css">
-  <title>Bigfoot</title>
+  <title>Mave</title>
 </head>
 <body>
   <div class="window">
     <aside class="sidebar">
-      <div class="titlebar"><div class="traffic"><button class="close" aria-label="Close"></button><button class="min" aria-label="Minimize"></button></div></div>
+      <div class="sidebar-head">
+        <div class="brand">
+          <span class="brand-avatar"><img src="assets/tray@2x.png" width="18" height="18" alt=""></span>
+          <span class="brand-name">Mave</span>
+        </div>
+        <button class="icon-btn sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+        </button>
+      </div>
+
+      <button class="new-chat-btn" id="sidebar-new-chat" title="New chat (Ctrl+N)">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        <span>New chat</span>
+        <kbd class="shortcut">Ctrl+N</kbd>
+      </button>
+
       <nav id="nav">
-        <button data-section="home"><span class="row-icon brand"><img src="assets/tray@2x.png" width="18" height="18" alt=""></span><span>Home</span></button>
-        <div class="nav-sep">Settings</div>
-        <button data-section="assistant"><span class="row-icon" style="background:#3380ff"><svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="5.6" r="2.6"/><path d="M3 13.5c.7-2.4 2.7-3.7 5-3.7s4.3 1.3 5 3.7"/></svg></span><span id="nav-name">Assistant</span></button>
-        <button data-section="account"><span class="row-icon" style="background:linear-gradient(135deg,#d97757,#8f46eb 55%,#2563eb)"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/><path d="M19 15.5c.2 1.8 1.1 2.7 2.9 2.9-1.8.2-2.7 1.1-2.9 2.9-.2-1.8-1.1-2.7-2.9-2.9 1.8-.2 2.7-1.1 2.9-2.9z" opacity=".85"/></svg></span><span>Models</span></button>
-        <button data-section="voice"><span class="row-icon" style="background:#8f46eb"><svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"><path d="M3 6.5v3M5.5 4.5v7M8 2.5v11M10.5 5v6M13 7v2"/></svg></span><span>Voice</span></button>
-        <button data-section="general"><span class="row-icon" style="background:#6b736f"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span><span>General</span></button>
-        <div class="nav-sep"></div>
-        <button data-section="terminal"><span class="row-icon" style="background:#0b0c0c; border:1px solid #373b39"><svg viewBox="0 0 16 16" fill="none" stroke="#34d399" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5l3 3-3 3M8.5 11.5h4"/></svg></span><span>Terminal</span></button>
+        <button data-section="home" class="nav-item active">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Chat</span>
+        </button>
+        <button data-section="terminal" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          <span>Terminal</span>
+        </button>
       </nav>
+
+      <div class="sidebar-recents" id="sidebar-recents">
+        <div class="recents-header">Recent Tasks</div>
+        <button type="button" class="recent-item active" id="recent-active-item"><span class="recent-icon">💬</span><span class="recent-title">Current Chat</span></button>
+        <button type="button" class="recent-item" data-prompt="Analyze system performance and diagnose background activity"><span class="recent-icon">⚡</span><span class="recent-title">System Diagnostics</span></button>
+        <button type="button" class="recent-item" data-prompt="Search Knowledge Vault and screen memory for key facts"><span class="recent-icon">🧠</span><span class="recent-title">Knowledge Vault</span></button>
+        <button type="button" class="recent-item" data-prompt="Write a Python script to automate tasks"><span class="recent-icon">💻</span><span class="recent-title">Code Automation</span></button>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="user-profile-btn" id="open-settings-btn" title="Settings (Ctrl+,)">
+          <div class="user-avatar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div class="user-meta"><span class="user-name">You</span><span class="user-sub">Settings</span></div>
+          <svg class="gear-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
     </aside>
 
     <main class="content">
-      <div class="titlebar"><div class="title" id="section-title">Models</div></div>
+      <div class="titlebar">
+        <button class="icon-btn sidebar-expand-btn" id="sidebar-expand-btn" title="Open sidebar">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+        </button>
+        <div class="model-picker-wrap">
+          <button type="button" class="model-picker-btn" id="model-picker-btn" aria-haspopup="true" aria-expanded="false" title="Switch Intelligence Engine">
+            <span class="model-brand-icon">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/></svg>
+            </span>
+            <span class="model-picker-name" id="model-picker-name">Mave 4o (Auto)</span>
+            <svg class="chevron-down" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <div class="model-picker-dropdown" id="model-picker-dropdown" hidden>
+            <div class="mp-dropdown-title">Model & Intelligence</div>
+            <button type="button" class="mp-item" data-model-type="auto">
+              <div class="mp-item-head">
+                <span class="mp-badge smart">⚡ Smart</span>
+                <span class="mp-name">Mave 4o (Auto Router)</span>
+              </div>
+              <div class="mp-desc">Dynamic multi-tier routing (local speed + cloud depth)</div>
+            </button>
+            <button type="button" class="mp-item" data-model-type="local">
+              <div class="mp-item-head">
+                <span class="mp-badge local">💻 Local AI</span>
+                <span class="mp-name">Qwen 3-VL (On-Device)</span>
+              </div>
+              <div class="mp-desc">100% Offline & Private on your local RTX 5060 GPU</div>
+            </button>
+            <button type="button" class="mp-item" data-model-type="anthropic">
+              <div class="mp-item-head">
+                <span class="mp-badge claude">🧠 Claude 3.7</span>
+                <span class="mp-name">Claude 3.7 Sonnet</span>
+              </div>
+              <div class="mp-desc">State-of-the-art coding, deep thinking & screen actions</div>
+            </button>
+            <button type="button" class="mp-item" data-model-type="openai">
+              <div class="mp-item-head">
+                <span class="mp-badge gpt">🌐 OpenAI</span>
+                <span class="mp-name">GPT-4o (ChatGPT Engine)</span>
+              </div>
+              <div class="mp-desc">ChatGPT multimodal intelligence & reasoning</div>
+            </button>
+            <button type="button" class="mp-item" data-model-type="airllm">
+              <div class="mp-item-head">
+                <span class="mp-badge airllm">🚀 AirLLM 70B</span>
+                <span class="mp-name">AirLLM 70B MoE</span>
+              </div>
+              <div class="mp-desc">Layer-wise streaming for massive frontier models</div>
+            </button>
+            <div class="mp-divider"></div>
+            <button type="button" class="mp-item mp-settings-action" id="mp-open-settings">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>Manage Models & API Keys…</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="title" id="section-title">Home</div>
+
+        <div class="titlebar-actions">
+          <span class="status" id="status"><span class="dot"></span><span id="status-text">Ready</span></span>
+          <button class="btn plain small" id="talk-btn" title="ChatGPT-Style Hands-Free Voice Mode (Talk)">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6.5v3M5.5 4.5v7M8 2.5v11M10.5 5v6M13 7v2"/></svg>
+            <span id="talk-btn-text">Voice Mode</span>
+          </button>
+          <button class="btn plain small" id="new-chat" title="Start a new conversation">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+            <span>New chat</span>
+          </button>
+        </div>
+      </div>
+
       <div id="lai-banner" class="banner-slot"></div>
       <div class="pane scroll" id="pane">
 
         <!-- Home -->
         <section data-pane="home" class="home" hidden>
-          <div class="chat-head">
-            <span class="status" id="status"><span class="dot"></span><span id="status-text">Ready</span></span>
-            <span class="spacer"></span>
-            <button class="btn plain small" id="new-chat" title="Start a new conversation">
-              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
-              New chat
-            </button>
-          </div>
-
           <div class="card setup" id="setup" hidden>
             <div><div class="headline">Set up your local AI to get started</div></div>
             <button class="btn primary small" id="btn-setup">Set Up</button>
@@ -56,24 +149,65 @@
 
           <div class="log scroll" id="log" aria-live="polite">
             <div class="empty" id="empty">
-              <img src="assets/icon.png" width="48" height="48" alt="" class="empty-mark">
-              <div class="empty-title">How can I help?</div>
+              <div class="empty-mark-wrap">
+                <img src="assets/tray@2x.png" width="48" height="48" alt="" class="empty-mark">
+              </div>
+              <div class="empty-title">What can I help with today?</div>
+              <div class="empty-chips">
+                <button type="button" class="empty-chip" data-prompt="Write a Python script to automate file organization in my Downloads folder">
+                  <div class="chip-icon">💻</div>
+                  <div class="chip-text">
+                    <strong>Code & Automate</strong>
+                    <span>Write a script or debug errors</span>
+                  </div>
+                </button>
+                <button type="button" class="empty-chip" data-prompt="Analyze the architecture for an autonomous multi-tier AI agent and plan out the steps">
+                  <div class="chip-icon">🧠</div>
+                  <div class="chip-text">
+                    <strong>Deep Reasoning</strong>
+                    <span>Plan projects & solve problems</span>
+                  </div>
+                </button>
+                <button type="button" class="empty-chip" data-prompt="Search my personal knowledge vault and recent screen memory for key facts">
+                  <div class="chip-icon">🔍</div>
+                  <div class="chip-text">
+                    <strong>Knowledge Vault</strong>
+                    <span>Search notes & visual memory</span>
+                  </div>
+                </button>
+                <button type="button" class="empty-chip" data-prompt="Open my browser and search for the latest updates on autonomous AI systems">
+                  <div class="chip-icon">⚡</div>
+                  <div class="chip-text">
+                    <strong>Control PC</strong>
+                    <span>Open apps, browse & automate tasks</span>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
 
-          <div class="region-chip" id="region-chip" hidden>
-            <span class="rc-icon"></span><span id="region-text">Area selected</span>
-            <button class="rc-clear" id="region-clear" aria-label="Remove selected area" title="Remove">
-              <svg viewBox="0 0 10 10"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-            </button>
+          <div class="composer-wrap">
+            <div class="region-chip" id="region-chip" hidden>
+              <span class="rc-icon"></span><span id="region-text">Area selected</span>
+              <button class="rc-clear" id="region-clear" aria-label="Remove selected area" title="Remove">
+                <svg viewBox="0 0 10 10"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <form class="composer" id="composer">
+              <button type="button" class="composer-tool-btn" id="composer-attach-btn" title="Add attachment or select screen region">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+              <textarea id="prompt" rows="1" placeholder="Message Mave..." spellcheck="true" aria-label="Message"></textarea>
+              <button type="button" class="voice-mode-btn" id="voice-btn" title="ChatGPT-Style Hands-Free Voice Mode (Talk)">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              </button>
+              <button type="submit" class="send" id="send" aria-label="Send" title="Send (Enter)">
+                <svg class="i-send" viewBox="0 0 16 16"><path d="M8 12.5V3.8M4.2 7.4L8 3.6l3.8 3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg class="i-stop" viewBox="0 0 16 16"><rect x="4.5" y="4.5" width="7" height="7" rx="1.5" fill="currentColor"/></svg>
+              </button>
+            </form>
+            <div class="composer-footnote">Mave can make mistakes. Check important info.</div>
           </div>
-          <form class="composer" id="composer">
-            <textarea id="prompt" rows="1" placeholder="Message Bigfoot" spellcheck="true" aria-label="Message"></textarea>
-            <button type="submit" class="send" id="send" aria-label="Send" title="Send (Enter)">
-              <svg class="i-send" viewBox="0 0 16 16"><path d="M8 12.5V3.8M4.2 7.4L8 3.6l3.8 3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <svg class="i-stop" viewBox="0 0 16 16"><rect x="4.5" y="4.5" width="7" height="7" rx="1.5" fill="currentColor"/></svg>
-            </button>
-          </form>
         </section>
 
         <!-- Terminal -->
@@ -105,24 +239,68 @@
           </div>
           <div id="term-shells"></div>
         </section>
+      </div>
+    </main>
+
+    <!-- ChatGPT Settings Modal Dialog -->
+    <div class="settings-modal-backdrop" id="settings-modal" hidden>
+      <div class="settings-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title">
+        <div class="settings-modal-head">
+          <div class="settings-modal-title" id="settings-dialog-title">Settings</div>
+          <button class="settings-modal-close" id="settings-modal-close" title="Close Settings (Esc)" aria-label="Close">
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+          </button>
+        </div>
+        <div class="settings-modal-body">
+          <aside class="settings-tabs" id="settings-tabs">
+            <button class="settings-tab-btn active" data-tab="general">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>General</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="account">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/></svg>
+              <span>Models & AI</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="voice">
+              <svg class="tab-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6.5v3M5.5 4.5v7M8 2.5v11M10.5 5v6M13 7v2"/></svg>
+              <span>Voice & Audio</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="superpowers">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>Superpowers</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="assistant">
+              <svg class="tab-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="5.6" r="2.6"/><path d="M3 13.5c.7-2.4 2.7-3.7 5-3.7s4.3 1.3 5 3.7"/></svg>
+              <span>Assistant</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="customization">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>User Freedom</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="governance">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Parent Admin & Powers</span>
+            </button>
+          </aside>
+          <div class="settings-content scroll" id="settings-content">
 
         <!-- Assistant -->
         <section data-pane="assistant" hidden>
           <div class="hero">
             <img class="hero-mark" src="assets/icon.png" width="52" height="52" alt="">
-            <div><div class="title-2" id="hero-name">Bigfoot</div></div>
+            <div><div class="title-2" id="hero-name">Mave</div></div>
           </div>
           <div class="group">
             <div class="row"><div class="label">Name</div>
               <div class="control"><input class="field" id="assistant-name" maxlength="24" spellcheck="false" autocomplete="off"></div></div>
-            <div class="row"><div class="label">Answer to “Hey <span class="name-slot">Bigfoot</span>”<div class="hint" id="wake-hint"></div></div>
+            <div class="row"><div class="label">Answer to “Hey <span class="name-slot">Mave</span>”<div class="hint" id="wake-hint"></div></div>
               <div class="control"><span class="status" id="wake-status"><span class="dot"></span><span class="text"></span></span><label class="switch"><input type="checkbox" id="wake"><span class="track"></span></label></div></div>
             <div class="row"><div class="label">Show next to the cursor</div>
               <div class="control"><label class="switch"><input type="checkbox" id="show-buddy"><span class="track"></span></label></div></div>
           </div>
-          <div class="section-label">Talking to <span class="name-slot">Bigfoot</span></div>
+          <div class="section-label">Talking to <span class="name-slot">Mave</span></div>
           <div class="group">
-            <div class="row"><div class="label">Say its name</div><div class="control"><span class="caption">“Hey <span class="name-slot">Bigfoot</span>, …”</span></div></div>
+            <div class="row"><div class="label">Say its name</div><div class="control"><span class="caption">“Hey <span class="name-slot">Mave</span>, …”</span></div></div>
             <div class="row"><div class="label">Hold to talk</div><div class="control"><kbd>Ctrl</kbd>+<kbd>Alt</kbd></div></div>
             <div class="row"><div class="label">Point at something while talking</div><div class="control"><kbd>Ctrl</kbd>+<kbd>Alt</kbd><span class="caption">+ drag</span></div></div>
             <div class="row"><div class="label">Stop</div><div class="control"><kbd>Esc</kbd></div></div>
@@ -139,16 +317,16 @@
           <div class="section-label first">On this PC</div>
           <div id="local-ai"></div>
           <div class="group keep-group">
-            <div class="row"><div class="label">Keep the AI loaded<div class="hint">Instant replies. The model stays in memory while Bigfoot runs; turn off to free it after 10 idle minutes.</div></div>
+            <div class="row"><div class="label">Keep the AI loaded<div class="hint">Instant replies. The model stays in memory while Mave runs; turn off to free it after 10 idle minutes.</div></div>
               <div class="control"><label class="switch"><input type="checkbox" id="keep-loaded"><span class="track"></span></label></div></div>
           </div>
           <div class="local-foot"><a data-link="qwen">About Qwen3-VL</a></div>
 
           <div class="section-label">Cloud models <span class="optional">Optional</span></div>
-          <div class="cloud-note"><span class="warn-icon"></span><span>Cloud models need an internet connection and your own API key. Whenever you’re offline, Bigfoot uses the model on this PC.</span></div>
+          <div class="cloud-note"><span class="warn-icon"></span><span>Cloud models need an internet connection and your own API key. Whenever you’re offline, Mave uses the model on this PC.</span></div>
           <div class="group">
             <div class="row"><div class="label">Use for requests<div class="hint" id="provider-hint"></div></div>
-              <div class="control"><div class="segmented" id="provider" data-options='[["local","On this PC"],["anthropic","Claude"],["openai","OpenAI"]]'></div></div></div>
+              <div class="control"><div class="segmented" id="provider" data-options='[["local","On this PC"],["anthropic","Claude"],["openai","OpenAI (ChatGPT)"]]'></div></div></div>
             <div class="row stack cloud-only">
               <div class="row-head"><span class="headline" id="llm-key-label">Anthropic API key</span><span class="status" id="llm-key-status"><span class="dot"></span><span class="text">Not set</span></span></div>
               <div class="field-wrap">
@@ -157,6 +335,8 @@
               </div>
               <div class="row-foot"><a id="llm-key-link">Get an API key</a><span class="spacer"></span><button class="btn plain small" id="llm-remove" hidden>Remove</button><button class="btn secondary small" id="llm-test">Test Connection</button></div>
             </div>
+            <div class="row cloud-only" id="endpoint-row"><div class="label">API Base URL<div class="hint">Leave empty for official OpenAI. Or use OpenRouter (https://openrouter.ai/api/v1), DeepSeek, Groq.</div></div>
+              <div class="control"><input class="field mono" id="openai-endpoint" placeholder="https://api.openai.com/v1" style="width: 220px;" spellcheck="false"></div></div>
             <div class="row cloud-only"><div class="label">Model<div class="hint" id="model-note"></div></div><div class="control"><select class="field" id="model"></select></div></div>
             <div class="row" id="effort-row"><div class="label">Effort</div>
               <div class="control"><div class="segmented" id="effort" data-options='[["low","Low"],["medium","Medium"],["high","High"],["xhigh","Higher"],["max","Max"]]'></div></div></div>
@@ -195,8 +375,138 @@
           </div>
         </section>
 
+        <!-- Superpowers -->
+        <section data-pane="superpowers" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+            <div><div class="title-2">Superpowers & Extensions</div></div>
+          </div>
+
+          <!-- Telegram Bot Bridge -->
+          <div class="section-label first">Telegram Bot Bridge</div>
+          <div class="group">
+            <div class="row"><div class="label">Enable Telegram Remote Control<div class="hint">Chat with Mave, give tasks, and receive screenshots from Telegram on your phone.</div></div>
+              <div class="control"><label class="switch"><input type="checkbox" id="tg-enable"><span class="track"></span></label></div></div>
+            <div class="row stack">
+              <div class="row-head"><span class="headline">Bot Token</span><span class="status" id="tg-status"><span class="dot"></span><span class="text">Checking…</span></span></div>
+              <div class="field-wrap">
+                <input class="field mono" id="tg-token" type="password" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11" autocomplete="off" spellcheck="false">
+                <button class="icon-btn reveal" id="tg-reveal" title="Show token" aria-label="Show token"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg></button>
+              </div>
+              <div class="row-foot"><span class="caption">Get from @BotFather on Telegram</span><span class="spacer"></span><button class="btn secondary small" id="tg-connect">Connect Bot</button></div>
+            </div>
+            <div class="row"><div class="label">Authorized Chat ID<div class="hint">Security restriction: only you can control Mave from Telegram.</div></div>
+              <div class="control"><input class="field mono" id="tg-chat-id" placeholder="Optional (auto-pairs on /pair)"></div></div>
+          </div>
+
+          <!-- Mobile LAN Web Controller -->
+          <div class="section-label">Mobile LAN Web Controller</div>
+          <div class="group">
+            <div class="row"><div class="label">Local Wi-Fi Address<div class="hint" id="lan-url-hint">Access Mave from your phone browser on the same Wi-Fi.</div></div>
+              <div class="control"><a class="btn plain small" id="lan-url-link" target="_blank">http://localhost:4040</a><button class="btn secondary small" id="lan-url-copy">Copy Link</button></div></div>
+            <div class="row"><div class="label">Web Port</div>
+              <div class="control"><input class="field mono" id="web-port" style="width: 80px;" type="number" min="1024" max="65535" value="4040"></div></div>
+          </div>
+
+          <!-- Remote Security PIN Access -->
+          <div class="section-label">Remote Security PINs (Other Device Access)</div>
+          <div class="group">
+            <div class="row"><div class="label">Viewer PIN (Read-Only)<div class="hint">Allows viewing metrics, status, and active models. Default: 8080</div></div>
+              <div class="control"><input class="field mono" id="sec-read-pin" style="width: 100px; text-align: center; font-weight: 700;" maxlength="8" value="8080"></div></div>
+            <div class="row"><div class="label">Operator PIN (Chat & Control)<div class="hint">Allows chatting, voice mode, and remote PC mouse/keyboard control. Default: 0509</div></div>
+              <div class="control"><input class="field mono" id="sec-operate-pin" style="width: 100px; text-align: center; font-weight: 700;" maxlength="8" value="0509"></div></div>
+            <div class="row"><div class="label">Admin PIN (Full Access)<div class="hint">Allows changing security settings, running terminal commands, and switching intelligence. Default: 1508</div></div>
+              <div class="control"><input class="field mono" id="sec-admin-pin" style="width: 100px; text-align: center; font-weight: 700;" maxlength="8" value="1508"></div></div>
+          </div>
+
+          <!-- Meta Muse Desktop Companion -->
+          <div class="section-label">Meta Muse Desktop Companion</div>
+          <div class="group">
+            <div class="row"><div class="label">Show Desktop Companion<div class="hint">A cute, comfy Meta Muse companion that animates on your screen and morphs on tasks.</div></div>
+              <div class="control"><label class="switch"><input type="checkbox" id="pet-enable"><span class="track"></span></label></div></div>
+            <div class="row"><div class="label">Species Avatar<div class="hint">Choose your flagship companion species (Meta Muse recommended).</div></div>
+              <div class="control"><div class="segmented" id="pet-species" data-options='[["meta_muse","Meta Muse 🔮"],["chatgpt_dots","Dots ✨"],["cyber_fox","Fox 🦊"],["mini_robot","Robot 🤖"],["pixel_cat","Cat 🐱"],["baby_dragon","Dragon 🐲"],["shiba_inu","Shiba 🐕"],["ghost","Ghost 👻"]]'></div></div></div>
+            <div class="row"><div class="label">Muse Color Palette<div class="hint">Your personalized color glow when relaxing or idling.</div></div>
+              <div class="control"><div class="segmented" id="pet-theme" data-options='[["sunset","Sunset 🌅"],["cyber","Cyber ⚡"],["nebula","Nebula 🌌"],["sakura","Sakura 🌸"],["ocean","Ocean 🌊"],["golden","Gold ⭐"]]'></div></div></div>
+            <div class="row"><div class="label">Companion Scale<div class="hint">Adjust the size of the floating companion on your desktop.</div></div>
+              <div class="control"><div class="segmented" id="pet-size" data-options='[["compact","Compact"],["normal","Normal"],["large","Large"]]'></div></div></div>
+            <div class="row"><div class="label">Auto-Morph by Task<div class="hint">Automatically morph colors, orbital rings, and visor based on active task (Coding, Research, Thinking, Action).</div></div>
+              <div class="control"><label class="switch"><input type="checkbox" id="pet-auto-morph"><span class="track"></span></label></div></div>
+            <div class="row"><div class="label">Companion Name</div>
+              <div class="control"><input class="field" id="pet-name" style="width: 140px;" placeholder="Muse" maxlength="20"></div></div>
+            <div class="row"><div class="label"><span class="headline" id="pet-state-headline">Companion Status</span><div class="hint" id="pet-mood-hint">Energy: 100% · Happiness: 100% · Mood: Happy</div></div>
+              <div class="control">
+                <button class="btn secondary small" id="pet-feed-btn">Feed 🍓</button>
+                <button class="btn secondary small" id="pet-pet-btn" style="margin-left:8px;">Pet ❤️</button>
+                <button class="btn secondary small" id="pet-play-btn" style="margin-left:8px;">Play ⭐</button>
+                <button class="btn plain small" id="pet-summon-btn" style="margin-left:8px;">Summon</button>
+              </div></div>
+          </div>
+
+          <!-- Proactive Routines & Circadian Briefings -->
+          <div class="section-label">Proactive Routines & Autonomous Briefings</div>
+          <div class="group">
+            <div class="row"><div class="label">Autonomous Routines<div class="hint">Mave proactively monitors the system and runs scheduled tasks in the background.</div></div>
+              <div class="control"><label class="switch"><input type="checkbox" id="routines-enable"><span class="track"></span></label></div></div>
+            <div class="row"><div class="label">Circadian Executive Briefing<div class="hint">Smart morning overview of weather, tasks, and system performance.</div></div>
+              <div class="control"><label class="switch"><input type="checkbox" id="circadian-briefing"><span class="track"></span></label><button class="btn secondary small" id="briefing-test-btn" style="margin-left: 12px;">Trigger Briefing</button></div></div>
+          </div>
+
+          <!-- Screen Memory & Knowledge Vault (RAG) -->
+          <div class="section-label">Screen Memory & Knowledge Vault (RAG)</div>
+          <div class="group">
+            <div class="row"><div class="label">Total Recall (Screen Memory)<div class="hint">Indexes visual screen history privately so you can ask “What was I reading an hour ago?”.</div></div>
+              <div class="control"><label class="switch"><input type="checkbox" id="screen-memory"><span class="track"></span></label></div></div>
+            <div class="row"><div class="label">Personal Knowledge Vault Folder<div class="hint">Folder of documents, notes, and local models for neural RAG semantic retrieval.</div></div>
+              <div class="control"><input class="field mono" id="vault-dir" style="width: 220px;" spellcheck="false"><button class="btn secondary small" id="vault-reindex-btn" style="margin-left:8px;">Re-Index</button></div></div>
+          </div>
+
+          <!-- Smart Model Router -->
+          <div class="section-label">Smart Model Router</div>
+          <div class="group">
+            <div class="row"><div class="label">Dynamic Multi-Tier Routing<div class="hint">Automatically routes light tasks to fast offline models and escalates heavy tasks to deep reasoning models.</div></div>
+              <div class="control"><label class="switch"><input type="checkbox" id="auto-routing"><span class="track"></span></label></div></div>
+            <div class="row"><div class="label">Routing Strategy</div>
+              <div class="control"><div class="segmented" id="routing-strategy" data-options='[["local_first","Local First (Offline)"],["cloud_assisted","Cloud Assisted"],["auto","Balanced Auto"]]'></div></div></div>
+          </div>
+
+          <!-- Universal Connected Services Hub -->
+          <div class="section-label">Universal Connected Services Hub</div>
+          <div class="group">
+            <div class="row"><div class="label">Universal Cross-Platform Automation<div class="hint">Connects ChatGPT, Claude, Gmail, Google Drive, Calendar, Microsoft 365, Slack, Discord, Notion, GitHub, and Notes into a unified AI brain.</div></div>
+              <div class="control"><label class="switch"><input type="checkbox" id="connected-services-enable"><span class="track"></span></label></div></div>
+            <div class="row"><div class="label">Supported Platform Suites<div class="hint">Active connectors across personal, productivity, developer, and cloud services.</div></div>
+              <div class="control" style="display:flex; flex-wrap:wrap; gap:6px; max-width:380px; justify-content:flex-end;">
+                <span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); font-size:11px; padding:3px 8px; border-radius:6px;">ChatGPT & Claude</span>
+                <span class="badge" style="background:rgba(59,130,246,0.15); color:#3b82f6; border:1px solid rgba(59,130,246,0.3); font-size:11px; padding:3px 8px; border-radius:6px;">Google Workspace</span>
+                <span class="badge" style="background:rgba(234,88,12,0.15); color:#f97316; border:1px solid rgba(234,88,12,0.3); font-size:11px; padding:3px 8px; border-radius:6px;">Microsoft 365</span>
+                <span class="badge" style="background:rgba(139,92,246,0.15); color:#a855f7; border:1px solid rgba(139,92,246,0.3); font-size:11px; padding:3px 8px; border-radius:6px;">Notion & Obsidian</span>
+                <span class="badge" style="background:rgba(236,72,153,0.15); color:#ec4899; border:1px solid rgba(236,72,153,0.3); font-size:11px; padding:3px 8px; border-radius:6px;">Slack & Discord</span>
+                <span class="badge" style="background:rgba(245,158,11,0.15); color:#eab308; border:1px solid rgba(245,158,11,0.3); font-size:11px; padding:3px 8px; border-radius:6px;">GitHub & Linear</span>
+              </div>
+            </div>
+            <div class="row"><div class="label">Personal Notes Vault<div class="hint">Folder for Obsidian, Notion exports, or Markdown notes (default: ~/Documents/Notes).</div></div>
+              <div class="control"><input class="field mono" id="notes-vault-dir" style="width: 220px;" placeholder="~/Documents/Notes" spellcheck="false"></div></div>
+            <div class="row"><div class="label">Google Drive Folder<div class="hint">Local synced Google Drive path (e.g. G:\My Drive).</div></div>
+              <div class="control"><input class="field mono" id="gdrive-dir" style="width: 220px;" placeholder="G:\My Drive" spellcheck="false"></div></div>
+            <div class="row"><div class="label">Omnichannel Status Check<div class="hint">Verifies connections to intelligence, cloud storage, mail, and notes.</div></div>
+              <div class="control"><button class="btn secondary small" id="test-services-btn">Verify Connectors</button></div></div>
+          </div>
+        </section>
+
         <!-- General -->
         <section data-pane="general" hidden>
+          <div class="section-label">Appearance</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Theme<div class="hint">Switch between Dark, Light, or follow System appearance</div></div>
+              <div class="control">
+                <div class="segmented" id="theme-mode" data-options='[["dark","🌙 Dark"],["light","☀️ Light"],["system","💻 System"]]'></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">Preferences</div>
           <div class="group">
             <div class="row"><div class="label">Sound effects</div><div class="control"><label class="switch"><input type="checkbox" id="sounds"><span class="track"></span></label></div></div>
             <div class="row"><div class="label">Open at login</div><div class="control"><label class="switch"><input type="checkbox" id="login"><span class="track"></span></label></div></div>
@@ -215,10 +525,236 @@
           <div class="group">
             <div class="row"><div class="label">Activity log</div><div class="control"><button class="btn secondary small" id="open-logs">Show Logs</button></div></div>
           </div>
-          <div class="about"><img src="assets/icon.png" width="40" height="40" alt=""><div><div class="headline">Bigfoot</div><div class="caption" id="version"></div></div></div>
+          <div class="about"><img src="assets/icon.png" width="40" height="40" alt=""><div><div class="headline">Mave</div><div class="caption" id="version"></div></div></div>
+        </section>
+
+        <!-- User Freedom & Customization -->
+        <section data-pane="customization" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div>
+              <div class="title-2">User Freedom & Customization</div>
+              <div class="caption">Tailor your personal Mave experience, instructions, preferred voice, companion, and language.</div>
+            </div>
+          </div>
+
+          <div class="section-label first">Active Family Profile</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Select Profile<div class="hint">Each user has their own distinct taste, memory dock, and preferences</div></div>
+              <div class="control" style="display:flex; align-items:center; gap:8px;">
+                <select class="field" id="custom-user-select" style="min-width:180px;"></select>
+                <button class="btn secondary small" id="custom-new-user-btn">+ New Profile</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Display Name</div>
+              <div class="control"><input class="field" id="custom-user-name" maxlength="32" placeholder="Your Name"></div>
+            </div>
+          </div>
+
+          <div class="section-label">User Custom Instructions ("What Mave should know about you")</div>
+          <div class="group">
+            <div class="row stack">
+              <div class="row-head">
+                <span class="headline">What should Mave remember about you to provide better responses?</span>
+              </div>
+              <div class="hint" style="margin-bottom:8px;">Share your profession, study topics, style preferences, goals, or hobbies. Mave dynamically adheres to these instructions whenever you chat.</div>
+              <textarea class="field mono" id="custom-instructions-text" rows="4" style="width:100%; resize:vertical; font-family:var(--font-sans);" placeholder="e.g. I am Alex, 10 years old. I like space, coding games in Python, and building robots. Explain things with fun analogies!"></textarea>
+            </div>
+          </div>
+
+          <div class="section-label">Voice & Multilingual Presence</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Preferred AI Voice<div class="hint">Kokoro neural voice with humanized cadence</div></div>
+              <div class="control"><select class="field" id="custom-voice-select"></select></div>
+            </div>
+            <div class="row">
+              <div class="label">Language Preference<div class="hint">Natural multilingual conversation</div></div>
+              <div class="control">
+                <select class="field" id="custom-language-select">
+                  <option value="auto">Auto-detect (Natural Multi-lingual)</option>
+                  <option value="English">English</option>
+                  <option value="Hindi">Hindi (हिंदी)</option>
+                  <option value="Spanish">Spanish (Español)</option>
+                  <option value="French">French (Français)</option>
+                  <option value="German">German (Deutsch)</option>
+                  <option value="Japanese">Japanese (日本語)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">Companion Avatar & Themes</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Desktop Companion Species</div>
+              <div class="control">
+                <select class="field" id="custom-pet-species">
+                  <option value="meta_muse">Meta Muse 🔮</option>
+                  <option value="baby_dragon">Dragon 🐲</option>
+                  <option value="mini_robot">Robot 🤖</option>
+                  <option value="cyber_fox">Cyber Fox 🦊</option>
+                  <option value="pixel_cat">Pixel Cat 🐱</option>
+                  <option value="shiba_inu">Shiba 🐕</option>
+                  <option value="ghost">Ghost 👻</option>
+                  <option value="chatgpt_dots">ChatGPT Dots ✨</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Companion Glow Theme</div>
+              <div class="control">
+                <select class="field" id="custom-pet-theme">
+                  <option value="sunset">Sunset 🌅</option>
+                  <option value="cyber">Cyber ⚡</option>
+                  <option value="nebula">Nebula 🌌</option>
+                  <option value="sakura">Sakura 🌸</option>
+                  <option value="ocean">Ocean 🌊</option>
+                  <option value="golden">Gold ⭐</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Personal UI Theme</div>
+              <div class="control">
+                <select class="field" id="custom-theme-select">
+                  <option value="dark">Dark 🌙</option>
+                  <option value="light">Light ☀️</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+            <span class="status" id="custom-save-status" style="align-self:center;"><span class="dot"></span><span class="text"></span></span>
+            <button class="btn secondary" id="custom-save-btn">Save My Customization</button>
+          </div>
+        </section>
+
+        <!-- Parent Admin Governance & Powers -->
+        <section data-pane="governance" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#dc2626,#ea580c)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+            <div>
+              <div class="title-2">Parent Admin Governance & Device Powers</div>
+              <div class="caption">Define mandatory safety rules, manage family power tiers, and allocate device capabilities.</div>
+            </div>
+          </div>
+
+          <!-- Admin Authentication -->
+          <div class="section-label first">Parent Admin Authorization</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Master Admin PIN<div class="hint">Required to edit safety rules, elevate power tiers, or grant terminal access. Default: 1508</div></div>
+              <div class="control" style="display:flex; align-items:center; gap:8px;">
+                <input class="field mono" id="gov-admin-pin" type="password" style="width:110px; text-align:center; font-weight:700;" placeholder="1508" maxlength="12">
+                <button class="btn secondary small" id="gov-unlock-btn">Unlock Console</button>
+                <span class="status" id="gov-auth-status"><span class="dot"></span><span class="text">Locked 🔒</span></span>
+              </div>
+            </div>
+          </div>
+
+          <div id="gov-authorized-area" style="opacity:0.4; pointer-events:none; transition:opacity 0.2s;">
+            <!-- Global Rules -->
+            <div class="section-label">Master Parent Safety Rules (MANDATORY & ABSOLUTE)</div>
+            <div class="group">
+              <div class="row stack">
+                <div class="row-head">
+                  <span class="headline">Global Rules Enforced on Mave</span>
+                  <span class="caption">Applies to all users and connected devices</span>
+                </div>
+                <div id="gov-global-rules-list" style="display:flex; flex-direction:column; gap:6px; margin:8px 0;"></div>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                  <input class="field" id="gov-new-rule-text" placeholder="Add a new master rule (e.g. Always require parent approval before buying anything)..." style="flex:1;">
+                  <button class="btn secondary small" id="gov-add-rule-btn">+ Add Rule</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- User Power Allocation Matrix -->
+            <div class="section-label">User Power Allocation Matrix ("How much power to give each user")</div>
+            <div class="group">
+              <div class="row">
+                <div class="label">Target User Profile</div>
+                <div class="control"><select class="field" id="gov-user-select" style="min-width:180px;"></select></div>
+              </div>
+              <div class="row">
+                <div class="label">Assigned Power Tier<div class="hint" id="gov-user-tier-desc">Loading power description...</div></div>
+                <div class="control">
+                  <select class="field" id="gov-user-tier-select">
+                    <option value="super_admin">⚡ Super Admin (Full Power)</option>
+                    <option value="standard">💼 Standard User (Productivity)</option>
+                    <option value="safe_kid">🛡️ Safe Kid (Guarded / Homework)</option>
+                    <option value="read_only">👁️ Guest / Read-Only</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row stack">
+                <div class="row-head"><span class="headline">Fine-Grained Capability Toggles</span></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+                  <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;"><input type="checkbox" id="gov-perm-terminal"> <span>Run Terminal / PowerShell</span></label>
+                  <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;"><input type="checkbox" id="gov-perm-screen"> <span>Mouse & Keyboard Control</span></label>
+                  <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;"><input type="checkbox" id="gov-perm-vault"> <span>Access Secret Vault</span></label>
+                  <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;"><input type="checkbox" id="gov-perm-memory"> <span>Recall Screen History</span></label>
+                  <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;"><input type="checkbox" id="gov-perm-remote"> <span>Control Other Devices (Hands)</span></label>
+                  <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;"><input type="checkbox" id="gov-perm-purchase"> <span>Make Online Purchases</span></label>
+                </div>
+              </div>
+              <div class="row stack">
+                <div class="row-head"><span class="headline">User-Specific Rules</span></div>
+                <textarea class="field mono" id="gov-user-rules-text" rows="3" style="width:100%; font-family:var(--font-sans);" placeholder="Specific rules for this user (one per line)..."></textarea>
+              </div>
+              <div class="row" style="justify-content:flex-end;">
+                <button class="btn secondary small" id="gov-save-user-power-btn">Update User Power Settings</button>
+              </div>
+            </div>
+
+            <!-- Device Power Matrix -->
+            <div class="section-label">Device Power Allocation Matrix ("How much power to give each device")</div>
+            <div class="group">
+              <div class="row">
+                <div class="label">Target Device</div>
+                <div class="control"><select class="field" id="gov-device-select" style="min-width:180px;"></select></div>
+              </div>
+              <div class="row">
+                <div class="label">Device Power Tier</div>
+                <div class="control">
+                  <select class="field" id="gov-device-tier-select">
+                    <option value="super_admin">⚡ Super Admin (Full Power)</option>
+                    <option value="standard">💼 Standard User (Productivity)</option>
+                    <option value="safe_kid">🛡️ Safe Kid (Guarded)</option>
+                    <option value="read_only">👁️ Guest / Read-Only</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="label">Assigned Primary User</div>
+                <div class="control"><select class="field" id="gov-device-user-select"></select></div>
+              </div>
+              <div class="row" style="justify-content:flex-end;">
+                <button class="btn secondary small" id="gov-save-device-power-btn">Update Device Power Settings</button>
+              </div>
+            </div>
+
+            <!-- Change Master PIN -->
+            <div class="section-label">Master PIN Settings</div>
+            <div class="group">
+              <div class="row">
+                <div class="label">Change Master Admin PIN<div class="hint">Keep this safe from kids to preserve parent authority</div></div>
+                <div class="control" style="display:flex; gap:8px;">
+                  <input class="field mono" id="gov-new-pin-input" type="password" placeholder="New PIN (min 4 digits)" style="width:160px;">
+                  <button class="btn plain small" id="gov-change-pin-btn">Change PIN</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
-    </main>
+    </div>
+  </div>
+</div>
   </div>
   <script src="ui.js"></script>
   <script src="local-ai.js"></script>

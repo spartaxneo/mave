@@ -48,8 +48,8 @@ function assertWritable(p) {
   assertNotBigfoot(p);
 }
 
-/** Bigfoot's own folders (the app and its data) are never a place to work in. */
-function assertNotBigfoot(p) {
+/** Mave's own folders (the app and its data) are never a place to work in. */
+function assertNotMave(p) {
   const lower = path.normalize(p).toLowerCase();
   let roots = [];
   try {
@@ -57,8 +57,9 @@ function assertNotBigfoot(p) {
     if (app && app.getAppPath) roots = [app.getAppPath(), process.resourcesPath, app.getPath('userData'), path.dirname(app.getPath('exe'))];
   } catch { /* tests */ }
   for (const r of roots.filter(Boolean).map((x) => path.normalize(x).toLowerCase().replace(/[\\/]app\.asar$/, ''))) {
-    if (lower === r || lower.startsWith(`${r}\\`)) throw new Error('That is Bigfoot\'s own folder. Work somewhere else, such as a folder in ~/Projects.');
+    if (lower === r || lower.startsWith(`${r}\\`)) throw new Error('That is Mave\'s own folder. Work somewhere else, such as a folder in ~/Projects.');
   }
 }
+const assertNotBigfoot = assertNotMave;
 
-module.exports = { resolvePath, assertWritable, assertNotBigfoot };
+module.exports = { resolvePath, assertWritable, assertNotMave, assertNotBigfoot };

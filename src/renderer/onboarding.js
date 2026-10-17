@@ -4,7 +4,7 @@
   const api = window.buddy;
   const $ = (id) => document.getElementById(id);
   const STEPS = ['welcome', 'name', 'voice', 'listen', 'model'];
-  const NAME_IDEAS = ['Bigfoot', 'Nova', 'Sage', 'Pixel', 'Milo', 'Echo', 'Juno', 'Atlas'];
+  const NAME_IDEAS = ['Mave', 'Nova', 'Sage', 'Pixel', 'Milo', 'Echo', 'Juno', 'Atlas'];
   const ACTIVE = ['queued', 'downloading', 'waiting', 'verifying', 'installing', 'paused', 'failed'];
   let s = await api.invoke('settings:get');
   let index = 0;
@@ -46,7 +46,7 @@
     const step = STEPS[index];
     const next = $('next');
     const state = modelState();
-    const name = cleanName($('name').value) || 'Bigfoot';
+    const name = cleanName($('name').value) || 'Mave';
     if (step === 'welcome') next.textContent = 'Get Started';
     else if (step !== 'model') next.textContent = 'Continue';
     else next.textContent = { none: 'Download & Install', downloading: 'Continue', installed: `Start Using ${name}` }[state];
@@ -110,7 +110,7 @@
     return String(v).replace(/[^\p{L}\p{M}' -]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 24);
   }
   function renderName() {
-    const n = cleanName($('name').value) || 'Bigfoot';
+    const n = cleanName($('name').value) || 'Mave';
     $('name-echo').textContent = n;
     $('name-bubble').textContent = `hey! i’m ${n.toLowerCase()}`;
     $('name-bubble').classList.add('bump');

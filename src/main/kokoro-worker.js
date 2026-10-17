@@ -7,6 +7,7 @@
 const { parentPort, workerData } = require('worker_threads');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const SAMPLE_RATE = 24000;
 const MAX_TOKENS = 510;
@@ -14,13 +15,15 @@ const PUNCT = ';:,.!?¡¿—…"«»“”(){}[]';
 const PUNCT_RUN = new RegExp(`(\\s*[${PUNCT.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]+\\s*)+`, 'g');
 
 let model = null;
+const PHONEME_CACHE = new Map();
 
 async function load() {
   if (model) return model;
   const ort = require('onnxruntime-node');
   const dir = workerData.dir;
-  // Two threads: the AI model is busy on the others, and speech is short.
-  const session = await ort.InferenceSession.create(path.join(dir, 'kokoro.onnx'), { intraOpNumThreads: 2, graphOptimizationLevel: 'all' });
+  const cpuCount = (os.cpus() && os.cpus().length) || 4;
+  const intraOpNumThreads = Math.min(Math.max(Math.floor(cpuCount / 2), 2), 6);
+  const session = await ort.InferenceSession.create(path.join(dir, 'kokoro.onnx'), { intraOpNumThreads, graphOptimizationLevel: 'all' });
   const tok = JSON.parse(fs.readFileSync(path.join(dir, 'tokenizer.json'), 'utf8'));
   const { phonemize } = require('phonemizer');
   model = { ort, session, vocab: tok.model.vocab, phonemize, voices: new Map() };
@@ -29,14 +32,76 @@ async function load() {
   return model;
 }
 
-function style(m, voice, tokens) {
-  if (!m.voices.has(voice)) {
-    const file = path.join(workerData.dir, `${voice}.bin`);
-    const b = fs.readFileSync(file);
-    m.voices.set(voice, new Float32Array(b.buffer, b.byteOffset, b.byteLength / 4));
+function loadVoiceArray(voiceName) {
+  const dir = workerData.dir;
+  const file = path.join(dir, `${voiceName}.bin`);
+  if (!fs.existsSync(file)) return null;
+  const b = fs.readFileSync(file);
+  return new Float32Array(b.buffer, b.byteOffset, b.byteLength / 4);
+}
+
+function blendVectors(vecA, vecB, weightA = 0.5) {
+  const len = Math.min(vecA.length, vecB.length);
+  const out = new Float32Array(len);
+  const weightB = 1.0 - weightA;
+  for (let i = 0; i < len; i++) {
+    out[i] = vecA[i] * weightA + vecB[i] * weightB;
   }
+  return out;
+}
+
+function getVoiceData(m, voice) {
+  if (m.voices.has(voice)) return m.voices.get(voice);
+
+  let data = null;
+
+  // Studio Blended Voices
+  if (voice === 'blend_muse') {
+    const heart = getVoiceData(m, 'af_heart');
+    const bella = getVoiceData(m, 'af_bella');
+    if (heart && bella) data = blendVectors(heart, bella, 0.7);
+  } else if (voice === 'blend_serena') {
+    const heart = getVoiceData(m, 'af_heart');
+    const emma = getVoiceData(m, 'bf_emma');
+    if (heart && emma) data = blendVectors(heart, emma, 0.6);
+  } else if (voice === 'blend_orion') {
+    const michael = getVoiceData(m, 'am_michael');
+    const fenrir = getVoiceData(m, 'am_fenrir');
+    if (michael && fenrir) data = blendVectors(michael, fenrir, 0.6);
+  }
+  // ChatGPT voice fallbacks for local Kokoro
+  else if (voice === 'nova' || voice === 'alloy') {
+    data = getVoiceData(m, 'af_heart');
+  } else if (voice === 'shimmer') {
+    data = getVoiceData(m, 'af_bella');
+  } else if (voice === 'echo') {
+    data = getVoiceData(m, 'am_michael');
+  } else if (voice === 'onyx') {
+    data = getVoiceData(m, 'am_fenrir');
+  } else if (voice === 'fable') {
+    data = getVoiceData(m, 'bf_emma');
+  }
+
+  // Load from file if not a blend/alias
+  if (!data) {
+    data = loadVoiceArray(voice);
+  }
+
+  // Default fallback if requested voice file doesn't exist
+  if (!data) {
+    data = loadVoiceArray('af_heart');
+  }
+
+  if (data) {
+    m.voices.set(voice, data);
+  }
+  return data;
+}
+
+function style(m, voice, tokens) {
+  const voiceData = getVoiceData(m, voice);
   const row = Math.min(Math.max(tokens - 2, 0), 509) * 256; // a style per sentence length
-  return m.voices.get(voice).slice(row, row + 256);
+  return voiceData ? voiceData.slice(row, row + 256) : new Float32Array(256);
 }
 
 /** Spoken forms for numbers, money and abbreviations, as kokoro-js writes them. */
@@ -84,6 +149,12 @@ function normalize(text) {
 
 async function phonemes(m, text, british) {
   const clean = normalize(text);
+  const lang = british ? 'en' : 'en-us';
+  const cacheKey = `${lang}|${clean}`;
+  if (PHONEME_CACHE.has(cacheKey)) {
+    return PHONEME_CACHE.get(cacheKey);
+  }
+
   const parts = [];
   let last = 0;
   for (const p of clean.matchAll(PUNCT_RUN)) {
@@ -92,12 +163,19 @@ async function phonemes(m, text, british) {
     last = p.index + p[0].length;
   }
   if (last < clean.length) parts.push({ punct: false, text: clean.slice(last) });
-  const lang = british ? 'en' : 'en-us';
   const joined = (await Promise.all(parts.map(async (p) => (p.punct ? p.text : (await m.phonemize(p.text, lang)).join(' '))))).join('');
   let out = joined.replace(/kəkˈoːɹoʊ/g, 'kˈoʊkəɹoʊ').replace(/kəkˈɔːɹəʊ/g, 'kˈəʊkəɹəʊ').replace(/ʲ/g, 'j').replace(/r/g, 'ɹ')
     .replace(/x/g, 'k').replace(/ɬ/g, 'l').replace(/(?<=[a-zɹː])(?=hˈʌndɹɪd)/g, ' ').replace(/ z(?=[;:,.!?¡¿—…"«»“” ]|$)/g, 'z');
   if (!british) out = out.replace(/(?<=nˈaɪn)ti(?!ː)/g, 'di');
-  return out.trim();
+  const res = out.trim();
+  if (clean.length <= 150) {
+    if (PHONEME_CACHE.size > 200) {
+      const first = PHONEME_CACHE.keys().next().value;
+      PHONEME_CACHE.delete(first);
+    }
+    PHONEME_CACHE.set(cacheKey, res);
+  }
+  return res;
 }
 
 /** 16-bit mono WAV, what the audio engine plays. */
@@ -114,7 +192,8 @@ function wav(samples) {
 
 async function speak({ text, voice, speed }) {
   const m = await load();
-  const ph = await phonemes(m, text, voice.startsWith('b'));
+  const isBritish = voice.startsWith('b') || voice === 'fable' || voice === 'blend_serena';
+  const ph = await phonemes(m, text, isBritish);
   const ids = [0];
   for (const ch of ph) if (m.vocab[ch] !== undefined && ids.length < MAX_TOKENS + 1) ids.push(m.vocab[ch]);
   ids.push(0);

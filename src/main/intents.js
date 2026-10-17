@@ -15,10 +15,10 @@ const SITES = {
 const BROWSERS = '(?:google chrome|chrome|microsoft edge|edge|firefox|the browser|my browser|a browser|browser|google)';
 const enc = (q) => encodeURIComponent(q.trim()).replace(/%20/g, '+');
 
-/** Strip the polite and addressing parts: "Hey Bigfoot, can you please …" → "…". */
+/** Strip the polite and addressing parts: "Hey Mave, can you please …" → "…". */
 function core(text) {
   return String(text || '').trim()
-    .replace(/^(?:hey|hi|ok(?:ay)?)?\s*,?\s*(?:big\s?foot|bigfoot)\s*[,.!]?\s*/i, '')
+    .replace(/^(?:hey|hi|ok(?:ay)?)?\s*,?\s*(?:big\s?foot|bigfoot|mave)\s*[,.!]?\s*/i, '')
     .replace(/^(?:can|could|would|will) you\s+(?:please\s+)?/i, '')
     .replace(/^(?:please|kindly|i want you to|i need you to|help me(?: to)?|go ahead and)\s+/i, '')
     .replace(/[.!?]+$/, '')
@@ -79,7 +79,7 @@ function matchIntent(text) {
 }
 
 const SHELLS = { powershell: 'powershell', 'power shell': 'powershell', cmd: 'cmd', 'command prompt': 'cmd', 'git bash': 'bash', bash: 'bash' };
-const TERMINAL = "(?:the |my |a |bigfoot'?s? |your )?(?:terminal|console|command line)";
+const TERMINAL = "(?:the |my |a |bigfoot'?s? |mave'?s? |your )?(?:terminal|console|command line)";
 
 /**
  * "the terminal" is Bigfoot's own (the Terminal page): "open the terminal", "open PowerShell",

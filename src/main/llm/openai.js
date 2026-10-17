@@ -9,20 +9,29 @@ const API = 'https://api.openai.com/v1';
 const KEEP_IMAGES = 3; // older screenshots are replaced with a note to keep requests small
 
 class OpenAIProvider {
-  constructor({ apiKey, model, system, tools, screen, computer = computerFunction(screen.width, screen.height) }) {
+  constructor({ apiKey, model, system, tools, screen, endpoint = API, computer = computerFunction(screen.width, screen.height) }) {
     this.id = 'openai';
-    this.label = 'OpenAI';
+    this.endpointUrl = (endpoint && String(endpoint).trim()) ? String(endpoint).trim().replace(/\/+$/, '') : API;
+    this.label = (this.endpointUrl && !this.endpointUrl.includes('api.openai.com')) ? 'OpenAI-Compatible' : 'OpenAI';
     this.apiKey = apiKey;
     this.model = model;
     this.keepImages = KEEP_IMAGES;
     this.timeoutMs = 180000;
     this.messages = [{ role: 'system', content: system }];
-    this.tools = [computer, ...tools.map((t) => ({ name: t.name, description: t.description, parameters: t.input_schema }))]
+    this.computer = computer;
+    this.rawTools = tools;
+    this.updateTools(tools);
+  }
+
+  updateTools(tools) {
+    this.rawTools = tools;
+    this.tools = [this.computer, ...tools.map((t) => ({ name: t.name, description: t.description, parameters: t.input_schema }))]
+      .filter(Boolean)
       .map((f) => ({ type: 'function', function: { ...f, parameters: portableSchema(f.parameters) } }));
   }
 
   async endpoint() {
-    return { url: API, key: this.apiKey };
+    return { url: this.endpointUrl || API, key: this.apiKey };
   }
 
   requestExtras() {
@@ -109,17 +118,23 @@ function imagePart(data) {
 const CHAT_MODEL = /^(gpt-|o\d|chatgpt-)/;
 const NOT_CHAT = /(audio|realtime|tts|transcribe|embedding|image|search|moderation|instruct|codex|dall-e|whisper)/;
 
-async function listModels(apiKey) {
-  const body = await requestJson(`${API}/models`, { headers: { Authorization: `Bearer ${apiKey}` } }, 'OpenAI');
-  return (body.data || [])
-    .map((m) => m.id)
-    .filter((id) => CHAT_MODEL.test(id) && !NOT_CHAT.test(id))
+async function listModels(apiKey, endpoint = API) {
+  const url = (endpoint && String(endpoint).trim()) ? String(endpoint).trim().replace(/\/+$/, '') : API;
+  const body = await requestJson(`${url}/models`, { headers: { Authorization: `Bearer ${apiKey}` } }, 'OpenAI');
+  const items = (body.data || body.models || []);
+  let list = items
+    .map((m) => (typeof m === 'string' ? m : (m.id || m.name)))
+    .filter(Boolean);
+  if (url === API) {
+    list = list.filter((id) => CHAT_MODEL.test(id) && !NOT_CHAT.test(id));
+  }
+  return list
     .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
     .map((id) => ({ id, name: id }));
 }
 
-async function testKey(apiKey) {
-  await listModels(apiKey);
+async function testKey(apiKey, model, endpoint = API) {
+  await listModels(apiKey, endpoint);
 }
 
 async function ask({ url = API, key, model, label = 'OpenAI', prompt, image, maxTokens = 300, signal, extras = {}, timeoutMs }) {

@@ -7,6 +7,7 @@ const llm = require('./llm');
 const { VOICES } = require('./kokoro');
 const hardware = require('./local/hardware');
 const catalog = require('./local/catalog');
+const { getGovernanceManager, POWER_TIERS } = require('./security/governance');
 
 const LINKS = {
   anthropic: 'https://platform.claude.com/settings/keys',
@@ -38,7 +39,8 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     if (!key) return { ok: false, message: 'Paste a key first.' };
     if (id === 'anthropic' && !/^sk-ant-/.test(key)) return { ok: false, message: 'Anthropic keys start with sk-ant-.' };
     try {
-      await llm.testKey(id, key, settings.get(p.modelSetting));
+      const endpoint = id === 'openai' ? settings.get('openaiEndpoint') : null;
+      await llm.testKey(id, key, settings.get(p.modelSetting), endpoint);
       return { ok: true, message: 'Connected' };
     } catch (err) {
       return { ok: false, message: err.message };
@@ -49,7 +51,8 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     const key = p && p.cloud && settings.secret(p.keyName);
     if (!key) return { ok: false, models: [], message: `Add a ${p ? p.label : ''} key to see its models.` };
     try {
-      return { ok: true, models: await llm.listModels(id, key) };
+      const endpoint = id === 'openai' ? settings.get('openaiEndpoint') : null;
+      return { ok: true, models: await llm.listModels(id, key, endpoint) };
     } catch (err) {
       return { ok: false, models: [], message: err.message };
     }
@@ -65,11 +68,216 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     const hw = await hardware.detect(app.getPath('userData'));
     return { hardware: hw, ...catalog.recommend(hw) };
   });
-  handle('local:status', () => ({ ...local.snapshot(), runtime: runtime.running ? 'ready' : 'stopped', online: net.isOnline() }));
-  handle('local:start', (id) => local.start(id));
+  handle('local:status', async () => {
+    let colibriActive = false;
+    try {
+      const { colibriService } = require('./local/colibri');
+      colibriActive = await colibriService.isHealthy();
+    } catch { /* empty */ }
+    return {
+      ...local.snapshot(),
+      runtime: runtime.running ? 'ready' : 'stopped',
+      online: net.isOnline(),
+      provider: settings.get('provider') || 'local',
+      colibriActive,
+      colibriModel: settings.get('colibriModel') || 'deepseek-v4-flash',
+      ollamaModel: settings.get('ollamaModel') || 'deepseek-r1:8b',
+    };
+  });
+  handle('local:start', async (id) => {
+    if (id && id.startsWith('colibri-')) {
+      const rawModel = id.replace(/^colibri-/, '');
+      runtime.stop(); // free GPU / system RAM
+      const { colibriService } = require('./local/colibri');
+      await colibriService.start(rawModel);
+      settings.update({ provider: 'colibri', colibriModel: rawModel });
+      return { ok: true, provider: 'colibri', model: rawModel, status: 'ready' };
+    }
+    if (id && id.startsWith('ollama-')) {
+      const parts = id.replace(/^ollama-/, '').split('-');
+      const rawModel = parts.length > 1 ? `${parts.slice(0, -1).join('-')}:${parts[parts.length - 1]}` : parts[0];
+      settings.update({ provider: 'ollama', ollamaModel: rawModel });
+      return { ok: true, provider: 'ollama', model: rawModel, status: 'ready' };
+    }
+    try {
+      const { colibriService } = require('./local/colibri');
+      colibriService.stop();
+    } catch { /* empty */ }
+    settings.update({ provider: 'local', localModel: id });
+    return local.start(id);
+  });
   handle('local:pause', () => local.pause());
   handle('local:resume', () => local.resume());
   handle('local:cancel', () => local.cancel());
+  handle('local:custom-scan', async () => catalog.scanCustomModels());
+  handle('local:pick-file', async (event) => {
+    const fs = require('fs');
+    const res = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
+      title: 'Select GGUF Model',
+      buttonLabel: 'Select Model',
+      properties: ['openFile'],
+      filters: [{ name: 'GGUF Models', extensions: ['gguf'] }],
+    });
+    if (res.canceled || !res.filePaths[0]) return null;
+    const modelPath = res.filePaths[0];
+    const stat = fs.statSync(modelPath);
+    const sizeGB = Math.round((stat.size / (1024 ** 3)) * 10) / 10;
+    const filename = path.basename(modelPath);
+    const baseId = filename.replace(/\.gguf$/i, '').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    const cleanLabel = filename.replace(/\.gguf$/i, '').replace(/[-_]/g, ' ');
+    const modelDef = {
+      id: `custom-${baseId}`,
+      size: `${sizeGB}GB`,
+      label: cleanLabel,
+      memoryGB: Math.max(4, Math.round(sizeGB * 1.25)),
+      custom: true,
+      modelPath,
+      bytes: stat.size,
+      available: true,
+    };
+    catalog.saveCustomModel(modelDef);
+    return modelDef;
+  });
+  handle('local:remove-custom', (id) => catalog.removeCustomModel(id));
+
+  // Superpowers
+  handle('superpowers:status', async () => {
+    let pet = null;
+    try {
+      const { getPetManager } = require('./pet/manager');
+      const pm = getPetManager();
+      if (pm) pet = pm.getStatus();
+    } catch { /* empty */ }
+
+    let lanUrl = 'http://127.0.0.1:4040';
+    try {
+      const { getLocalIp } = require('./remote/web');
+      const port = settings.get('webPort') || 4040;
+      lanUrl = `http://${getLocalIp()}:${port}`;
+    } catch { /* empty */ }
+
+    let tgConfig = {};
+    try {
+      const { loadTelegramConfig } = require('./remote/telegram');
+      tgConfig = loadTelegramConfig();
+    } catch { /* empty */ }
+
+    const tgToken = settings.secret('telegramBotToken') || process.env.TELEGRAM_BOT_TOKEN || tgConfig.token || '';
+    const isTgConfigured = Boolean(tgToken);
+    const tgUsername = tgConfig.username || 'FromnearTaskManager_bot';
+
+    return {
+      mobileLanUrl: lanUrl,
+      mobileLocalUrl: `http://localhost:${settings.get('webPort') || 4040}`,
+      pet: pet || { name: 'Codex Pet', state: 'idle', hunger: 30, happiness: 90, energy: 85 },
+      telegram: {
+        configured: isTgConfigured,
+        token: tgToken,
+        botUsername: tgUsername,
+        chatId: settings.get('telegramChatId') || tgConfig.authorizedChatId || '',
+        enabled: settings.get('telegramEnabled') !== false,
+      },
+      routines: {
+        proactiveEnabled: settings.get('proactiveRoutinesEnabled') !== false,
+        circadianBriefing: settings.get('circadianBriefing') !== false,
+      },
+      screenMemory: {
+        enabled: settings.get('screenMemoryEnabled') !== false,
+      },
+      knowledgeVault: {
+        dir: settings.get('knowledgeVaultDir') || 'E:\\AI-Models',
+      },
+      router: {
+        strategy: settings.get('routingStrategy') || 'local_first',
+        autoRouting: settings.get('autoModelRouting') !== false,
+      },
+    };
+  });
+
+  handle('pet:feed', () => {
+    try {
+      const { getPetManager } = require('./pet/manager');
+      const pm = getPetManager();
+      if (pm) return pm.feed();
+    } catch { /* empty */ }
+    return { ok: true, message: 'Fed pet!' };
+  });
+
+  handle('pet:pet', () => {
+    try {
+      const { getPetManager } = require('./pet/manager');
+      const pm = getPetManager();
+      if (pm) return pm.pet();
+    } catch { /* empty */ }
+    return { ok: true, message: 'Petted companion!' };
+  });
+
+  handle('pet:play', () => {
+    try {
+      const { getPetManager } = require('./pet/manager');
+      const pm = getPetManager();
+      if (pm) return pm.play();
+    } catch { /* empty */ }
+    return { ok: true, message: 'Played with companion!' };
+  });
+
+  handle('pet:summon', () => {
+    try {
+      settings.update({ desktopPetEnabled: true });
+      windows.showPet(settings.get('desktopPetSize'));
+      windows.updatePetConfig({
+        species: settings.get('desktopPetSpecies'),
+        theme: settings.get('desktopPetTheme'),
+        size: settings.get('desktopPetSize'),
+        name: settings.get('desktopPetName'),
+        autoMorph: settings.get('desktopPetAutoMorph'),
+      });
+      return { ok: true, message: 'Companion summoned to desktop!' };
+    } catch (err) {
+      return { ok: false, message: err.message };
+    }
+  });
+
+  handle('telegram:connect', async (candidateToken) => {
+    try {
+      const { TelegramBridge, saveTelegramConfig, loadTelegramConfig } = require('./remote/telegram');
+      const saved = loadTelegramConfig();
+      const token = typeof candidateToken === 'string' && candidateToken.trim()
+        ? candidateToken.trim()
+        : (settings.secret('telegramBotToken') || saved.token || process.env.TELEGRAM_BOT_TOKEN);
+      if (!token) return { ok: false, message: 'No Telegram bot token provided.' };
+      const bridge = new TelegramBridge({ token, controller, logger });
+      const info = await bridge.verifyToken();
+      settings.update({ telegramBotToken: token, telegramEnabled: true });
+      saveTelegramConfig({ token, username: info.username });
+      bridge.start();
+      return { ok: true, message: `Connected to @${info.username}`, username: info.username, token };
+    } catch (err) {
+      return { ok: false, message: err.message };
+    }
+  });
+
+  handle('routines:briefing', async () => {
+    try {
+      const { ExecutiveBriefing } = require('./routines/circadian');
+      const briefing = new ExecutiveBriefing({ controller, logger });
+      const summary = await briefing.generateBriefing();
+      return { ok: true, summary };
+    } catch (err) {
+      return { ok: false, message: err.message };
+    }
+  });
+
+  handle('knowledge:reindex', async () => {
+    try {
+      const { PersonalKnowledgeVault } = require('./rag/vault');
+      const vault = new PersonalKnowledgeVault({ dir: settings.get('knowledgeVaultDir') || 'E:\\AI-Models', logger });
+      const stats = await vault.reindex();
+      return { ok: true, stats };
+    } catch (err) {
+      return { ok: false, message: err.message };
+    }
+  });
 
   // tool tray and math
   handle('toolbar:pick', (tool) => { controller.pickTool(tool); return true; });
@@ -98,6 +306,11 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     const used = await controller.previewVoice(typeof voiceId === 'string' ? voiceId : null);
     return { ok: true, used };
   });
+  handle('speech:speak', async (text) => {
+    if (!text) return false;
+    audio.speak(text, { force: true });
+    return true;
+  });
   handle('mic:status', () => microphoneStatus());
   handle('mic:test', async (on) => {
     try {
@@ -108,6 +321,11 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     }
   });
   handle('wake:status', async () => ({ enabled: settings.get('wakeWord'), active: await controller.refreshWakeWord() }));
+  handle('voice-mode:toggle', () => {
+    controller.setVoiceMode(!controller.voiceMode);
+    return controller.voiceMode;
+  });
+  handle('voice-mode:status', () => Boolean(controller.voiceMode));
 
   // tasks
   handle('task:run', (text) => controller.runTask(text, 'typed'));
@@ -115,6 +333,20 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('conversation:reset', () => agent.reset());
   handle('select:start', () => controller.startPanelSelection());
   handle('region:clear', () => { controller.clearRegion(); return true; });
+
+  // diagnostics & self-healing
+  handle('diagnostics:fix', (rec) => {
+    const { getTroubleshooter } = require('./diagnostics/troubleshooter');
+    return getTroubleshooter({ logger }).executeRecommendation(rec, controller);
+  });
+  handle('diagnostics:errors', () => {
+    const { getTroubleshooter } = require('./diagnostics/troubleshooter');
+    return getTroubleshooter({ logger }).getRecentErrors();
+  });
+  handle('diagnostics:clear', () => {
+    const { getTroubleshooter } = require('./diagnostics/troubleshooter');
+    return getTroubleshooter({ logger }).clearErrors();
+  });
 
   // windows & app
   handle('app:open-settings', (section) => { windows.openSettings(section); return true; });
@@ -144,6 +376,56 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return pluginManager.list();
   });
   handle('app:open-link', (which) => { if (LINKS[which]) shell.openExternal(LINKS[which]); });
+
+  // Governance & User Customization
+  handle('governance:get-state', () => {
+    const gov = getGovernanceManager();
+    return {
+      activeUserId: gov.activeUserId,
+      activeUser: gov.getActiveUser(),
+      users: gov.getUsers(),
+      devices: gov.getDevices(),
+      globalRules: gov.getGlobalRules(),
+      perUserRules: gov.perUserRules,
+      powerTiers: POWER_TIERS,
+    };
+  });
+  handle('governance:set-active-user', (userId) => {
+    const gov = getGovernanceManager();
+    return gov.setActiveUser(userId);
+  });
+  handle('governance:save-customization', (userId, updates) => {
+    const gov = getGovernanceManager();
+    return gov.updateCustomization(userId, updates);
+  });
+  handle('governance:admin-verify-pin', (pin) => {
+    const gov = getGovernanceManager();
+    return { ok: gov.verifyAdmin(pin) };
+  });
+  handle('governance:admin-update-user', (userId, data, adminPin) => {
+    const gov = getGovernanceManager();
+    return gov.adminUpdateUser(userId, data, adminPin);
+  });
+  handle('governance:admin-create-user', (userData, adminPin) => {
+    const gov = getGovernanceManager();
+    return gov.adminCreateUser(userData, adminPin);
+  });
+  handle('governance:admin-delete-user', (userId, adminPin) => {
+    const gov = getGovernanceManager();
+    return gov.adminDeleteUser(userId, adminPin);
+  });
+  handle('governance:admin-update-rules', (rules, adminPin) => {
+    const gov = getGovernanceManager();
+    return gov.adminSetGlobalRules(rules, adminPin);
+  });
+  handle('governance:admin-set-device-power', (deviceId, deviceConfig, adminPin) => {
+    const gov = getGovernanceManager();
+    return gov.adminSetDevicePower(deviceId, deviceConfig, adminPin);
+  });
+  handle('governance:admin-change-pin', (oldPin, newPin) => {
+    const gov = getGovernanceManager();
+    return gov.setAdminPin(oldPin, newPin);
+  });
   handle('app:info', () => ({
     version: app.getVersion(), state: controller.state, running: agent.running,
     usage: { task: costs.task, session: costs.session }, plugins: plugins.list(),

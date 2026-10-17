@@ -51,7 +51,10 @@ class LocalModelManager extends EventEmitter {
   complete(id) {
     const m = catalog.modelById(id);
     if (!m || !fs.existsSync(path.join(this.runtimeDir(), 'llama-server.exe'))) return false;
-    return m.files.every((f) => {
+    if (m.custom) {
+      return fs.existsSync(m.modelPath);
+    }
+    return (m.files || []).every((f) => {
       try { return fs.statSync(path.join(this.modelDir(id), f.name)).size === f.size; } catch { return false; }
     });
   }
@@ -60,8 +63,14 @@ class LocalModelManager extends EventEmitter {
     const m = catalog.modelById(id);
     if (!m) return null;
     const server = path.join(this.runtimeDir(), 'llama-server.exe');
-    const [model, mmproj] = m.files.map((f) => path.join(this.modelDir(id), f.name));
-    if (![server, model, mmproj].every((p) => fs.existsSync(p))) return null;
+    if (!fs.existsSync(server)) return null;
+    if (m.custom) {
+      if (!fs.existsSync(m.modelPath)) return null;
+      const mmproj = m.mmprojPath && fs.existsSync(m.mmprojPath) ? m.mmprojPath : null;
+      return { id, label: m.label, server, cwd: this.runtimeDir(), model: m.modelPath, mmproj, custom: true };
+    }
+    const [model, mmproj] = (m.files || []).map((f) => path.join(this.modelDir(id), f.name));
+    if (![server, model, mmproj].every((p) => p && fs.existsSync(p))) return null;
     return { id, label: m.label, server, cwd: this.runtimeDir(), model, mmproj };
   }
 
@@ -385,12 +394,15 @@ class LocalModelManager extends EventEmitter {
     this.settings.update({ localModel: job.modelId });
     if (previous && previous !== job.modelId) {
       this.emit('removing', previous); // the runtime stops the old model: Windows can't delete files in use
-      for (let attempt = 0; attempt < 10; attempt++) {
-        try {
-          await fs.promises.rm(this.modelDir(previous), { recursive: true, force: true });
-          break;
-        } catch {
-          await new Promise((r) => setTimeout(r, 500));
+      const prevM = catalog.modelById(previous);
+      if (prevM && !prevM.custom) {
+        for (let attempt = 0; attempt < 10; attempt++) {
+          try {
+            await fs.promises.rm(this.modelDir(previous), { recursive: true, force: true });
+            break;
+          } catch {
+            await new Promise((r) => setTimeout(r, 500));
+          }
         }
       }
     }

@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { strokesToSvg } = require('./plugins/lib/vector');
 const { ScreenTarget } = require('./capture');
-const { AgentError, toUserError } = require('./agent');
+const { AgentError, toUserError, isConversationalTask } = require('./agent');
 const { resolveProvider } = require('./llm');
 const { readInk, interpretInk, splitScripts, pretty } = require('./mathink');
 const { solveSystem, evaluate, solveEquation, normalize: normalizeMath } = require('./math');
@@ -17,6 +17,7 @@ const kokoro = require('./kokoro');
 const { mathmlToText } = require('./mathml');
 const { latexToText } = require('./latex');
 const mathread = require('./mathread');
+const { speakable } = require('./local/verbalizer');
 
 const PTT_DELAY_MS = 150;      // ignore quick Ctrl+Alt shortcuts; only a hold starts listening
 const MIN_RECORDING_MS = 350;
@@ -44,9 +45,28 @@ class Controller {
     this.regionAsking = null;   // display showing the ask box next to the marked area
     this.wakeActive = false;
     this.replyTimer = null;
+    this.currentThought = '';
+    this.thoughts = [];
   }
 
   get name() { return this.settings.get('assistantName'); }
+
+  recordThought(text) {
+    if (!text) return;
+    const clean = String(text).trim();
+    this.currentThought = clean;
+    if (!this.thoughts) this.thoughts = [];
+    this.thoughts.push(clean);
+    this.panelLog('thought', clean);
+    if (this.windows && this.windows.broadcast) {
+      this.windows.broadcast('thought', { thought: clean, list: this.thoughts });
+    }
+  }
+
+  clearThoughts() {
+    this.currentThought = '';
+    this.thoughts = [];
+  }
 
   // state & feedback
   setState(next) {
@@ -54,7 +74,27 @@ class Controller {
     this.windows.broadcast('state', next);
     this.windows.send(this.windows.panel, 'state', next);
     if (this.windows.tray) this.windows.tray.setToolTip(`${this.name} · ${STATE_LABELS[next] || 'Ready'}`);
-    if (next === 'idle') this.continueVoice();
+    if (next === 'idle') {
+      this.currentTaskMode = 'idle';
+      try {
+        const { getPetManager } = require('./pet/manager');
+        const pm = getPetManager();
+        if (pm) pm.setTaskMode('idle');
+      } catch {}
+      this.continueVoice();
+    } else if (next === 'processing' || next === 'acting') {
+      try {
+        const { getPetManager } = require('./pet/manager');
+        const pm = getPetManager();
+        if (pm) pm.setAgentState(next === 'acting' ? 'working' : 'thinking');
+      } catch {}
+    } else if (next === 'responding') {
+      try {
+        const { getPetManager } = require('./pet/manager');
+        const pm = getPetManager();
+        if (pm) pm.setAgentState('success');
+      } catch {}
+    }
     this.pauseWakeWord(next === 'processing' || next === 'acting');
   }
 
@@ -456,8 +496,8 @@ class Controller {
   aiNotReady() {
     if (this.provider() !== 'local') return null;
     const s = this.runtime.status();
-    if (s.state === 'loading') return `Bigfoot’s AI is still starting (${s.percent}%).`;
-    if (s.state === 'preparing') return `Bigfoot is getting ready for first use (${s.percent ? `${s.percent}%` : 'one time only'}).`;
+    if (s.state === 'loading') return `Mave’s AI is still starting (${s.percent}%).`;
+    if (s.state === 'preparing') return `Mave is getting ready for first use (${s.percent ? `${s.percent}%` : 'one time only'}).`;
     return null;
   }
 
@@ -748,15 +788,128 @@ class Controller {
     this.activity.add('info', 'Stopped by the user.');
   }
 
-  async runTask(text, source = 'typed') {
+  async runTask(text, source = 'typed', options = {}) {
     text = String(text || '').trim();
-    if (!text) return { ok: false };
-    if (this.agent.running) { this.showInfo('Still working', 'Press Esc to stop the current task first.'); return { ok: false }; }
-    if (!this.requireKey()) { this.setState('idle'); return { ok: false }; }
-    if (this.blockedUntilReady()) { this.setState('idle'); return { ok: false }; }
-    if (this.state === 'responding') this.finishReply();
+    if (!text && !options.image) return { ok: false, error: 'Empty task.' };
+    if (this.agent.running) {
+      this.showInfo('Still working', 'Press Esc to stop the current task first.');
+      return { ok: false, error: 'Still working on previous task. Press Esc to stop it.' };
+    }
+
+    // 0a. Privacy Blind Shield intent check
+    try {
+      const { getPrivacyShield } = require('./privacy');
+      const shield = getPrivacyShield();
+      const shieldIntent = shield.matchIntent(text);
+      if (shieldIntent) {
+        if (shieldIntent.action === 'blind') {
+          const res = shield.activateBlind(shieldIntent.minutes, 'user_command');
+          const reply = `🛡️ Privacy Shield Active: Screen vision paused for ${res.durationMinutes} minutes (until ${res.until}). I will not capture or inspect your screen. Say "resume tracking" when you are ready.`;
+          this.recordThought(`Privacy Shield active for ${res.durationMinutes} minutes.`);
+          this.showInfo('Privacy Shield Active', `Vision tracking paused for ${res.durationMinutes} min.`);
+          if (source === 'remote-web' || source === 'telegram') {
+            this.panelLog('assistant', reply);
+            this.setState('idle');
+          } else {
+            const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+            await this.presentReply(reply, null, display.id);
+          }
+          return { ok: true, text: reply, thoughts: this.thoughts };
+        } else if (shieldIntent.action === 'resume') {
+          shield.deactivateBlind();
+          const reply = '👁️ Privacy Shield Deactivated: Screen vision restored. I am ready to assist you.';
+          this.recordThought('Privacy Shield deactivated.');
+          this.showInfo('Vision Restored', 'Screen vision tracking resumed.');
+          if (source === 'remote-web' || source === 'telegram') {
+            this.panelLog('assistant', reply);
+            this.setState('idle');
+          } else {
+            const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+            await this.presentReply(reply, null, display.id);
+          }
+          return { ok: true, text: reply, thoughts: this.thoughts };
+        }
+      }
+    } catch {}
+
+    // 0b. Store sensitive credentials into encrypted vault
+    const saveCredMatch = /^(?:save|store)(?: my)? (?:password|secret|credential|token|key) for ([a-z0-9_.-]+)(?: as |: )(.+)$/i.exec(text);
+    if (saveCredMatch) {
+      try {
+        const { CredentialVault } = require('./security/vault');
+        const vault = new CredentialVault();
+        const service = saveCredMatch[1].trim();
+        const secret = saveCredMatch[2].trim();
+        vault.grantPermission({ service, secret, scope: 'always' });
+        const reply = `🔐 Credential saved encrypted in Secret Manager for "${service}" (AES-256-GCM). It is securely isolated and will be autofilled only with your consent.`;
+        this.recordThought(`Stored credential for ${service} in encrypted vault.`);
+        if (source === 'remote-web' || source === 'telegram') {
+          this.panelLog('assistant', reply);
+          this.setState('idle');
+        } else {
+          const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+          await this.presentReply(reply, null, display.id);
+        }
+        return { ok: true, text: reply, thoughts: this.thoughts };
+      } catch {}
+    }
+
+    // 0c. Live connected devices query
+    if (/^(?:who all|which|what|show|list)?\s*(?:all\s*)?devices (?:are\s*)?connected(?:\s*with mave|\s*right now|\s*now)?\??$/i.test(text) ||
+        /^who is connected(?:\s*with mave|\s*right now)?\??$/i.test(text)) {
+      try {
+        const { getMaveDropEngine } = require('./remote/web');
+        const known = getMaveDropEngine ? getMaveDropEngine().getKnownDevices() : [];
+        const deviceList = [
+          '• Primary PC (Host: Windows Desktop - Active)',
+          ...known.map(d => `• ${d.name || 'Remote Client'} (${d.os || 'Mobile'}, IP: ${d.ip || 'LAN'})`)
+        ];
+        const reply = `📱 Connected Devices (${deviceList.length}):\n${deviceList.join('\n')}\n\nEach device operates with isolated thread context ("Dockers") to prevent cross-device data contamination.`;
+        this.recordThought(`Queried active connected devices: ${deviceList.length} device(s).`);
+        if (source === 'remote-web' || source === 'telegram') {
+          this.panelLog('assistant', reply);
+          this.setState('idle');
+        } else {
+          const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+          await this.presentReply(reply, null, display.id);
+        }
+        return { ok: true, text: reply, thoughts: this.thoughts };
+      } catch {}
+    }
+
+    // 0d. Video editing inquiries
+    if (/^can you edit (?:videos?|footage|clips?)\??$/i.test(text) || /^(?:how can you|are you able to) edit (?:videos?|footage)\??$/i.test(text)) {
+      const reply = `🎬 **Yes, I can edit videos in multiple ways!**\n\n1. **FFmpeg Fast Automation**: Lossless trimming, cutting clips, combining videos, resizing for YouTube (16:9) or TikTok/Reels (9:16), audio normalization, and adding watermarks.\n2. **Desktop Video Editor Control**: I can open and operate **CapCut**, **Adobe Premiere Pro**, or **DaVinci Resolve** on your PC to arrange timelines and apply effects.\n3. **AI Video Generation & Prompting**: I can generate detailed cinematic camera prompts and scripts for **Runway Gen-3, Kling, Sora, or Luma Dream Machine**.\n4. **Automated Subtitles**: Generate standard synchronized \`.srt\` subtitle files automatically.\n\nWould you like me to edit existing video clips with FFmpeg, control an editor app, or generate a video using AI?`;
+      this.recordThought('Answered video editing capabilities comprehensively with solution options.');
+      if (source === 'remote-web' || source === 'telegram') {
+        this.panelLog('assistant', reply);
+        this.setState('idle');
+      } else {
+        const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+        await this.presentReply(reply, null, display.id);
+      }
+      return { ok: true, text: reply, thoughts: this.thoughts };
+    }
 
     const region = this.pendingRegion;
+    const drawing = (this.inkCounts.get(this.cursorDisplayId()) || 0) > 0;
+    const intent = !region && !drawing && !isConversationalTask(text) ? matchIntent(text) : null;
+    const term = !region && !drawing && this.terminals ? matchTerminal(text) : null;
+
+    if (!intent && !term && !this.requireKey()) {
+      this.setState('idle');
+      const dl = this.local ? this.local.snapshot() : { status: 'none' };
+      const msg = this.local && this.local.active()
+        ? `Local AI model is downloading (${Math.round((dl.fraction || 0) * 100)}%). Please wait until download completes.`
+        : 'No local AI model installed yet. Please complete setup in Mave or download Qwen3-VL in Settings > Models.';
+      return { ok: false, error: msg };
+    }
+    if (!intent && !term && this.blockedUntilReady()) {
+      this.setState('idle');
+      return { ok: false, error: 'AI model is still loading. Please wait a moment.' };
+    }
+    if (this.state === 'responding') this.finishReply();
+
     this.endRegionAsk();
     this.pendingRegion = null;
     this.windows.send(this.windows.panel, 'region', null);
@@ -765,7 +918,6 @@ class Controller {
       || screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
     const target = new ScreenTarget(display, this.screenshotEdge());
     target.decorate = (png, crop) => this.withDrawing(display.id, png, crop);
-    const drawing = (this.inkCounts.get(display.id) || 0) > 0;
     this.agent.setTarget(target);
     this.setInkBusy(true);
     let sentRegion = null;
@@ -787,63 +939,203 @@ class Controller {
     this.panelLog('user', text);
     this.logger.audit('task', { source, chars: text.length, region: Boolean(region) });
     this.setState('processing');
+    this.clearThoughts();
+    this.recordThought(`Received task: "${text}"`);
+    if (options.speaker && options.speaker.identified) {
+      this.recordThought(`Voice Biometrics: Identified speaker as "${options.speaker.name}" (${options.speaker.role}, pitch: ${options.speaker.pitch} Hz, confidence: ${(options.speaker.confidence * 100).toFixed(0)}%)`);
+    }
+    if (this.settings.get('desktopPetAutoMorph') !== false) {
+      try {
+        const { inferTaskMode } = require('./local/router');
+        const mode = inferTaskMode(text, intent);
+        this.currentTaskMode = mode;
+        const { getPetManager } = require('./pet/manager');
+        const pm = getPetManager();
+        if (pm) pm.setTaskMode(mode);
+      } catch {}
+    }
     const local = this.provider() === 'local';
-    // Everyday commands ("search for …", "open Spotify") run at once, without the model.
-    const intent = !region && !drawing ? matchIntent(text) : null;
+    if (intent) {
+      const callNames = intent.calls.map((c) => c.name).join(', ');
+      this.recordThought(`Identified direct command intent [${callNames}]. Executing directly...`);
+    } else {
+      this.recordThought(`Analyzing request with AI model (${this.provider()})...`);
+    }
     this.bubble(intent ? '' : local && this.runtime.preparing ? `getting ready for first use (${this.runtime.preparing.percent}%). your answer comes right after…`
       : local && !this.runtime.running ? 'one moment, my AI is still loading…' : '');
+
+    let switchedToRemote = false;
+    let handsMgr = null;
+    try {
+      const { getRemoteHandsManager } = require('./remote/hands');
+      handsMgr = getRemoteHandsManager();
+      handsMgr.setController(this);
+
+      const targetDevMatch = options.targetDevice || (
+        /\b(?:on|in|control|switch to)\s+(?:the\s+)?([a-zA-Z0-9_\-' ]+?)(?:'s)?\s+(?:laptop|pc|computer|macbook|phone|ipad|tablet|device)\b/i.exec(text)
+          ? /\b(?:on|in|control|switch to)\s+(?:the\s+)?([a-zA-Z0-9_\-' ]+?)(?:'s)?\s+(?:laptop|pc|computer|macbook|phone|ipad|tablet|device)\b/i.exec(text)[1]
+          : null
+      );
+
+      if (targetDevMatch) {
+        const dev = handsMgr.getDevice(targetDevMatch);
+        if (dev) {
+          if (!dev.isPermissionActive('screen_control')) {
+            const permReq = handsMgr.requestPermission(dev.id, { reason: text });
+            const reply = `I found "${dev.name}", but permission to control their device has not been granted yet. I sent an authorization request (Code: ${permReq.grantCode}) to their screen. Once the device owner grants permission, I will execute this task on their device without touching your PC.`;
+            this.recordThought(`Remote Hands: Permission pending on "${dev.name}".`);
+            if (source === 'remote-web' || source === 'telegram') {
+              this.panelLog('assistant', reply);
+              this.setState('idle');
+            } else {
+              await this.presentReply(reply, null, display.id);
+            }
+            return { ok: true, text: reply, thoughts: this.thoughts };
+          } else {
+            this.recordThought(`Remote Hands: Targeting device "${dev.name}" (${dev.platform}). Host PC screen will remain completely untouched.`);
+            handsMgr.switchToRemoteTarget(dev.id, this.agent);
+            switchedToRemote = true;
+          }
+        }
+      }
+    } catch {}
+
     try {
       // "open the terminal", "run npm install in the terminal": Bigfoot's own terminal, at once.
       const term = !region && !drawing && this.terminals ? matchTerminal(text) : null;
       if (term) {
+        this.recordThought(`Opening terminal shell: ${term.command || term.shell || 'terminal'}`);
         const reply = await this.terminalCommand(term);
+        this.recordThought(`Terminal command executed.`);
         if (reply) await this.presentReply(reply, null, display.id);
         else this.setState('idle');
-        return { ok: true };
+        return { ok: true, text: reply || '', thoughts: this.thoughts };
       }
       // "click Sign in", "scroll down": done from the screen list in about a second, no model.
-      const uiCommand = !intent && !region && !drawing ? matchUiCommand(text) : null;
+      const uiCommand = !intent && !region && !drawing && !isConversationalTask(text) ? matchUiCommand(text) : null;
       if (uiCommand) {
         this.setState('acting');
+        this.recordThought(`Executing on-screen UI command...`);
         const reply = await this.agent.runUiCommand(uiCommand, text).catch((err) => {
           this.logger.error('On-screen command failed, asking the AI', err.message);
           return null;
         });
         if (reply != null) {
+          this.recordThought(`UI command completed.`);
           if (reply) await this.presentReply(reply, null, display.id);
           else this.setState('idle');
-          return { ok: true };
+          return { ok: true, text: reply || '', thoughts: this.thoughts };
         }
+        this.recordThought(`UI target ambiguous; falling back to visual AI reasoning...`);
         this.setState('processing'); // not clear which element: the model decides, with the list
       }
       if (intent) {
         this.setState('acting');
-        await this.agent.runDirect(intent.calls);
+        for (const call of intent.calls) {
+          this.recordThought(`Executing tool: ${call.name} (${JSON.stringify(call.input)})`);
+        }
+        const directResults = await this.agent.runDirect(intent.calls);
+        this.recordThought('Tool execution succeeded.');
+        const finalReply = (directResults && directResults[0] && typeof directResults[0] === 'string')
+          ? directResults[0]
+          : (intent.reply || 'Done.');
         if (!intent.followUp) {
-          await this.presentReply(intent.reply, null, display.id);
-          return { ok: true };
+          if (source === 'remote-web' || source === 'telegram') {
+            this.panelLog('assistant', finalReply);
+            this.activity.add('reply', finalReply);
+            this.setState('idle');
+          } else {
+            await this.presentReply(finalReply, null, display.id);
+          }
+          return { ok: true, text: finalReply, thoughts: this.thoughts };
         }
         this.panelLog('progress', intent.reply);
         this.setState('processing');
       }
-      // The local model takes a while to answer: a spoken request hears "On it." at once.
-      if (local && source === 'voice') this.audio.acknowledge();
-      const result = await this.agent.run(intent ? intent.followUp : text, { region: sentRegion, drawing });
+      // A spoken request hears "On it." at once while the AI works.
+      if (source === 'voice') this.audio.acknowledge();
+      this.recordThought('Consulting AI agent for step-by-step task execution...');
+      const result = await this.agent.run(intent ? intent.followUp : text, { region: sentRegion, drawing, image: options.image, speaker: options.speaker });
       this.sendUsage();
+      this.recordThought('Task completed.');
       if (result.status === 'stopped') {
         this.audio.stopSpeaking();
         this.setState('idle');
         this.bubble('okay, stopped.', 1800);
-        return { ok: true };
+        return { ok: true, text: 'Stopped.', thoughts: this.thoughts };
+      }
+      if (source === 'remote-web' || source === 'telegram') {
+        this.panelLog('assistant', result.text);
+        this.activity.add('reply', result.text);
+        if (this.settings.get('speakResponses')) {
+          this.presentReply(result.text || 'Done.', result.point, display.id).catch(() => {});
+        } else {
+          this.setState('idle');
+        }
+        return { ok: true, text: result.text || 'Done.', thoughts: this.thoughts };
       }
       await this.presentReply(result.text || 'Done.', result.point, display.id);
-      return { ok: true };
+      return { ok: true, text: result.text || 'Done.', thoughts: this.thoughts };
     } catch (err) {
       this.sendUsage();
       this.setState('idle');
+      this.recordThought(`Error: ${err.message}`);
+      this.recordThought('Activating Mave Self-Healing Diagnostics Engine...');
+
+      let diagnosis = null;
+      let recommendations = [];
+      try {
+        const { getTroubleshooter } = require('./diagnostics/troubleshooter');
+        const troubleshooter = getTroubleshooter({ logger: this.logger });
+        const record = troubleshooter.collectError({
+          task: text,
+          error: err,
+          tool: (intent && intent.calls && intent.calls[0]) ? intent.calls[0].name : '',
+          context: {
+            appName: err.appName,
+            appInfo: err.appInfo,
+            closest: err.closest,
+          },
+        });
+        diagnosis = record.diagnosis;
+        recommendations = diagnosis.recommendations || [];
+        this.recordThought(`Diagnosed issue: ${diagnosis.category} — ${diagnosis.explanation}`);
+        if (recommendations.length) {
+          this.recordThought(`Generated ${recommendations.length} recommended next action(s).`);
+        }
+      } catch (diagErr) {
+        if (this.logger) this.logger.error('Troubleshooter error diagnosis failed', diagErr.message);
+      }
+
       this.showError(toUserError(err));
-      return { ok: false };
+
+      let userMsg = '';
+      if (diagnosis && diagnosis.category === 'APP_NOT_INSTALLED') {
+        userMsg = `⚠️ **${diagnosis.appName} is not installed on this PC.**\n\n${diagnosis.explanation}\n\nWould you like me to open the web version or install it for you?`;
+      } else if (diagnosis && diagnosis.explanation) {
+        userMsg = `⚠️ **Task failed:** ${diagnosis.explanation}`;
+      } else {
+        userMsg = `⚠️ **Error:** ${err.message}`;
+      }
+
+      this.panelLog('assistant', userMsg);
+      if (recommendations.length) {
+        this.panelLog('recommendations', recommendations);
+        this.windows.broadcast('recommendations', recommendations);
+      }
+
+      return {
+        ok: false,
+        error: err.message,
+        text: userMsg,
+        thoughts: this.thoughts,
+        recommendations,
+        diagnosis,
+      };
     } finally {
+      if (switchedToRemote && handsMgr) {
+        try { handsMgr.resetToHostTarget(this.agent); } catch {}
+      }
       if (region && !this.pendingRegion) { clearTimeout(this.regionFade); this.windows.broadcast('region', null); }
       this.setInkBusy(false);
     }
@@ -879,7 +1171,8 @@ class Controller {
     const clean = String(text || '').replace(/\[POINT[^\]]*\]?/gi, '').replace(/\s{2,}/g, ' ').trim();
     if (!clean) return;
     this.streamed = clean;
-    this.audio.feedStream(clean); // speak each sentence as soon as it's complete
+    const spoken = speakable(clean) || clean;
+    this.audio.feedStream(spoken); // speak each sentence as soon as it's complete
     this.windows.send(this.windows.panel, 'log-live', { text: clean });
     // In the chat already: don't write it out a second time next to the cursor.
     if (!this.windows.chatInView()) this.windows.broadcast('bubble-live', { text: clean, displayId: this.agent.target ? this.agent.target.display.id : null });
@@ -947,7 +1240,8 @@ class Controller {
     else this.windows.broadcast('bubble', { text: reply, ttl: 0, displayId });
     this.streamed = '';
 
-    const used = await this.audio.finishStream(reply); // whatever wasn't already spoken while streaming
+    const spokenReply = speakable(reply) || reply;
+    const used = await this.audio.finishStream(spokenReply); // whatever wasn't already spoken while streaming
     if (this.state !== 'responding') return;
     const readingMs = used === 'none' ? Math.min(16000, Math.max(4500, 2000 + reply.length * 45)) : 1400;
     clearTimeout(this.replyTimer);

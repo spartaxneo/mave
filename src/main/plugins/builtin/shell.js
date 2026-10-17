@@ -26,15 +26,15 @@ function folder(input) {
 /** The AI's own terminal, opened when first needed; a second one if it's still busy. */
 function aiTerminal(ctx) {
   const t = ctx.terminals;
-  const free = t.list().find((s) => s.owner === 'ai' && !s.exited && !s.busy && s.name === 'Bigfoot');
+  const free = t.list().find((s) => s.owner === 'ai' && !s.exited && !s.busy && (s.name === 'Mave' || s.name === 'Bigfoot'));
   if (free) return free;
-  return t.create({ shell: 'powershell', name: 'Bigfoot', owner: 'ai' });
+  return t.create({ shell: 'powershell', name: 'Mave', owner: 'ai' });
 }
 
 module.exports = [
   {
     name: 'run_command',
-    description: 'Run a PowerShell command or script on the user\'s computer, in a real terminal the user can watch (Terminal page, "Bigfoot" tab). It keeps its folder between commands. Use it to write and run code, build projects, run tests, git, npm/pip and other tools. Waits for the command to finish and returns its exit code and output. For servers and anything that keeps running, use start_process.',
+    description: 'Run a PowerShell command or script on the user\'s computer, in a real terminal the user can watch (Terminal page, "Mave" tab). It keeps its folder between commands. Use it to write and run code, build projects, run tests, git, npm/pip and other tools. Waits for the command to finish and returns its exit code and output. For servers and anything that keeps running, use start_process.',
     input_schema: {
       type: 'object',
       properties: {
@@ -49,7 +49,7 @@ module.exports = [
       const command = String(input.command).trim();
       if (!command) throw new Error('command is empty');
       const cwd = folder(input);
-      await ctx.confirm('change', { title: 'Run this command?', message: cwd ? `In ${cwd}` : 'In the Bigfoot terminal', detail: command, confirm: 'Run' });
+      await ctx.confirm('change', { title: 'Run this command?', message: cwd ? `In ${cwd}` : 'In the Mave terminal', detail: command, confirm: 'Run' });
       ctx.log('command', command);
       const term = aiTerminal(ctx);
       const timeoutMs = Math.max(1, Math.min(Number(input.timeout_seconds) || 300, 1800)) * 1000;

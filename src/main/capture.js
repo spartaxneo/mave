@@ -55,6 +55,13 @@ class ScreenTarget {
   }
 
   async capturePng(region) {
+    const { getPrivacyShield } = require('./privacy');
+    const shield = getPrivacyShield();
+    if (shield.isBlind()) {
+      const rem = shield.remainingSeconds();
+      throw new Error(`Privacy Shield is active (screen vision paused for ${rem}s). Mave cannot inspect the screen.`);
+    }
+
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
       thumbnailSize: {

@@ -52,6 +52,8 @@ async function freeDiskGB(dir) {
   }
 }
 
+let cachedHw = null;
+
 async function detect(dataDir) {
   const [reg, smi, disk] = await Promise.all([
     process.platform === 'win32' ? run('reg', ['query', DISPLAY_CLASS, '/s']) : '',
@@ -64,7 +66,7 @@ async function detect(dataDir) {
   const best = adapters[0] || null;
   const dedicated = Boolean(best && best.vramGB >= 2);
   const cpus = os.cpus();
-  return {
+  cachedHw = {
     gpu: best ? best.name : 'No dedicated GPU',
     vramGB: dedicated ? round(best.vramGB) : 0,
     dedicated,
@@ -72,8 +74,27 @@ async function detect(dataDir) {
     freeDiskGB: disk == null ? null : round(disk),
     cpu: cpus.length ? `${cpus[0].model.trim()} · ${cpus.length} threads` : '',
   };
+  return cachedHw;
+}
+
+function getCachedHardware() {
+  if (cachedHw) return cachedHw;
+  const cpus = os.cpus();
+  return {
+    gpu: 'Auto-detected',
+    vramGB: 0,
+    dedicated: false,
+    ramGB: round(os.totalmem() / GB),
+    freeDiskGB: null,
+    cpu: cpus.length ? `${cpus[0].model.trim()} · ${cpus.length} threads` : '',
+  };
+}
+
+function setCachedHardware(hw) {
+  cachedHw = hw;
 }
 
 function round(n) { return Math.round(n * 10) / 10; }
 
-module.exports = { detect, parseReg, adaptersFromReg, adaptersFromNvidiaSmi };
+module.exports = { detect, parseReg, adaptersFromReg, adaptersFromNvidiaSmi, getCachedHardware, setCachedHardware };
+

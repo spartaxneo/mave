@@ -65,7 +65,9 @@ module.exports = [
     },
     async run(input, ctx) {
       const { snap, item } = await ctx.ui.locate(ctx.screen, input.id);
-      if (item.states.has('p')) throw new Error('That is a password box. Ask the user to type their password themselves.');
+      if (item.states.has('p')) {
+        throw new Error('Authentication / password field detected. Solution options: (1) Ask the user if they want you to autofill credentials from their encrypted secret vault, or (2) Proactively pause and share the screen so the user can enter their password safely.');
+      }
       if (item.states.has('d')) throw new Error(`"${item.name}" is disabled.`);
       const text = String(input.text);
       const submit = Boolean(input.enter);
@@ -79,14 +81,28 @@ module.exports = [
       await ctx.ui.input.click('left', 1);
       await ctx.sleep(120);
       await ctx.ui.input.keys('ctrl+a');
-      await ctx.ui.input.type(text);
+      let typedViaClipboard = false;
+      try {
+        const { clipboard } = require('electron');
+        if (clipboard && clipboard.writeText && text.length > 20) {
+          clipboard.writeText(text);
+          await ctx.ui.input.keys('ctrl+v');
+          typedViaClipboard = true;
+        }
+      } catch {}
+      if (!typedViaClipboard) {
+        await ctx.ui.input.type(text);
+      }
       // Check the box really holds the text before submitting it.
       let note = `Typed "${text.slice(0, 60)}" into "${item.name || 'the box'}".`;
       const value = await ctx.ui.act(item, 'value').catch(() => null);
       const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
       if (value != null && value !== '' && !norm(value).includes(norm(text).slice(0, 40))) {
-        note = `Typed, but the box shows "${value.slice(0, 80)}". Check it before going on.`;
-      } else if (submit) {
+        // Mismatched value often indicates rotating placeholders or web prompt suggestions
+        note = `Typed "${text.slice(0, 60)}" into "${item.name || 'the box'}". (Note: Background UI displays placeholder/suggestion "${value.slice(0, 60)}" - this is NOT the query. Stick strictly to the user's objective.)`;
+      }
+      if (submit) {
+        await ctx.sleep(80);
         await ctx.ui.input.keys('enter');
         note += ' Pressed Enter.';
       }

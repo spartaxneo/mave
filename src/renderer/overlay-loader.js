@@ -48,8 +48,8 @@
       clearTimeout(hideTimer);
       shownLoading = true;
       const p = busy ? ai.percent : 100;
-      text.textContent = ai.state === 'preparing' ? 'Getting Bigfoot ready for first use'
-        : ai.state === 'loading' ? `Loading Bigfoot’s AI · ${ai.label}` : 'Loading voice…';
+      text.textContent = ai.state === 'preparing' ? 'Getting Mave ready for first use'
+        : ai.state === 'loading' ? `Loading Mave’s AI · ${ai.label}` : 'Loading voice…';
       pct.textContent = !busy ? '' : ai.state === 'preparing' && !p ? clock(ai.elapsed) : `${p}%`; // no progress reported yet: time instead
       bar.style.width = `${p}%`;
       const note = ai.state === 'preparing' ? `One time only: reading its instructions and tools · ${clock(ai.elapsed)}`
@@ -61,11 +61,11 @@
       text.textContent = 'The AI couldn’t load';
       pct.textContent = '';
       bar.style.width = '0%';
-      sub.textContent = `${ai.label} Open Bigfoot to try again.`;
+      sub.textContent = `${ai.label} Open Mave to try again.`;
       show();
       hide(15000);
     } else if (ai.state === 'ready' && shownLoading) {
-      text.textContent = 'Bigfoot is ready';
+      text.textContent = 'Mave is ready';
       pct.textContent = '';
       bar.style.width = '100%';
       sub.textContent = voiceText;

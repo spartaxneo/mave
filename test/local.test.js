@@ -348,6 +348,33 @@ test('smaller machines get smaller screenshots, and a kept-loaded model never un
   clearTimeout(idle.idleTimer);
 });
 
+test('contextSize safely scales with dedicated GPU VRAM without causing Vulkan OOM', () => {
+  const { contextSize } = require('../src/main/local/runtime');
+  assert.equal(contextSize({ dedicated: true, vramGB: 16 }), 32768);
+  assert.equal(contextSize({ dedicated: true, vramGB: 12 }), 32768);
+  assert.equal(contextSize({ dedicated: true, vramGB: 8 }), 24576);
+  assert.equal(contextSize({ dedicated: true, vramGB: 6 }), 16384);
+  assert.equal(contextSize({ dedicated: false, vramGB: 0 }), 16384);
+});
+
+test('LocalProvider compacts history on long conversation sessions', () => {
+  const p = new LocalProvider({ runtime: {}, model: 'm', system: 'System Instructions', tools: [], screen: { width: 100, height: 100 } });
+  p.messages = [
+    { role: 'system', content: 'System Instructions' },
+    { role: 'user', content: 'First task request' },
+  ];
+  for (let i = 0; i < 15; i++) {
+    p.messages.push({ role: 'assistant', content: `step ${i}` });
+    p.messages.push({ role: 'tool', tool_call_id: `call_${i}`, content: `result ${i}` });
+  }
+  assert.ok(p.messages.length > 30);
+  p.compactHistory();
+  assert.equal(p.messages[0].role, 'system');
+  assert.equal(p.messages[1].content, 'First task request');
+  assert.ok(p.messages.length <= 7);
+  assert.match(p.messages[2].content, /Earlier tool interactions completed successfully/);
+});
+
 test('handwriting is read live: answered after "=", checked when the user wrote an answer', () => {
   const { interpretInk } = require('../src/main/mathink');
   assert.deepEqual(interpretInk([['1+1', '+1', '1+7'], ['=', '=.', '-']]), { text: '1 + 1 =', status: 'answer', answer: '2', expression: '1+1' });
