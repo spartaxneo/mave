@@ -500,7 +500,7 @@ const selfEvolutionPlugin = require('../src/main/plugins/builtin/self_evolution'
 
 test('self_evolution builtin plugin tools have valid schemas and execute introspection loop', async () => {
   assert.ok(Array.isArray(selfEvolutionPlugin));
-  assert.equal(selfEvolutionPlugin.length, 3);
+  assert.equal(selfEvolutionPlugin.length, 4);
 
   for (const tool of selfEvolutionPlugin) {
     const error = validate(tool);
@@ -510,9 +510,11 @@ test('self_evolution builtin plugin tools have valid schemas and execute introsp
   const introspectTool = selfEvolutionPlugin.find((t) => t.name === 'trigger_self_reflection');
   const consultTool = selfEvolutionPlugin.find((t) => t.name === 'consult_architect_ai');
   const patchTool = selfEvolutionPlugin.find((t) => t.name === 'apply_evolution_patch');
+  const goalTool = selfEvolutionPlugin.find((t) => t.name === 'autonomous_goal_evolution_loop');
   assert.ok(introspectTool);
   assert.ok(consultTool);
   assert.ok(patchTool);
+  assert.ok(goalTool);
 
   const ctx = {
     confirm: async () => {},
@@ -537,6 +539,10 @@ test('self_evolution builtin plugin tools have valid schemas and execute introsp
     ticket_id: 'test_ticket_123',
   }, ctx);
   assert.ok(patchRes.includes('SELF-EVOLUTION UPGRADE DEPLOYED'));
+
+  // 4. Test autonomous goal evolution loop
+  const goalRes = await goalTool.run({ focus_domain: 'all' }, ctx);
+  assert.ok(goalRes.includes('AUTONOMOUS GOAL EVOLUTION AUDIT'));
 
   // Cleanup temporary file
   const fullTarget = path.resolve(__dirname, '../src/main/plugins/builtin/temp_test_tool.js');

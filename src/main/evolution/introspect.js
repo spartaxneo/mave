@@ -8,8 +8,15 @@ const fs = require('fs');
 const path = require('path');
 const { getMemoryStore } = require('../memory');
 
+const os = require('os');
+const { app } = require('electron');
+
+function defaultProfileDir() {
+  return app && app.getPath ? app.getPath('userData') : path.join(os.homedir(), '.mave');
+}
+
 class IntrospectionEngine {
-  constructor(profileDir = 'D:\\Bigfoot') {
+  constructor(profileDir = defaultProfileDir()) {
     this.profileDir = profileDir;
     this.proposalsFile = path.join(profileDir, 'evolution_proposals.json');
     this.historyFile = path.join(profileDir, 'evolution_history.json');
