@@ -33,6 +33,12 @@ const BUILTIN_GROUPS = {
   'builtin/team_playbooks.js': 'Multi-agent team playbooks and rosters (OpenMausBot parity)',
   'builtin/remote_hands.js': 'Distributed Hands: Remote device control & permission management',
   'builtin/parental_governance.js': 'Parental Admin Governance, Rules Engine & User Power Matrix',
+  'builtin/exo_cluster.js': 'Exo distributed AI cluster and peer-to-peer GPU swarm',
+  'builtin/cua_sandbox.js': 'Cua background computer use and isolated VM spaces',
+  'builtin/tapkit_iphone.js': 'TapKit physical iPhone touch and gesture automation',
+  'builtin/bot_database.js': 'Bot analytical database and tabular Data Tab (OpenMausBot parity)',
+  'builtin/group_channels.js': 'Multi-agent group channels and swarm round-table collaboration',
+  'builtin/permission_broker.js': 'Interactive in-chat permission broker and safety gate',
 };
 
 

@@ -170,7 +170,13 @@ class PluginRegistry {
         'cloud': ['cloud', 'vercel', 'firebase', 'supabase', 'aws', 'netlify', 'deploy'],
         'finance': ['finance', 'stripe', 'paypal', 'wise', 'invoice', 'expense'],
         'todo': ['todo', 'todoist', 'task', 'checklist', 'reminder'],
-        'pipeline': ['pipeline', 'cross service', 'workflow', 'automate', 'connect']
+        'pipeline': ['pipeline', 'cross service', 'workflow', 'automate', 'connect'],
+        'exo': ['exo', 'cluster', 'sharded', 'p2p', 'gpu swarm', 'distributed'],
+        'cua': ['cua', 'background', 'sandbox', 'spaces', 'untrusted', 'isolated'],
+        'tapkit': ['tapkit', 'iphone', 'ios', 'touch', 'swipe', 'gesture'],
+        'database': ['sql', 'query', 'dataset', 'table', 'csv', 'data tab', 'analytics'],
+        'channel': ['channel', 'roundtable', 'round table', 'debate', 'squad'],
+        'permission': ['permission', 'broker', 'approval', 'approve', 'risk']
       };
 
       for (const def of defs) {
