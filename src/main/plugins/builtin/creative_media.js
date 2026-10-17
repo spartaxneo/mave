@@ -354,5 +354,83 @@ cartoon, 3d render, blurry, distorted anatomy, warped faces, jerky motion, low r
       return `Action completed.`;
     },
   },
+  {
+    name: 'higgsfield_video_engine',
+    description: 'Higgsfield AI Generative Video & Cinematic Motion Engine. Generates prompt-to-video parameters, camera motion choreography (Orbit 360, Dolly Zoom, FPV Drone, Crane, Bullet Time), motion consistency control, and storyboard pipelines.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'The core visual description of the scene or action.'
+        },
+        camera_motion: {
+          type: 'string',
+          enum: ['orbit_360', 'dolly_zoom_vertigo', 'fpv_drone_flythrough', 'crane_up_reveal', 'bullet_time_slowmo', 'pan_and_tilt', 'steadicam_follow'],
+          description: 'Cinematic camera movement choreography.'
+        },
+        duration_seconds: {
+          type: 'number',
+          description: 'Target duration in seconds (default: 5).'
+        },
+        aspect_ratio: {
+          type: 'string',
+          enum: ['16:9_cinematic', '9:16_vertical_reels', '1:1_square', '2.39:1_anamorphic'],
+          description: 'Frame aspect ratio.'
+        },
+        fps: {
+          type: 'number',
+          enum: [24, 30, 60],
+          description: 'Frame rate for fluid realism.'
+        }
+      },
+      required: ['prompt'],
+      additionalProperties: false
+    },
+    async run(input, ctx) {
+      const prompt = input.prompt;
+      const camera = input.camera_motion || 'steadicam_follow';
+      const duration = input.duration_seconds || 5;
+      const aspect = input.aspect_ratio || '16:9_cinematic';
+      const fps = input.fps || 24;
+
+      const cameraDescriptions = {
+        'orbit_360': 'Dynamic 360-degree rotational camera orbit smoothly circling the subject, maintaining parallax depth and continuous subject focal lock.',
+        'dolly_zoom_vertigo': 'Hitchcock vertigo dolly zoom (optical zoom in while dolly track pulls back), altering background perspective distortion while subject size remains invariant.',
+        'fpv_drone_flythrough': 'Ultra-fast acrobatic FPV drone flight sweeping millimeters past architecture, high angular velocity banks and rolls with roll-axis horizon compensation.',
+        'crane_up_reveal': 'Smooth vertical Jib/Crane elevation rising from low ground detail to vast sweeping panoramic vista reveal at 45-degree downward tilt.',
+        'bullet_time_slowmo': 'High-frame-rate frozen-action matrix bullet time at 960fps, camera rotating freely around stationary suspended motion elements.',
+        'pan_and_tilt': 'Fluid tripod panoramic horizontal pan followed by vertical tilt up toward the sky.',
+        'steadicam_follow': 'Close third-person steadycam trailing track following subject shoulder level, subtle natural walking motion cadence without shake.'
+      };
+
+      const motionPrompt = cameraDescriptions[camera] || cameraDescriptions['steadicam_follow'];
+
+      return `🎥 **HIGGSFIELD GENERATIVE VIDEO PIPELINE**:
+• **Subject Prompt**: "${prompt}"
+• **Choreographed Camera Motion**: **${camera.toUpperCase()}**
+• **Aspect Ratio**: \`${aspect}\` | **Frame Rate**: \`${fps} FPS\` | **Duration**: \`${duration}s\`
+
+**Synthesized Motion Prompt (Higgsfield / Kling / Sora)**:
+\`\`\`text
+${prompt}. Camera Choreography: ${motionPrompt}. Hyper-photorealistic physics, volumetric atmospheric lighting, raytraced reflections, realistic skin subsurface scattering, zero motion jitter, fluid 60fps frame interpolation.
+\`\`\`
+
+**Higgsfield Motion Vector JSON**:
+\`\`\`json
+{
+  "engine": "higgsfield-motion-v2",
+  "camera_preset": "${camera}",
+  "aspect_ratio": "${aspect}",
+  "motion_strength": 0.85,
+  "fps": ${fps},
+  "duration": ${duration},
+  "render_ready": true
+}
+\`\`\`
+
+💡 *Mave can trigger local rendering or pass this pipeline to FFmpeg for post-processing.*`;
+    }
+  }
 ];
 

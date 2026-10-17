@@ -385,6 +385,8 @@
   if ($('btn-setup')) $('btn-setup').addEventListener('click', () => api.invoke('app:open-settings', 'account'));
   if ($('region-clear')) $('region-clear').addEventListener('click', () => api.invoke('region:clear'));
 
+  let jarvisHudActive = false;
+
   async function toggleVoiceMode() {
     const on = await api.invoke('voice-mode:toggle');
     updateVoiceModeUI(on);
@@ -394,10 +396,84 @@
     if ($('voice-btn')) $('voice-btn').classList.toggle('active', Boolean(on));
     if ($('talk-btn')) $('talk-btn').classList.toggle('active', Boolean(on));
     if ($('talk-btn-text')) $('talk-btn-text').textContent = on ? 'Listening…' : 'Voice Mode';
+    const vso = $('voice-session-overlay');
+    if (vso) {
+      vso.hidden = !on;
+      if (on && $('vso-status-text')) $('vso-status-text').textContent = 'Listening...';
+    }
   }
 
   if ($('voice-btn')) $('voice-btn').addEventListener('click', toggleVoiceMode);
   if ($('talk-btn')) $('talk-btn').addEventListener('click', toggleVoiceMode);
+  if ($('vso-close-btn')) $('vso-close-btn').addEventListener('click', toggleVoiceMode);
+  if ($('vso-end-btn')) $('vso-end-btn').addEventListener('click', toggleVoiceMode);
+
+  if ($('vso-toggle-hud')) {
+    $('vso-toggle-hud').addEventListener('click', () => {
+      jarvisHudActive = !jarvisHudActive;
+      if ($('vso-chatgpt-mode')) $('vso-chatgpt-mode').hidden = jarvisHudActive;
+      if ($('vso-jarvis-mode')) $('vso-jarvis-mode').hidden = !jarvisHudActive;
+      if ($('vso-hud-icon')) $('vso-hud-icon').textContent = jarvisHudActive ? '✨ ChatGPT Dots' : '🦾 JARVIS HUD';
+    });
+  }
+
+  if ($('vso-mute-btn')) {
+    $('vso-mute-btn').addEventListener('click', () => {
+      $('vso-mute-btn').classList.toggle('muted');
+    });
+  }
+
+  // Audio-reactive fluid scaling on the ChatGPT Dots Orb
+  api.on('engine:level', (lvl) => {
+    const orb = $('chatgpt-voice-orb');
+    if (orb) {
+      const scale = 1 + Math.min(0.45, lvl * 1.5);
+      orb.style.transform = `scale(${scale})`;
+    }
+  });
+
+  // Claude Interactive Artifacts Slide-Out Panel
+  window.showArtifact = function({ title = 'Artifact Preview', code = '', html = '' } = {}) {
+    const pane = $('claude-artifacts-pane');
+    if (!pane) return;
+    pane.hidden = false;
+    if ($('cap-title')) $('cap-title').textContent = title;
+    if ($('cap-code-content')) $('cap-code-content').textContent = code || html;
+    const frame = $('cap-preview-frame');
+    if (frame) {
+      frame.srcdoc = html || `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:24px;background:#fff;color:#111;"><h3>${title}</h3><pre style="background:#f4f4f4;padding:12px;border-radius:6px;overflow:auto;"><code>${code ? code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</code></pre></body></html>`;
+    }
+  };
+
+  if ($('cap-tab-preview')) {
+    $('cap-tab-preview').addEventListener('click', () => {
+      $('cap-tab-preview').classList.add('active');
+      $('cap-tab-code').classList.remove('active');
+      $('cap-preview-frame').hidden = false;
+      $('cap-code-view').hidden = true;
+    });
+  }
+  if ($('cap-tab-code')) {
+    $('cap-tab-code').addEventListener('click', () => {
+      $('cap-tab-code').classList.add('active');
+      $('cap-tab-preview').classList.remove('active');
+      $('cap-preview-frame').hidden = true;
+      $('cap-code-view').hidden = false;
+    });
+  }
+  if ($('cap-copy-btn')) {
+    $('cap-copy-btn').addEventListener('click', () => {
+      const code = ($('cap-code-content') && $('cap-code-content').textContent) || '';
+      if (code) navigator.clipboard.writeText(code);
+    });
+  }
+  if ($('cap-close-btn')) {
+    $('cap-close-btn').addEventListener('click', () => {
+      const pane = $('claude-artifacts-pane');
+      if (pane) pane.hidden = true;
+    });
+  }
+
   api.on('voice-mode', (on) => updateVoiceModeUI(on));
   api.invoke('voice-mode:status').then((on) => updateVoiceModeUI(on)).catch(() => {});
 

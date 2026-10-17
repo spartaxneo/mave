@@ -162,7 +162,7 @@ test('security_shield plugin exports valid tools', async () => {
 const creativePlugin = require('../src/main/plugins/builtin/creative_media');
 test('creative_media plugin exports valid tools', async () => {
   assert.ok(Array.isArray(creativePlugin));
-  assert.equal(creativePlugin.length, 5);
+  assert.equal(creativePlugin.length, 6);
 
   for (const tool of creativePlugin) {
     const error = validate(tool);
@@ -173,6 +173,7 @@ test('creative_media plugin exports valid tools', async () => {
   const podcastTool = creativePlugin.find((t) => t.name === 'clean_podcast_audio');
   const hudTool = creativePlugin.find((t) => t.name === 'manage_game_hud_tips');
   const videoTool = creativePlugin.find((t) => t.name === 'video_editor_assistant');
+  const higgsfieldTool = creativePlugin.find((t) => t.name === 'higgsfield_video_engine');
 
   const ctx = { confirm: async () => {}, log: () => {} };
 
@@ -195,6 +196,15 @@ test('creative_media plugin exports valid tools', async () => {
   const videoRes = await videoTool.run({ action: 'capabilities_overview' }, ctx);
   assert.ok(videoRes.includes('MAVE VIDEO EDITING WORKFLOWS'));
   assert.ok(videoRes.includes('FFmpeg'));
+
+  const hfRes = await higgsfieldTool.run({
+    prompt: 'Iron Man launching from Stark Tower at dusk',
+    camera_motion: 'fpv_drone_flythrough',
+    aspect_ratio: '16:9_cinematic'
+  }, ctx);
+  assert.ok(hfRes.includes('HIGGSFIELD GENERATIVE VIDEO PIPELINE'));
+  assert.ok(hfRes.includes('FPV_DRONE_FLYTHROUGH'));
+  assert.ok(hfRes.includes('higgsfield-motion-v2'));
 });
 
 // 6. Life & Finance Plugin

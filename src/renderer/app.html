@@ -242,6 +242,30 @@
       </div>
     </main>
 
+    <!-- Claude Interactive Artifacts Slide-Out Panel -->
+    <aside class="claude-artifacts-pane" id="claude-artifacts-pane" hidden>
+      <div class="cap-header">
+        <div class="cap-title-wrap">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <span class="cap-title" id="cap-title">Artifact Preview</span>
+        </div>
+        <div class="cap-actions">
+          <button type="button" class="cap-tab-btn active" id="cap-tab-preview" title="Live Preview">Preview</button>
+          <button type="button" class="cap-tab-btn" id="cap-tab-code" title="View Source Code">Code</button>
+          <button type="button" class="cap-icon-btn" id="cap-copy-btn" title="Copy Content">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="8.5" height="8.5" rx="1.8"/><path d="M11 5V3.8c0-1-.8-1.8-1.8-1.8H3.8C2.8 2 2 2.8 2 3.8v5.4C2 10.2 2.8 11 3.8 11H5"/></svg>
+          </button>
+          <button type="button" class="cap-icon-btn close" id="cap-close-btn" title="Close Artifacts (Esc)">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="cap-body">
+        <iframe class="cap-preview-frame" id="cap-preview-frame" sandbox="allow-scripts allow-modals"></iframe>
+        <pre class="cap-code-view" id="cap-code-view" hidden><code id="cap-code-content"></code></pre>
+      </div>
+    </aside>
+
     <!-- ChatGPT Settings Modal Dialog -->
     <div class="settings-modal-backdrop" id="settings-modal" hidden>
       <div class="settings-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title">
@@ -753,8 +777,77 @@
         </section>
       </div>
     </div>
-  </div>
-</div>
+    <!-- ChatGPT Dots & JARVIS Arc-Reactor Voice Overlay -->
+    <div class="voice-session-overlay" id="voice-session-overlay" hidden>
+      <div class="vso-backdrop"></div>
+      <div class="vso-content">
+        <div class="vso-topbar">
+          <div class="vso-badge" id="vso-mode-badge">
+            <span class="vso-dot"></span>
+            <span id="vso-status-text">Listening...</span>
+          </div>
+          <div class="vso-actions">
+            <button type="button" class="vso-btn" id="vso-toggle-hud" title="Switch to Iron Man JARVIS Arc-Reactor HUD Mode">
+              <span id="vso-hud-icon">🦾 JARVIS HUD</span>
+            </button>
+            <button type="button" class="vso-btn close" id="vso-close-btn" title="End Voice Session (Esc)">
+              <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode 1: ChatGPT Pulsating Fluid Aura & 4 Dots -->
+        <div class="vso-visualizer" id="vso-chatgpt-mode">
+          <div class="chatgpt-voice-orb" id="chatgpt-voice-orb">
+            <div class="orb-glow"></div>
+            <div class="orb-dots">
+              <div class="chatgpt-dot dot-1"></div>
+              <div class="chatgpt-dot dot-2"></div>
+              <div class="chatgpt-dot dot-3"></div>
+              <div class="chatgpt-dot dot-4"></div>
+            </div>
+          </div>
+          <div class="vso-hint">Tap anywhere or press Space to interrupt</div>
+        </div>
+
+        <!-- Mode 2: JARVIS Iron Man Arc-Reactor Holographic HUD -->
+        <div class="vso-visualizer jarvis-hud-wrap" id="vso-jarvis-mode" hidden>
+          <div class="jarvis-arc-reactor">
+            <div class="reactor-outer-ring"></div>
+            <div class="reactor-middle-ring"></div>
+            <div class="reactor-inner-core">
+              <div class="core-symbol">⚡</div>
+            </div>
+            <div class="reactor-pulse-waves"></div>
+          </div>
+          <div class="jarvis-telemetry-grid">
+            <div class="telemetry-card">
+              <span class="t-label">ARC REACTOR</span>
+              <span class="t-val" id="hud-reactor-val">OPTIMAL 100%</span>
+            </div>
+            <div class="telemetry-card">
+              <span class="t-label">CENTRAL BRAIN</span>
+              <span class="t-val" id="hud-cpu-val">ONLINE</span>
+            </div>
+            <div class="telemetry-card">
+              <span class="t-label">STARK PROTOCOL</span>
+              <span class="t-val" id="hud-protocol-val">MARK L OVERDRIVE</span>
+            </div>
+          </div>
+          <div class="vso-hint jarvis-hint">"At your service, Sir. Listening to your command."</div>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div class="vso-bottombar">
+          <button type="button" class="vso-circle-btn" id="vso-mute-btn" title="Mute Microphone">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <button type="button" class="vso-circle-btn end" id="vso-end-btn" title="End Voice Session">
+            <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor"><rect x="3.5" y="3.5" width="9" height="9" rx="2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
   <script src="ui.js"></script>
   <script src="local-ai.js"></script>
