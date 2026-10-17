@@ -6,10 +6,16 @@
 const fs = require('fs');
 const path = require('path');
 
+const os = require('os');
+
 class KnowledgeVault {
-  constructor(vaultDir = 'D:\\Bigfoot\\vault') {
-    this.vaultDir = vaultDir;
-    this.indexFilePath = path.join(vaultDir, 'vault_index.json');
+  constructor(vaultDir = null) {
+    this.vaultDir = vaultDir || (
+      process.env.APPDATA 
+        ? path.join(process.env.APPDATA, 'Mave', 'vault') 
+        : path.join(os.homedir(), '.mave', 'vault')
+    );
+    this.indexFilePath = path.join(this.vaultDir, 'vault_index.json');
   }
 
   _ensureDir() {

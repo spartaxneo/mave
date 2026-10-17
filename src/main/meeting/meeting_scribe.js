@@ -7,9 +7,15 @@
 const fs = require('fs');
 const path = require('path');
 
+const os = require('os');
+
 class MeetingScribe {
-  constructor(storageDir = 'D:\\Bigfoot\\meetings') {
-    this.storageDir = storageDir;
+  constructor(storageDir = null) {
+    this.storageDir = storageDir || (
+      process.env.APPDATA 
+        ? path.join(process.env.APPDATA, 'Mave', 'meetings') 
+        : path.join(os.homedir(), '.mave', 'meetings')
+    );
     this.activeMeeting = null;
   }
 

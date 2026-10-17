@@ -1163,12 +1163,22 @@ I have initiated a full autonomous scan of everything an ultimate AI companion, 
     • Instant clause risk scoring and predatory term detection (draconian non-competes, one-way IP assignment, unlimited indemnification).
 15. 🎙️ **Proactive Executive Morning Briefing Butler**:
     • Unified morning wake-up greeting combining sleep recovery, schedule conflicts, weather, EV charge, solar forecast, and critical financial flags.
+16. 🛡️ **Cybersecurity & Network Perimeter Sentinel**:
+    • Subnet rogue MAC intrusion detection, insecure cleartext port auditing, and zero-leakage PII/secret protection (AWS keys, GitHub tokens, credit cards).
+17. 🧠 **Personal Knowledge Graph & Associative Memory**:
+    • Entity-relationship memory linking people, companies, projects, and concepts with multi-hop graph traversal and shortest-path associative reasoning.
+18. 🏷️ **Autonomous Negotiation & Price-Drop Hunter**:
+    • Post-purchase price guarantee tracking (14-30 day window), price-drop detection, auto-drafting merchant refund claims, and coupon stack maximization.
+19. 🧘 **Digital Ergonomics & Focus Well-Being Guardian**:
+    • 20-20-20 ocular rest alerts, posture stretch prompts, circadian blue-light melatonin preservation, and deep work focus shields.
+20. ⏱️ **Meeting Executive Co-Pilot & Whisper Assistant**:
+    • Real-time meeting agenda pacing, schedule overrun alerts, discrete in-ear fact-check whispers against historical records, and live commitment owner extraction.
 
 ---
 
 🚀 **From now on, I proactively anticipate what Mave needs, implement it directly, and push verified code without asking you to specify it.**`;
 
-      this.recordThought('Triggered autonomous goal evolution loop and confirmed all 15 master personal intelligence domains.');
+      this.recordThought('Triggered autonomous goal evolution loop and confirmed all 20 master personal intelligence domains.');
       if (source === 'remote-web' || source === 'telegram') {
         this.panelLog('assistant', reply);
         this.setState('idle');
