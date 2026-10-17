@@ -993,6 +993,41 @@ class Controller {
       } catch {}
     }
 
+    // 0g. IoT Apps & Smart Home Devices Interception
+    try {
+      const { getIoTHub } = require('./iot/iot_hub');
+      const hub = getIoTHub();
+      const iotIntent = hub.matchIntent(text);
+      if (iotIntent.handled) {
+        let reply = '';
+        if (iotIntent.type === 'inquiry') {
+          reply = hub.getCapabilityOverview();
+          this.recordThought('Generated comprehensive overview of IoT apps, protocols, and connected devices.');
+        } else if (iotIntent.type === 'control') {
+          const res = await hub.controlDevice(iotIntent.target, iotIntent.action, iotIntent.params || {});
+          reply = `🔌 **IoT Command Executed**: ${res.message}`;
+          this.recordThought(`Executed IoT ${iotIntent.action} on "${iotIntent.target}".`);
+        } else if (iotIntent.type === 'query' || iotIntent.type === 'list') {
+          const devs = hub.getDevices();
+          reply = `📱 **Connected Smart Devices (${devs.length})**:\n` + devs.map((d) => `• **${d.name}** [${d.room}]: ${d.type === 'lock' ? (d.state.locked ? '🔒 Locked' : '🔓 Unlocked') : d.type === 'thermostat' ? `❄️ ${d.state.currentTempC}°C` : (d.state.power ? '🟢 ON' : '⚫ OFF')}`).join('\n');
+          this.recordThought('Queried IoT devices status.');
+        }
+
+        if (reply) {
+          if (source === 'remote-web' || source === 'telegram') {
+            this.panelLog('assistant', reply);
+            this.setState('idle');
+          } else {
+            const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+            await this.presentReply(reply, null, display.id);
+          }
+          return { ok: true, text: reply, thoughts: this.thoughts };
+        }
+      }
+    } catch (err) {
+      if (this.logger) this.logger.error('IoT intent error', err.message);
+    }
+
     const region = this.pendingRegion;
     const drawing = (this.inkCounts.get(this.cursorDisplayId()) || 0) > 0;
     const intent = !region && !drawing && !isConversationalTask(text) ? matchIntent(text) : null;
