@@ -40,11 +40,11 @@ module.exports = [
 
       return `📱 **TAPKIT iOS AUTOMATION ENGINE STATUS**:
 • **Bridge Endpoint**: \`${endpoint}\`
-• **Hardware Bridge**: TapKit Companion Daemon
-• **Simulated Primary Target**: "iPhone 16 Pro Max" (Resolution: 1320x2868, Retina Display)
+• **Daemon Status**: Offline / Standby (No active TapKit bridge detected on port 8088)
+• **Hardware Target**: Physical Apple iPhone (Resolution: 1320 x 2868 px or USB-connected iOS device)
 • **Gesture Pipeline**: Ready (Tap, Vision-Tap, Flick, Pan, Drag, Type)
 
-💡 *Tip: To control your physical iPhone, connect it via USB to your Mac/PC running the TapKit companion app. Mave will see the screen and execute touch interactions automatically.*`;
+💡 *Tip: To control your physical iPhone, connect it via USB with the TapKit companion app running. Mave will automatically stream screen frames and dispatch touch interactions.*`;
     }
   },
   {
@@ -72,11 +72,7 @@ module.exports = [
 • **Device**: \`${phoneName}\`
 • **Dimensions**: 1320 x 2868 px (3x Retina Scale)
 • **Format**: \`image/png\`
-• **OCR Visual Inspection**:
-  - Top Bar: Signal 5G, Wi-Fi 6E, Battery 92%
-  - Home Screen: Dynamic Island active, App Grid visible
-  - Detected App Icons: Settings, Messages, Safari, Photos, Mail, Slack, Camera
-• **Status**: Buffer ready for multimodal vision reasoning and tap targeting.`;
+• **Status**: Screen buffer acquired for multimodal vision reasoning and tap targeting.`;
     }
   },
   {
@@ -127,7 +123,7 @@ module.exports = [
         const target = input.vision_target || 'UI element';
         return `👆 **TAPKIT VISION TAP DISPATCHED**:
 • **Target Description**: "${target}"
-• **Vision Resolution**: Visual coordinate mapped at (x: 215, y: 480)
+• **Vision Resolution**: Natural language element mapped to screen touch point.
 • **Gesture**: Single touch event with 45ms haptic release.
 • **Status**: Element activated on iPhone screen.`;
       }

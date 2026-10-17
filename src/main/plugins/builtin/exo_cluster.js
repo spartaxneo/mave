@@ -133,17 +133,17 @@ ${SHARDED_MODELS.map((m) => `  • **${m.id}** (${m.name}) - Min Nodes: ${m.minN
 • **Cluster Endpoint**: \`${host}\`
 • **Execution Strategy**: Pipeline & Tensor Parallelism (Layer Sharding)
 
-**Simulated Swarm Pipeline**:
-1. **Node 1 (Host PC - ${os.hostname()})**: Input Embeddings + Layers 0–27 (VRAM: ~14 GB)
-2. **Node 2 (Connected Secondary Device / GPU)**: Layers 28–55 (VRAM: ~14 GB)
-3. **Node 3 (Terminal Device / Mac M-Series)**: Layers 56–80 + LM Head De-quantization (VRAM: ~12 GB)
+**Swarm Layer Sharding Architecture**:
+1. **Node 1 (Host PC - ${os.hostname()})**: Input Embeddings + Layers 0–27 (Host Device)
+2. **Node 2 (Connected Secondary Device / GPU)**: Intermediate Hidden States & Attention Layers
+3. **Node 3 (Terminal Device / Client Node)**: Output De-quantization & LM Head
 
 **Task Payload**:
 \`\`\`text
 ${prompt.slice(0, 200)}${prompt.length > 200 ? '...' : ''}
 \`\`\`
 
-*(Exo distributes forward passes over local P2P WebRTC/mDNS with zero external cloud cost).*`;
+*(To run live distributed forward passes across local PCs or Macs with zero external cloud cost, start \`exo\` on each device on your local Wi-Fi).*`;
     }
   },
   {

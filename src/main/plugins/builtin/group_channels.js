@@ -139,27 +139,55 @@ ${resolvedBots.map((b) => `  - **${b.name}** (\`${b.role}\`) - *${b.perspective}
         DEFAULT_PERSONAS['performance_engineer']
       ];
 
+      // Dynamic domain analysis tailored to the specific topic
+      function analyzePersonaPerspective(bot, rawTopic) {
+        const t = rawTopic.toLowerCase();
+        const role = (bot.role || '').toLowerCase();
+
+        if (role.includes('architect')) {
+          let focus = 'decouple domain state and establish formal typed contracts';
+          if (t.includes('data') || t.includes('sql') || t.includes('event')) focus = 'enforce idempotent event logs, migration safety, and transactional boundary isolation';
+          else if (t.includes('auth') || t.includes('payment') || t.includes('security')) focus = 'isolate sensitive payment/auth paths behind dedicated micro-gateways';
+          else if (t.includes('ui') || t.includes('frontend')) focus = 'separate view-state management from I/O controllers';
+          return `Examining: '${rawTopic}'. Structurally, we must ${focus}. Let's establish clean interfaces with deterministic schema validations before writing runtime logic.`;
+        }
+
+        if (role.includes('security') || role.includes('sentinel') || role.includes('audit')) {
+          let focus = 'enforce strict input sanitization and zero-trust validation';
+          if (t.includes('payment') || t.includes('token') || t.includes('key')) focus = 'require cryptographic signatures, replay token defenses, and DPAPI key storage';
+          else if (t.includes('sql') || t.includes('command') || t.includes('terminal')) focus = 'bind all parameters and gate elevated privileges with the permission broker';
+          return `Safety and attack surface containment are critical for '${rawTopic}'. We must ${focus}. Sandboxing is non-negotiable.`;
+        }
+
+        if (role.includes('performance') || role.includes('engineer')) {
+          let focus = 'avoid synchronous blocking and eliminate hot-path latency';
+          if (t.includes('data') || t.includes('event') || t.includes('stream')) focus = 'pipeline chunked I/O with backpressure handling and in-memory caching';
+          else if (t.includes('concurrency') || t.includes('thread')) focus = 'prevent lock contention with lock-free atomic buffers';
+          return `From a throughput and latency standpoint on '${rawTopic}', we must ${focus}. Everything should be stream-oriented with abort signals to ensure sub-50ms responsiveness.`;
+        }
+
+        if (role.includes('product') || role.includes('critic') || role.includes('ux')) {
+          return `Regarding '${rawTopic}': user experience and error resilience must be prioritized. If any step fails, the system must provide instant, understandable diagnostics rather than obscure stack traces.`;
+        }
+
+        return `Analyzing '${rawTopic}' from the perspective of ${bot.name} (${bot.perspective || 'Specialist'}): Ensure strict domain correctness, modular test coverage, and clear error recovery.`;
+      }
+
       // Synthesize debate transcripts
       const transcript = [];
       transcript.push(`### Round 1: Initial Critiques & Angle Formations`);
-      transcript.push(`**${squad[0].name} (${squad[0].role})**:`);
-      transcript.push(`> "Examining: '${topic}'. Structurally, we must decouple external execution dependencies from internal state. Let's establish clean interfaces with deterministic schema validations before writing any runtime logic."`);
-
-      if (squad[1]) {
-        transcript.push(`\n**${squad[1].name} (${squad[1].role})**:`);
-        transcript.push(`> "I concur on interfaces, but safety boundaries are paramount. All unauthenticated IPC inputs or external payloads must pass strict sanitization to prevent injection vulnerabilities. Sandboxing is non-negotiable."`);
-      }
-
-      if (squad[2]) {
-        transcript.push(`\n**${squad[2].name} (${squad[2].role})**:`);
-        transcript.push(`> "From a performance standpoint, synchronous blocking must be avoided. Everything should be stream-oriented or asynchronous with abort signals so user interaction remains fluid at 60 FPS."`);
+      for (let i = 0; i < squad.length; i++) {
+        const bot = squad[i];
+        const perspective = analyzePersonaPerspective(bot, topic);
+        transcript.push(`\n**${bot.name} (${bot.role})**:`);
+        transcript.push(`> "${perspective}"`);
       }
 
       transcript.push(`\n### Round 2: Synthesis & Unified Consensus`);
       transcript.push(`**Consensus Action Plan**:`);
-      transcript.push(`1. **Decoupled Architecture**: Abstract providers behind clean protocol adapters.`);
-      transcript.push(`2. **Zero-Trust Security**: Apply strict parameter validation and ephemeral sandbox boundaries.`);
-      transcript.push(`3. **High-Throughput Execution**: Asynchronous non-blocking pipelines with immediate feedback.`);
+      transcript.push(`1. **Decoupled Architecture**: Abstract providers behind clean protocol adapters for "${topic}".`);
+      transcript.push(`2. **Zero-Trust Security**: Apply strict parameter validation, token defenses, and ephemeral sandbox boundaries.`);
+      transcript.push(`3. **High-Throughput Execution**: Asynchronous non-blocking pipelines with automated test verification.`);
 
       return `🏛️ **MULTI-AGENT ROUND-TABLE CONCLUDED** (#${channelName}):
 • **Topic**: "${topic}"
