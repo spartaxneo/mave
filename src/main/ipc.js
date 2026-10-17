@@ -139,6 +139,20 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return modelDef;
   });
   handle('local:remove-custom', (id) => catalog.removeCustomModel(id));
+  handle('local:check-updates', async (autoInstall = true) => {
+    if (global.__maveModelAutoUpdater) {
+      return await global.__maveModelAutoUpdater.checkForUpdates({ autoInstall });
+    }
+    return { updateAvailable: false, message: 'Auto-updater not active' };
+  });
+  handle('local:auto-update-status', () => {
+    return {
+      enabled: settings.get('autoUpdateModels') !== false,
+      intervalHours: settings.get('autoUpdateIntervalHours') || 6,
+      lastCheck: global.__maveModelAutoUpdater ? global.__maveModelAutoUpdater.lastCheck : null,
+      lastUpdate: global.__maveModelAutoUpdater ? global.__maveModelAutoUpdater.lastUpdate : null
+    };
+  });
 
   // Superpowers
   handle('superpowers:status', async () => {

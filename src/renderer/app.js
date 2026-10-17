@@ -241,6 +241,40 @@
     renderActive();
   }
   UI.switchControl($('keep-loaded'), s.keepAiLoaded, (v) => update({ keepAiLoaded: v }));
+  const autoUpdateToggle = $('auto-update-models');
+  if (autoUpdateToggle) {
+    UI.switchControl(autoUpdateToggle, s.autoUpdateModels !== false, (v) => update({ autoUpdateModels: v }));
+  }
+  const checkUpdatesBtn = $('check-model-updates-btn');
+  const updateStatusHint = $('model-update-status-hint');
+  if (checkUpdatesBtn) {
+    checkUpdatesBtn.addEventListener('click', async () => {
+      checkUpdatesBtn.disabled = true;
+      checkUpdatesBtn.textContent = 'Checking…';
+      try {
+        const res = await api.invoke('local:check-updates', true);
+        if (res && res.updateAvailable) {
+          if (updateStatusHint) updateStatusHint.textContent = `Update found: ${res.targetLabel}. Downloading & installing in background...`;
+          checkUpdatesBtn.textContent = 'Installing…';
+        } else {
+          if (updateStatusHint) updateStatusHint.textContent = (res && res.message) || 'Models are up to date.';
+          checkUpdatesBtn.textContent = 'Check for Updates';
+          checkUpdatesBtn.disabled = false;
+        }
+      } catch (err) {
+        if (updateStatusHint) updateStatusHint.textContent = 'Check failed: ' + err.message;
+        checkUpdatesBtn.textContent = 'Check for Updates';
+        checkUpdatesBtn.disabled = false;
+      }
+    });
+    // Fetch initial status if available
+    api.invoke('local:auto-update-status').then((info) => {
+      if (info && info.lastCheck && updateStatusHint) {
+        const d = new Date(info.lastCheck).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        updateStatusHint.textContent = `Auto-checks every ${info.intervalHours}h. Last checked at ${d}.`;
+      }
+    }).catch(() => {});
+  }
   const llmKey = UI.keyField({
     input: $('llm-key'), status: $('llm-key-status'), reveal: $('llm-reveal'), remove: $('llm-remove'),
     key: () => current().keyName, has: s.has[current().keyName], placeholder: () => current().placeholder,

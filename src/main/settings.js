@@ -44,6 +44,8 @@ const DEFAULTS = {
   autoModelRouting: true,         // automatically select fast vs deep model by task complexity and escalate on errors
   routingStrategy: 'local_first', // local_first | cloud_assisted | auto
   keepAiLoaded: true,             // load the local model at startup and keep it loaded (no cold starts)
+  autoUpdateModels: true,         // automatically detect newer weights and hardware tier upgrades
+  autoUpdateIntervalHours: 6,     // frequency in hours to check for model updates
   model: 'claude-opus-5-5',       // Claude model
   openaiModel: 'gpt-4o',          // OpenAI / ChatGPT model (gpt-4o, gpt-4o-mini, o1, o3-mini)
   openaiEndpoint: '',             // custom OpenAI-compatible endpoint (e.g. https://openrouter.ai/api/v1, https://api.deepseek.com/v1)

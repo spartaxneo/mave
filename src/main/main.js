@@ -25,6 +25,7 @@ const { createTray } = require('./tray');
 const { resolveProvider } = require('./llm');
 const { LocalModelManager } = require('./local/manager');
 const { LocalRuntime } = require('./local/runtime');
+const { ModelAutoUpdater } = require('./local/auto_updater');
 const { SpeechService } = require('./local/speech');
 const catalog = require('./local/catalog');
 const hardware = require('./local/hardware');
@@ -77,6 +78,10 @@ async function start() {
   const speech = new SpeechService({ logger });
   global.__maveSpeech = speech;
   global.__bigfootSpeech = speech;
+
+  const modelAutoUpdater = new ModelAutoUpdater({ manager: local, settings, logger });
+  global.__maveModelAutoUpdater = modelAutoUpdater;
+  global.__maveLocalModelManager = local;
 
   const plugins = new PluginRegistry(logger);
   plugins.loadBuiltins();
@@ -194,6 +199,16 @@ async function start() {
     activity.add('info', `Local AI installed: ${id}. Mave now works offline.`);
     controller.notify('Your local AI is ready', 'Mave can now work fully offline.');
   });
+
+  modelAutoUpdater.on('update-available', (info) => {
+    activity.add('info', `New model update detected: ${info.targetLabel} (${info.reason})`);
+  });
+  modelAutoUpdater.on('auto-install-started', (info) => {
+    activity.add('info', `Auto-installing model update: ${info.label}...`);
+    controller.notify('Auto-Updating AI Model', `Downloading and installing ${info.label} in the background.`);
+  });
+  modelAutoUpdater.startAutoCheckTimer();
+  modelAutoUpdater.checkOnStartup();
   runtime.on('state', (s) => {
     windows.send(windows.main, 'local:runtime', s);
     if (s === 'ready') controller.warmLocal();
