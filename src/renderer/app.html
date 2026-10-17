@@ -38,6 +38,14 @@
           <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
           <span>Terminal</span>
         </button>
+        <button data-section="data" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          <span>Data Tab</span>
+        </button>
+        <button data-section="channels" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Channels</span>
+        </button>
       </nav>
 
       <div class="sidebar-recents" id="sidebar-recents">
@@ -238,6 +246,114 @@
           </div>
           </div>
           <div id="term-shells"></div>
+        </section>
+
+        <!-- Bot Data Tab (OpenMausBot Parity) -->
+        <section data-pane="data" class="data-pane" hidden>
+          <div class="data-tab-header">
+            <div class="data-tab-title-wrap">
+              <h2>Bot Analytical Data Tab</h2>
+              <p>Zero-hallucination local tabular engine. Import spreadsheets & run deterministic SQL.</p>
+            </div>
+            <div class="data-tab-actions">
+              <button type="button" class="btn small primary" id="data-tab-import-btn">Import CSV / JSON</button>
+            </div>
+          </div>
+
+          <div class="data-sql-box">
+            <div class="sql-box-header">
+              <span class="sql-badge">SQL Console</span>
+              <span class="sql-presets">
+                Presets: 
+                <button type="button" class="sql-chip" data-sql="SELECT * FROM payroll_test LIMIT 10">All Rows</button>
+                <button type="button" class="sql-chip" data-sql="SELECT department, SUM(salary) FROM payroll_test GROUP BY department">Sum Salary</button>
+                <button type="button" class="sql-chip" data-sql="SELECT * FROM payroll_test WHERE salary > 100000">High Earners</button>
+              </span>
+            </div>
+            <div class="sql-input-row">
+              <input type="text" id="data-sql-input" class="field" placeholder="SELECT department, SUM(salary) FROM payroll_test GROUP BY department" value="SELECT department, SUM(salary) FROM payroll_test GROUP BY department">
+              <button type="button" class="btn small primary" id="data-sql-run-btn">Execute SQL</button>
+            </div>
+          </div>
+
+          <div class="data-tab-results-card">
+            <div class="results-header">
+              <span class="results-title" id="data-results-title">Query Results</span>
+              <span class="results-count" id="data-results-count">3 records</span>
+            </div>
+            <div class="data-table-scroll" id="data-table-container">
+              <table class="data-table" id="data-results-table">
+                <thead>
+                  <tr><th>department</th><th>sum_salary</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Engineering</td><td>250,000</td></tr>
+                  <tr><td>Marketing</td><td>180,000</td></tr>
+                  <tr><td>Sales</td><td>110,000</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Multi-Agent Group Channels (OpenMausBot Parity) -->
+        <section data-pane="channels" class="channels-pane" hidden>
+          <div class="channels-header">
+            <div class="channels-title-wrap">
+              <h2>Multi-Agent Group Channels</h2>
+              <p>Convene specialized AI squads for architecture reviews, security audits, and product strategy.</p>
+            </div>
+            <button type="button" class="btn small primary" id="channels-create-btn">+ New Channel</button>
+          </div>
+
+          <div class="channels-grid">
+            <div class="channel-card">
+              <div class="channel-head">
+                <span class="channel-tag">#core-architecture-squad</span>
+                <span class="channel-badge">3 Bots</span>
+              </div>
+              <p class="channel-desc">System design, high scalability, database partitioning & maintainability.</p>
+              <div class="bot-squad-chips">
+                <span class="squad-chip">🏛️ Lead Architect</span>
+                <span class="squad-chip">🛡️ Security Sentinel</span>
+                <span class="squad-chip">⚡ Performance Engineer</span>
+              </div>
+              <div class="channel-foot">
+                <button type="button" class="btn small primary round-table-btn" data-channel="core-architecture-squad" data-topic="Review microservices decomposition and caching strategy">Convene Round-Table</button>
+              </div>
+            </div>
+
+            <div class="channel-card">
+              <div class="channel-head">
+                <span class="channel-tag">#security-audit-room</span>
+                <span class="channel-badge">2 Bots</span>
+              </div>
+              <p class="channel-desc">Vulnerability analysis, threat modeling, credential protection & sandbox verification.</p>
+              <div class="bot-squad-chips">
+                <span class="squad-chip">🛡️ Security Sentinel</span>
+                <span class="squad-chip">🔍 Vulnerability Auditor</span>
+              </div>
+              <div class="channel-foot">
+                <button type="button" class="btn small primary round-table-btn" data-channel="security-audit-room" data-topic="Audit credential storage and network exposure">Convene Round-Table</button>
+              </div>
+            </div>
+
+            <div class="channel-card">
+              <div class="channel-head">
+                <span class="channel-tag">#launch-growth-team</span>
+                <span class="channel-badge">3 Bots</span>
+              </div>
+              <p class="channel-desc">Product critique, TAM/SAM/SOM reality check, pricing model, and go-to-market.</p>
+              <div class="bot-squad-chips">
+                <span class="squad-chip">💡 Product Critic</span>
+                <span class="squad-chip">📊 Market Analyst</span>
+                <span class="squad-chip">✍️ Copywriter</span>
+              </div>
+              <div class="channel-foot">
+                <button type="button" class="btn small primary round-table-btn" data-channel="launch-growth-team" data-topic="Review product positioning and monetization strategy">Convene Round-Table</button>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </main>

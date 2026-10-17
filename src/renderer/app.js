@@ -4,7 +4,7 @@
 (async () => {
   const api = window.buddy;
   const $ = (id) => document.getElementById(id);
-  const TITLES = { home: 'Home', terminal: 'Terminal', assistant: 'Assistant', account: 'Models', voice: 'Voice', superpowers: 'Superpowers', general: 'General' };
+  const TITLES = { home: 'Home', terminal: 'Terminal', data: 'Data Tab', channels: 'Channels', assistant: 'Assistant', account: 'Models', voice: 'Voice', superpowers: 'Superpowers', general: 'General' };
   const ALIASES = { listening: 'voice', models: 'account' }; // links to pages
   const update = (patch) => api.invoke('settings:update', patch).then((v) => { s = v; return v; });
 
@@ -66,7 +66,7 @@
     document.querySelectorAll('#pane > [data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== section; });
     $('section-title').textContent = section === 'assistant' ? s.assistantName : TITLES[section];
     $('pane').scrollTop = 0;
-    $('pane').classList.toggle('fill', section === 'home' || section === 'terminal');
+    $('pane').classList.toggle('fill', section === 'home' || section === 'terminal' || section === 'data' || section === 'channels');
     document.dispatchEvent(new CustomEvent('section-shown', { detail: section }));
   }
 

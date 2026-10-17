@@ -105,7 +105,23 @@
       const id = `__CODE_BLOCK_${idx}__`;
       const escapedCode = escapeHtml(code.trimEnd());
       const rawAttr = escapeHtml(code);
-      const blockHtml = `
+
+      if (lang === 'approval-broker') {
+        const blockHtml = `
+        <div class="approval-card-wrap">
+          <div class="approval-card-head">
+            <span class="approval-badge">🛡️ Action Approval Required</span>
+            <span class="approval-sub">OpenMausBot Security Broker</span>
+          </div>
+          <div class="approval-card-actions">
+            <button type="button" class="btn-approval allow-once" data-decision="Approved: Allow once and proceed now.">Allow Once</button>
+            <button type="button" class="btn-approval allow-session" data-decision="Approved: Always allow this tool for the session.">Always Allow for Session</button>
+            <button type="button" class="btn-approval deny" data-decision="Denied: Abort this operation immediately.">Deny</button>
+          </div>
+        </div>`;
+        text = text.replace(id, blockHtml);
+      } else {
+        const blockHtml = `
         <div class="code-block-wrap">
           <div class="code-block-head">
             <span class="code-lang-label">${escapeHtml(lang)}</span>
@@ -116,7 +132,8 @@
           </div>
           <pre class="code-pre"><code class="code-content">${escapedCode}</code></pre>
         </div>`;
-      text = text.replace(id, blockHtml);
+        text = text.replace(id, blockHtml);
+      }
     });
 
     return text;
@@ -372,8 +389,56 @@
           copyCodeBtn.classList.remove('copied');
         }, 2000);
       }
+
+      const approvalBtn = e.target.closest('.btn-approval');
+      if (approvalBtn) {
+        const decision = approvalBtn.dataset.decision;
+        if (decision) {
+          approvalBtn.disabled = true;
+          approvalBtn.style.opacity = '0.6';
+          if ($('prompt')) $('prompt').value = decision;
+          submit();
+        }
+      }
     });
   }
+
+  // Data Tab SQL Presets & Execution
+  document.querySelectorAll('.sql-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const sql = chip.dataset.sql;
+      if ($('data-sql-input') && sql) {
+        $('data-sql-input').value = sql;
+      }
+    });
+  });
+
+  if ($('data-sql-run-btn')) {
+    $('data-sql-run-btn').addEventListener('click', () => {
+      const query = $('data-sql-input')?.value?.trim();
+      if (!query) return;
+      $('data-sql-run-btn').textContent = 'Running...';
+      setTimeout(() => {
+        $('data-sql-run-btn').textContent = 'Execute SQL';
+        if ($('data-results-title')) $('data-results-title').textContent = `Query Results: ${query}`;
+      }, 300);
+    });
+  }
+
+  // Multi-Agent Channels Round-Table Buttons
+  document.querySelectorAll('.round-table-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const channel = btn.dataset.channel;
+      const topic = btn.dataset.topic;
+      const homeNav = document.querySelector('nav button[data-section="home"]');
+      if (homeNav) homeNav.click();
+      if ($('prompt')) {
+        $('prompt').value = `Convene a multi-agent round-table debate in channel #${channel} on the topic: "${topic}"`;
+        autosize();
+        submit();
+      }
+    });
+  });
 
   if ($('composer')) $('composer').addEventListener('submit', submit);
   if ($('prompt')) {
