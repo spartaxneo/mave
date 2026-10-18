@@ -80,9 +80,10 @@
     if (recording.vad && !recording.ended) {
       const quietFor = now - recording.lastSpeechAt;
       const elapsed = now - recording.startedAt;
-      // Adaptive silence threshold: 750ms for fluent speech (matching ChatGPT Voice), 900ms for short utterances
+      // Natural human conversational pauses: 1150ms for fluent speech, 1350ms for short utterances
+      // (prevents Mave from cutting off the user mid-thought while they speak)
       const speechDuration = recording.heardSpeech ? (recording.lastSpeechAt - (recording.firstSpeechAt || recording.startedAt)) : 0;
-      const silenceCutoff = speechDuration > 350 ? 750 : 900;
+      const silenceCutoff = speechDuration > 350 ? 1150 : 1350;
       if ((recording.heardSpeech && quietFor > silenceCutoff) || (!recording.heardSpeech && !recording.patient && elapsed > NO_SPEECH_MS)) {
         recording.ended = true;
         api.send('engine:vad', recording.heardSpeech ? 'silence' : 'no-speech');
@@ -157,6 +158,8 @@
   // speech
   let currentAudio = null;
   let finishSpeech = null;
+  const activeSources = new Set();
+  let nextPlayTime = 0;
 
   function stopAudio() {
     speechSynthesis.cancel();
@@ -165,6 +168,11 @@
       URL.revokeObjectURL(currentAudio.src);
       currentAudio = null;
     }
+    for (const src of activeSources) {
+      try { src.stop(); } catch {}
+    }
+    activeSources.clear();
+    nextPlayTime = 0;
     if (finishSpeech) { finishSpeech(); finishSpeech = null; }
   }
 
@@ -214,17 +222,49 @@
     }
   }
 
-  function play({ audio, type = 'audio/mpeg' }) {
-    stopAudio();
-    return new Promise((resolve, reject) => {
-      const el = new Audio(URL.createObjectURL(new Blob([audio], { type })));
-      currentAudio = el;
-      finishSpeech = resolve;
-      const cleanup = () => { URL.revokeObjectURL(el.src); if (currentAudio === el) currentAudio = null; finishSpeech = null; };
-      el.onended = () => { cleanup(); resolve(); };
-      el.onerror = () => { cleanup(); reject(new Error('The voice audio couldn’t be played.')); };
-      el.play().catch((err) => { cleanup(); reject(err); });
-    });
+  async function play({ audio, type = 'audio/mpeg' }) {
+    const c = audioCtx();
+    const arrayBuffer = audio.buffer ? audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength) : audio;
+
+    try {
+      // High-performance Web Audio API: Zero-gap seamless audio chaining
+      const audioBuffer = await c.decodeAudioData(arrayBuffer.slice(0));
+      return new Promise((resolve) => {
+        const sourceNode = c.createBufferSource();
+        sourceNode.buffer = audioBuffer;
+        sourceNode.connect(c.destination);
+
+        const now = c.currentTime;
+        // Schedule gapless continuity: if previous piece is still playing, schedule right at nextPlayTime
+        const startTime = Math.max(now, nextPlayTime);
+        sourceNode.start(startTime);
+        nextPlayTime = startTime + audioBuffer.duration;
+
+        activeSources.add(sourceNode);
+        finishSpeech = resolve;
+
+        sourceNode.onended = () => {
+          activeSources.delete(sourceNode);
+          if (activeSources.size === 0) {
+            nextPlayTime = 0;
+            finishSpeech = null;
+          }
+          resolve();
+        };
+      });
+    } catch {
+      // HTMLAudioElement Fallback
+      stopAudio();
+      return new Promise((resolve, reject) => {
+        const el = new Audio(URL.createObjectURL(new Blob([audio], { type })));
+        currentAudio = el;
+        finishSpeech = resolve;
+        const cleanup = () => { URL.revokeObjectURL(el.src); if (currentAudio === el) currentAudio = null; finishSpeech = null; };
+        el.onended = () => { cleanup(); resolve(); };
+        el.onerror = () => { cleanup(); reject(new Error('The voice audio couldn’t be played.')); };
+        el.play().catch((err) => { cleanup(); reject(err); });
+      });
+    }
   }
 
   // outline drawing

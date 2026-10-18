@@ -324,6 +324,16 @@ class Agent {
         provider.updateTools(taskTools);
       }
       this.hooks.terminal('info', `Using ${llm.describe(this.settings, provider.id)}`);
+      let activeWindowNote = '';
+      try {
+        if (this.input && typeof this.input.windowTitle === 'function') {
+          const winTitle = await this.input.windowTitle();
+          if (winTitle && winTitle.trim()) {
+            activeWindowNote = `\n\n(Current active foreground window on user's PC: "${winTitle.trim()}")`;
+          }
+        }
+      } catch {}
+
       let request = null;
       if (region) {
         const r = [region.x0, region.y0, region.x1, region.y1].map(Math.round);
@@ -346,7 +356,7 @@ class Agent {
           const how = traced
             ? `I traced around something on the screen; it's outlined in blue in the first image (bounding box [${box}] in your coordinate space)`
             : `I highlighted the area [${box}] of the first image, in your coordinate space`;
-          p.addUserMessage(`${task}${speakerInfo}${govNote}\n\n(${how}. The second image is a close-up of that area. My question is about what I marked; identify it first if that helps.)`,
+          p.addUserMessage(`${task}${activeWindowNote}${speakerInfo}${govNote}\n\n(${how}. The second image is a close-up of that area. My question is about what I marked; identify it first if that helps.)`,
             [full.toString('base64'), crop.toString('base64')]);
         };
       } else if (image) {
@@ -354,7 +364,7 @@ class Agent {
         const speakerInfo = (speaker && speaker.name) ? `\n(Recognized Speaker via Voice Biometrics: ${speaker.name}${speaker.role ? ` [Role: ${speaker.role}]` : ''})` : '';
         const govNote = governanceDirectives ? `\n${governanceDirectives}` : '';
         request = (p) => {
-          p.addUserMessage(`${task || 'Analyze this camera capture or photo in detail.'}${speakerInfo}${govNote}\n\n(This photo was captured from the user's remote device camera. Describe and answer the request.)`, [imgBase64]);
+          p.addUserMessage(`${task || 'Analyze this camera capture or photo in detail.'}${activeWindowNote}${speakerInfo}${govNote}\n\n(This photo was captured from the user's remote device camera. Describe and answer the request.)`, [imgBase64]);
         };
       } else {
         let screenNote = '';
@@ -367,6 +377,12 @@ class Agent {
           } catch (err) {
             this.hooks.terminal('error', `Couldn’t read the screen: ${err.message}`);
           }
+        }
+        let groundingNote = '';
+        const entityMatch = task.match(/^(?:what do you know about|tell me about|who is|what is|do you know about|do you know|can you tell me about)\s+([^?.!]+)/i);
+        if (entityMatch && entityMatch[1]) {
+          const entityQuery = entityMatch[1].trim();
+          groundingNote = `\n\n[Mave Grounding Directive: The user is asking about "${entityQuery}". Do NOT guess, invent fake slang definitions, fake biographies, or hallucinated claims. If you do not have verified, ground-truth facts in your persistent memories or active window context, you MUST call web_search({ query: "${entityQuery}" }) to retrieve verified real-world facts before giving your answer. If search yields no verified records, state honestly that you do not have verified records.]`;
         }
         let memoryNote = '';
         if (speaker && speaker.name) {
@@ -384,7 +400,7 @@ class Agent {
         const now = new Date();
         const timeNote = `\n\n(Current system time: ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}, ${now.toLocaleTimeString('en-US')})`;
         const anchorNote = `\n\n[Mave Task Anchor: "${task}"] Stick strictly to this user request. Do NOT divert to unrelated apps, websites, suggestions, or placeholders found on screen.`;
-        request = (p) => p.addUserMessage(task + screenNote + memoryNote + govNote + timeNote + anchorNote);
+        request = (p) => p.addUserMessage(task + activeWindowNote + groundingNote + screenNote + memoryNote + govNote + timeNote + anchorNote);
       }
       if (provider.startTask) provider.startTask(); // keep earlier turns lean (local model)
       request(provider);

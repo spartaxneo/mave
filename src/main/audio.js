@@ -157,8 +157,8 @@ class AudioService extends EventEmitter {
     this.said = [...(this.said || []).slice(-20), { text, at: Date.now() }];
     try {
       // Several sentences or a long one: all parts start being made now, in order, and each
-      // plays as soon as it's ready, so speech starts after the first short part.
-      const parts = prepared ? [text] : sentences(String(text), true).flatMap((p) => clauses(p));
+      // plays as soon as it's ready, keeping full sentence prosody intact.
+      const parts = prepared ? [text] : sentences(String(text), true).flatMap((p) => p.length > 110 ? clauses(p, 70) : [p]);
       const made = prepared ? [prepared] : parts.map((p) => this.prepare(p, voice));
       if (made.length && made.every(Boolean)) {
         try {

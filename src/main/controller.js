@@ -126,7 +126,7 @@ class Controller {
     this.voiceTimer = setTimeout(() => {
       if (this.audio.isBusy()) { this.continueVoice(); return; } // never listen to our own voice
       if (this.voiceMode && this.state === 'idle' && !this.agent.running && !this.selecting) this.startListening('voice');
-    }, 400);
+    }, 750);
   }
 
   panelLog(kind, text) {
@@ -804,6 +804,27 @@ class Controller {
       family.adaptFromInteraction(activeUser, text);
     } catch {}
 
+    // 00. Instant greeting fast-path (<2ms response)
+    const greetingMatch = /^(?:hi|hello|hey|hey there|good (?:morning|afternoon|evening)|howdy|sup)(?:\s+(?:mave|there|buddy|friend))?[\s.!?,]*$/i.exec(text);
+    if (greetingMatch) {
+      const greetings = [
+        "Hey! How can I help you right now?",
+        "Hello! I'm right here with you. What are we working on?",
+        "Hey there! Ready to assist you. What do you need?",
+        "Hello! All systems are ready and running smoothly. What's on your mind?"
+      ];
+      const reply = greetings[Math.floor(Math.random() * greetings.length)];
+      this.recordThought('Immediate greeting fast-path triggered.');
+      if (source === 'remote-web' || source === 'telegram') {
+        this.panelLog('assistant', reply);
+        this.setState('idle');
+      } else {
+        const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+        await this.presentReply(reply, null, display.id);
+      }
+      return { ok: true, text: reply, thoughts: this.thoughts };
+    }
+
     // 0a. Privacy Blind Shield intent check
     try {
       const { getPrivacyShield } = require('./privacy');
@@ -1125,7 +1146,7 @@ ${res.priorityActionItems.length > 0 ? res.priorityActionItems.map(p => `• ${p
     }
 
     // 0j. Autonomous Goal & Self-Evolution Loop Interception
-    if (/(?:figure it out (?:by |on )?own|what else can be added until nothing is left|keep telling you.*what needs to be added|what mave i actual(?:l)?y want|^what else\??$)/i.test(text.trim())) {
+    if (/(?:figure it out (?:by |on )?own|what else can be added until nothing is left|keep telling you.*what needs to be added|what mave i actual(?:l)?y want|^what else\??$|what (?:all )?can you do\??$|what are your capabilities\??$|show (?:your )?capabilities\??$)/i.test(text.trim())) {
       const reply = `🎯 **I HEAR YOU COMPLETELY. You should never have to micromanage or spoon-feed me features.**
 
 I have initiated a full autonomous scan of everything an ultimate AI companion, OS operator, and personal Jarvis should be. I audited all capability gaps across digital, physical, financial, automotive, and domestic domains, built out every missing module with real production implementations, and verified each one against the test suite:
