@@ -373,11 +373,118 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('voice-mode:status', () => Boolean(controller.voiceMode));
 
   // tasks
-  handle('task:run', (text) => controller.runTask(text, 'typed'));
+  handle('task:run', (text, opts = {}) => controller.runTask(text, 'typed', opts));
   handle('task:stop', () => { controller.stopTask(); return true; });
   handle('conversation:reset', () => agent.reset());
   handle('select:start', () => controller.startPanelSelection());
   handle('region:clear', () => { controller.clearRegion(); return true; });
+
+  // ChatGPT-Style Threads & Multi-Session Conversations
+  handle('threads:list', (opts = {}) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().listThreads(opts);
+  });
+  handle('threads:get', (threadId) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().getThread(threadId);
+  });
+  handle('threads:create', (title = 'New Chat', device = 'desktop', projectId = null) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().createThread(title, device, projectId);
+  });
+  handle('threads:switch', (threadId) => {
+    const { getThreadManager } = require('./threads');
+    const tm = getThreadManager();
+    tm.setActiveThread('desktop', threadId);
+    return tm.getThread(threadId);
+  });
+  handle('threads:rename', (threadId, newTitle) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().renameThread(threadId, newTitle);
+  });
+  handle('threads:pin', (threadId, pinned) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().pinThread(threadId, pinned);
+  });
+  handle('threads:archive', (threadId) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().archiveThread(threadId, true);
+  });
+  handle('threads:unarchive', (threadId) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().unarchiveThread(threadId);
+  });
+  handle('threads:delete', (threadId) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().deleteThread(threadId);
+  });
+  handle('threads:archived', () => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().listArchivedThreads();
+  });
+  handle('threads:groups', (opts = {}) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().getTimelineGroups(opts);
+  });
+
+  // Projects & Folders
+  handle('projects:list', () => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().listProjects();
+  });
+  handle('projects:create', (name, instructions, files) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().createProject(name, instructions, files);
+  });
+  handle('projects:update', (projectId, updates) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().updateProject(projectId, updates);
+  });
+  handle('projects:delete', (projectId) => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().deleteProject(projectId);
+  });
+
+  // Multimodal Generative Media & Analysis
+  handle('media:generate-image', async (opts = {}) => {
+    const { getGenerativeMediaEngine } = require('./multimodal/generator');
+    return getGenerativeMediaEngine(settings).generateImage(opts);
+  });
+  handle('media:generate-video', async (opts = {}) => {
+    const { getGenerativeMediaEngine } = require('./multimodal/generator');
+    return getGenerativeMediaEngine(settings).generateVideo(opts);
+  });
+  handle('media:analyze-file', async (filePath) => {
+    const { getMultimodalAnalyzer } = require('./multimodal/analyzer');
+    return getMultimodalAnalyzer().analyzeFile(filePath);
+  });
+  handle('file:pick', async (event, opts = {}) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const res = await dialog.showOpenDialog(win, {
+      title: opts.title || 'Attach Files or Media',
+      buttonLabel: 'Attach',
+      properties: ['openFile', ...(opts.multiple ? ['multiSelections'] : [])],
+      filters: opts.filters || [
+        { name: 'All Supported Formats', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'webm', 'mov', 'pdf', 'txt', 'csv', 'json', 'py', 'js', 'docx'] },
+        { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'svg'] },
+        { name: 'Videos', extensions: ['mp4', 'webm', 'mov', 'mkv', 'avi'] },
+        { name: 'Documents & Code', extensions: ['pdf', 'txt', 'md', 'csv', 'json', 'py', 'js', 'html', 'docx'] },
+      ],
+    });
+    if (res.canceled || !res.filePaths || res.filePaths.length === 0) return [];
+    const { getMultimodalAnalyzer } = require('./multimodal/analyzer');
+    const analyzer = getMultimodalAnalyzer();
+    const analyses = [];
+    for (const fp of res.filePaths) {
+      try {
+        const item = await analyzer.analyzeFile(fp);
+        analyses.push(item);
+      } catch (err) {
+        analyses.push({ ok: false, file: { path: fp, name: path.basename(fp) }, error: err.message });
+      }
+    }
+    return analyses;
+  });
 
   // diagnostics & self-healing
   handle('diagnostics:fix', (rec) => {

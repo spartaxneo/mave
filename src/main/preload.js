@@ -21,6 +21,10 @@ const INVOKE = new Set([
   'governance:admin-verify-pin', 'governance:admin-update-user', 'governance:admin-create-user',
   'governance:admin-delete-user', 'governance:admin-update-rules', 'governance:admin-set-device-power',
   'governance:admin-change-pin',
+  'threads:list', 'threads:get', 'threads:create', 'threads:switch', 'threads:rename', 'threads:pin',
+  'threads:archive', 'threads:unarchive', 'threads:delete', 'threads:archived', 'threads:groups',
+  'projects:list', 'projects:create', 'projects:update', 'projects:delete',
+  'media:generate-image', 'media:generate-video', 'media:analyze-file', 'file:pick',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',

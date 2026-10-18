@@ -1,7 +1,8 @@
 'use strict';
-// Home: Authentic ChatGPT-style conversation canvas.
-// Rich markdown rendering, syntax-highlighted code blocks with 1-click copy,
-// thought accordions for reasoning, and assistant action toolbars.
+// Home: Authentic ChatGPT-Grade Conversational Canvas & App Experience.
+// Multi-session chat history, timeline grouping (Pinned, Today, Yesterday, 7 Days, 30 Days),
+// Projects & custom instructions, Archiving, Multimodal Image/Video/PDF attachment understanding,
+// Inline DALL-E/Sora generative media players, syntax-highlighted code blocks with 1-click copy.
 
 (() => {
   const api = window.buddy;
@@ -14,6 +15,10 @@
   let live = null;      // the assistant message being written
   let thinking = null;  // typing indicator while nothing is written yet
   let steps = null;     // the current turn's list of actions
+
+  let activeThreadId = null;
+  let activeProjectId = null;
+  let pendingAttachments = [];
 
   const el = (tag, cls, text) => {
     const n = document.createElement(tag);
@@ -30,7 +35,7 @@
   function add(node) {
     if ($('empty')) $('empty').hidden = true;
     $('log').append(node);
-    while ($('log').children.length > 300) $('log').children[1].remove(); // keep the empty state
+    while ($('log').children.length > 500) $('log').children[1].remove(); // keep empty state
     scrollDown();
   }
 
@@ -77,15 +82,31 @@
     // 6. Blockquotes
     text = text.replace(/^\&gt; (.*$)/gim, '<blockquote class="md-quote">$1</blockquote>');
 
-    // 7. Unordered lists: - item or * item
+    // 7. Unordered lists
     text = text.replace(/^\s*[-*]\s+(.*$)/gim, '<li class="md-li">$1</li>');
     text = text.replace(/(<li class="md-li">[\s\S]*?<\/li>)+/g, '<ul class="md-ul">$&</ul>');
 
-    // 8. Ordered lists: 1. item
+    // 8. Ordered lists
     text = text.replace(/^\s*\d+\.\s+(.*$)/gim, '<li class="md-oli">$1</li>');
     text = text.replace(/(<li class="md-oli">[\s\S]*?<\/li>)+/g, '<ol class="md-ol">$&</ol>');
 
-    // 9. Links: [label](url)
+    // 9. Links & Images
+    // Images: ![alt](url) -> ChatGPT Generative Image Card
+    text = text.replace(/!\[([^\]]*)\]\((data:image\/[^\s)]+|https?:\/\/[^\s)]+|file:\/\/\/[^\s)]+)\)/g, (_m, alt, src) => {
+      const cleanAlt = alt || 'Generated Image';
+      return `
+      <div class="generated-image-card">
+        <img src="${src}" alt="${cleanAlt}" loading="lazy">
+        <div class="media-overlay">
+          <span class="media-badge">🎨 ${cleanAlt}</span>
+          <div>
+            <a href="${src}" download="mave_image.png" class="btn-media-action" style="text-decoration:none;display:inline-block;">Download</a>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    // Links: [label](url)
     text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" class="md-link" target="_blank" rel="noopener">$1</a>');
 
     // 10. Horizontal rule
@@ -96,44 +117,31 @@
     text = paragraphs.map((p) => {
       const trimmed = p.trim();
       if (!trimmed) return '';
-      if (/^<(h[2-4]|ul|ol|blockquote|div|hr)/.test(trimmed)) return trimmed;
+      if (/^<(h[2-4]|ul|ol|blockquote|div|hr|video|iframe)/.test(trimmed)) return trimmed;
       return `<p class="md-p">${trimmed.replace(/\n/g, '<br>')}</p>`;
     }).filter(Boolean).join('\n');
 
-    // 12. Restore code blocks with ChatGPT-style header and copy button
+    // 12. Unescape video tags if generated
+    text = text.replace(/&lt;video([\s\S]*?)&gt;([\s\S]*?)&lt;\/video&gt;/gi, '<div class="generated-video-card"><video$1>$2</video><div class="media-overlay"><span class="media-badge">🎬 Generated Video</span></div></div>');
+
+    // 13. Restore code blocks with ChatGPT-style header and copy button
     codeBlocks.forEach(({ lang, code }, idx) => {
       const id = `__CODE_BLOCK_${idx}__`;
       const escapedCode = escapeHtml(code.trimEnd());
       const rawAttr = escapeHtml(code);
 
-      if (lang === 'approval-broker') {
-        const blockHtml = `
-        <div class="approval-card-wrap">
-          <div class="approval-card-head">
-            <span class="approval-badge">🛡️ Action Approval Required</span>
-            <span class="approval-sub">OpenMausBot Security Broker</span>
-          </div>
-          <div class="approval-card-actions">
-            <button type="button" class="btn-approval allow-once" data-decision="Approved: Allow once and proceed now.">Allow Once</button>
-            <button type="button" class="btn-approval allow-session" data-decision="Approved: Always allow this tool for the session.">Always Allow for Session</button>
-            <button type="button" class="btn-approval deny" data-decision="Denied: Abort this operation immediately.">Deny</button>
-          </div>
-        </div>`;
-        text = text.replace(id, blockHtml);
-      } else {
-        const blockHtml = `
-        <div class="code-block-wrap">
-          <div class="code-block-head">
-            <span class="code-lang-label">${escapeHtml(lang)}</span>
-            <button type="button" class="copy-code-btn" data-code="${rawAttr}" title="Copy code">
-              <svg class="copy-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              <span class="copy-text">Copy code</span>
-            </button>
-          </div>
-          <pre class="code-pre"><code class="code-content">${escapedCode}</code></pre>
-        </div>`;
-        text = text.replace(id, blockHtml);
-      }
+      const blockHtml = `
+      <div class="code-block-wrap">
+        <div class="code-block-head">
+          <span class="code-lang-label">${escapeHtml(lang)}</span>
+          <button type="button" class="copy-code-btn" data-code="${rawAttr}" title="Copy code">
+            <svg class="copy-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span class="copy-text">Copy code</span>
+          </button>
+        </div>
+        <pre class="code-pre"><code class="code-content">${escapedCode}</code></pre>
+      </div>`;
+      text = text.replace(id, blockHtml);
     });
 
     return text;
@@ -165,7 +173,7 @@
       }, 2000);
     });
 
-    // 2. Read aloud / speaker button (uses optimized Mave neural voice)
+    // 2. Read aloud / speaker button
     const speakBtn = el('button', 'msg-action-btn speak-msg-btn');
     speakBtn.title = 'Read aloud';
     speakBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`;
@@ -223,37 +231,299 @@
 
   function updateSend() {
     if (!$('send')) return;
-    $('send').disabled = !running && !$('prompt').value.trim();
+    $('send').disabled = !running && !$('prompt').value.trim() && pendingAttachments.length === 0;
     $('send').title = running ? 'Stop (Esc)' : 'Send (Enter)';
     $('send').setAttribute('aria-label', running ? 'Stop' : 'Send');
   }
 
-  function recordTaskInSidebar(title) {
-    const recents = $('sidebar-recents');
-    if (!recents) return;
-    const clean = String(title || '').trim().slice(0, 32);
-    if (!clean) return;
+  function renderAttachmentsPreview() {
+    const bar = $('attachments-preview-bar');
+    if (!bar) return;
+    if (pendingAttachments.length === 0) {
+      bar.hidden = true;
+      bar.innerHTML = '';
+      updateSend();
+      return;
+    }
 
-    // Check if duplicate of top
-    const topItem = recents.querySelector('.recent-item:not(#recent-active-item)');
-    if (topItem && topItem.querySelector('.recent-title')?.textContent === clean) return;
+    bar.hidden = false;
+    bar.innerHTML = '';
+    pendingAttachments.forEach((att, idx) => {
+      const chip = el('div', 'attachment-chip');
+      const icon = att.file.type === 'image' ? '🖼️' : att.file.type === 'video' ? '🎬' : att.file.type === 'audio' ? '🎵' : '📄';
 
-    const btn = el('button', 'recent-item');
-    btn.type = 'button';
-    btn.dataset.prompt = title;
-    btn.innerHTML = `<span class="recent-icon">💬</span><span class="recent-title">${escapeHtml(clean)}</span>`;
-    btn.addEventListener('click', () => {
-      $('prompt').value = title;
-      autosize();
-      $('prompt').focus();
+      chip.innerHTML = `
+        <span class="attachment-chip-icon">${icon}</span>
+        <span class="attachment-chip-name" title="${escapeHtml(att.file.name)}">${escapeHtml(att.file.name)}</span>
+        <span class="attachment-chip-size">${att.file.sizeFormatted || ''}</span>
+        <button type="button" class="attachment-chip-remove" data-idx="${idx}" title="Remove file">×</button>
+      `;
+
+      chip.querySelector('.attachment-chip-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        pendingAttachments.splice(idx, 1);
+        renderAttachmentsPreview();
+      });
+
+      bar.append(chip);
+    });
+    updateSend();
+  }
+
+  // --- Multi-Session Conversations & Timeline ---
+  async function loadSidebarChats() {
+    const container = $('sidebar-chats');
+    if (!container) return;
+
+    const searchQuery = $('chat-search') ? $('chat-search').value.trim() : '';
+    try {
+      const groups = await api.invoke('threads:groups', {
+        projectId: activeProjectId,
+        search: searchQuery,
+      });
+
+      container.innerHTML = '';
+
+      const groupLabels = [
+        { key: 'pinned', title: '📌 Pinned' },
+        { key: 'today', title: 'Today' },
+        { key: 'yesterday', title: 'Yesterday' },
+        { key: 'previous7Days', title: 'Previous 7 Days' },
+        { key: 'previous30Days', title: 'Previous 30 Days' },
+        { key: 'older', title: 'Older' },
+      ];
+
+      let totalRendered = 0;
+      for (const { key, title } of groupLabels) {
+        const items = groups[key];
+        if (Array.isArray(items) && items.length > 0) {
+          const hdr = el('div', 'timeline-group-header', title);
+          container.append(hdr);
+
+          for (const item of items) {
+            totalRendered++;
+            const chatItem = el('div', `chat-item ${item.id === activeThreadId ? 'active' : ''}`);
+            chatItem.dataset.id = item.id;
+
+            const titleSpan = el('span', 'chat-item-title', item.title || 'Untitled Chat');
+            chatItem.append(titleSpan);
+
+            // 3-Dots Context Menu Button
+            const menuBtn = el('button', 'chat-item-menu-btn');
+            menuBtn.type = 'button';
+            menuBtn.title = 'More options';
+            menuBtn.innerHTML = `<svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><circle cx="2.5" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="13.5" cy="8" r="1.5"/></svg>`;
+
+            menuBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              toggleChatMenu(chatItem, item);
+            });
+
+            chatItem.addEventListener('click', () => switchThread(item.id));
+            chatItem.append(menuBtn);
+            container.append(chatItem);
+          }
+        }
+      }
+
+      if (totalRendered === 0) {
+        container.innerHTML = `<div style="padding:16px 8px;font-size:12.5px;color:var(--text-3);text-align:center;">No conversations found</div>`;
+      }
+    } catch {}
+  }
+
+  function toggleChatMenu(chatItem, thread) {
+    document.querySelectorAll('.chat-item-dropdown').forEach((d) => d.remove());
+    document.querySelectorAll('.chat-item.menu-open').forEach((i) => i.classList.remove('menu-open'));
+
+    chatItem.classList.add('menu-open');
+    const menu = el('div', 'chat-item-dropdown');
+
+    // Pin/Unpin
+    const pinBtn = el('button', '', thread.pinned ? '📌 Unpin' : '📌 Pin');
+    pinBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await api.invoke('threads:pin', thread.id, !thread.pinned);
+      menu.remove();
+      loadSidebarChats();
     });
 
-    const activeItem = $('recent-active-item');
-    if (activeItem && activeItem.nextSibling) {
-      recents.insertBefore(btn, activeItem.nextSibling);
-    } else {
-      recents.append(btn);
+    // Rename
+    const renameBtn = el('button', '', '✏️ Rename');
+    renameBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      menu.remove();
+      const newTitle = prompt('Rename conversation:', thread.title);
+      if (newTitle && newTitle.trim()) {
+        await api.invoke('threads:rename', thread.id, newTitle.trim());
+        if (thread.id === activeThreadId && $('chat-header-title')) {
+          $('chat-header-title').textContent = newTitle.trim();
+        }
+        loadSidebarChats();
+      }
+    });
+
+    // Archive
+    const archiveBtn = el('button', '', '📦 Archive');
+    archiveBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      menu.remove();
+      await api.invoke('threads:archive', thread.id);
+      if (thread.id === activeThreadId) {
+        startNewChat();
+      } else {
+        loadSidebarChats();
+      }
+    });
+
+    // Delete
+    const deleteBtn = el('button', 'danger', '🗑️ Delete');
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      menu.remove();
+      if (confirm(`Delete conversation "${thread.title}"?`)) {
+        await api.invoke('threads:delete', thread.id);
+        if (thread.id === activeThreadId) {
+          startNewChat();
+        } else {
+          loadSidebarChats();
+        }
+      }
+    });
+
+    menu.append(pinBtn, renameBtn, archiveBtn, deleteBtn);
+    chatItem.append(menu);
+
+    const closeMenu = (ev) => {
+      if (!menu.contains(ev.target)) {
+        menu.remove();
+        chatItem.classList.remove('menu-open');
+        document.removeEventListener('click', closeMenu);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeMenu), 50);
+  }
+
+  async function switchThread(threadId) {
+    if (!threadId) return;
+    activeThreadId = threadId;
+    try {
+      const thread = await api.invoke('threads:switch', threadId);
+      renderThreadMessages(thread);
+      loadSidebarChats();
+    } catch {}
+  }
+
+  function renderThreadMessages(thread) {
+    if (!thread) return;
+    if ($('chat-header-title')) $('chat-header-title').textContent = thread.title || 'Main Chat';
+
+    // Update project badge
+    if ($('chat-project-badge')) {
+      if (thread.projectId) {
+        api.invoke('projects:list').then((projs) => {
+          const match = (projs || []).find((p) => p.id === thread.projectId);
+          if (match) {
+            $('chat-project-badge').textContent = `📁 ${match.name}`;
+            $('chat-project-badge').hidden = false;
+          } else {
+            $('chat-project-badge').hidden = true;
+          }
+        });
+      } else {
+        $('chat-project-badge').hidden = true;
+      }
     }
+
+    // Clear log and render all earlier chat turns
+    const log = $('log');
+    if (!log) return;
+    [...log.children].forEach((n) => { if (n.id !== 'empty') n.remove(); });
+    live = null;
+    thinking = null;
+    steps = null;
+
+    if (!thread.messages || thread.messages.length === 0) {
+      if ($('empty')) $('empty').hidden = false;
+      return;
+    }
+
+    if ($('empty')) $('empty').hidden = true;
+
+    for (const msg of thread.messages) {
+      if (msg.role === 'user') {
+        const row = el('div', 'turn user');
+        const bubble = el('div', 'msg user');
+
+        // Render any attachments user uploaded with this message
+        if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
+          const attWrap = el('div', 'msg-attachments-wrap');
+          for (const att of msg.attachments) {
+            const chip = el('div', 'attachment-chip');
+            const icon = att.file && att.file.type === 'image' ? '🖼️' : att.file && att.file.type === 'video' ? '🎬' : '📄';
+            chip.innerHTML = `<span>${icon}</span> <span>${escapeHtml((att.file && att.file.name) || 'File')}</span>`;
+            attWrap.append(chip);
+          }
+          bubble.append(attWrap);
+        }
+
+        bubble.append(document.createTextNode(msg.content || ''));
+        row.append(bubble);
+        log.append(row);
+      } else {
+        const row = el('div', 'turn assistant');
+        const avatar = el('img', 'avatar');
+        avatar.src = 'assets/tray@2x.png';
+        avatar.alt = '';
+        const body = el('div', 'msg assistant');
+        body.innerHTML = renderMarkdown(msg.content || '');
+        attachAssistantActions(row, msg.content || '');
+        row.append(avatar, body);
+        log.append(row);
+      }
+    }
+    scrollDown();
+  }
+
+  async function startNewChat() {
+    try {
+      const thread = await api.invoke('threads:create', 'New Chat', 'desktop', activeProjectId);
+      activeThreadId = thread.id;
+      renderThreadMessages(thread);
+      loadSidebarChats();
+      if ($('prompt')) $('prompt').focus();
+    } catch {}
+  }
+
+  // --- Projects Management ---
+  async function loadProjects() {
+    const listEl = $('projects-list');
+    if (!listEl) return;
+    try {
+      const projs = await api.invoke('projects:list');
+      listEl.innerHTML = '';
+      if (!Array.isArray(projs) || projs.length === 0) {
+        listEl.innerHTML = `<div style="font-size:11.5px;color:var(--text-3);padding:4px 6px;">No projects yet</div>`;
+        return;
+      }
+      projs.forEach((p) => {
+        const item = el('button', `project-item ${p.id === activeProjectId ? 'active' : ''}`);
+        item.type = 'button';
+        item.innerHTML = `
+          <div class="project-item-left">
+            <span>📁</span>
+            <span class="project-title">${escapeHtml(p.name)}</span>
+          </div>
+          <span class="project-badge-count">${p.threadCount || 0}</span>
+        `;
+        item.addEventListener('click', () => {
+          activeProjectId = activeProjectId === p.id ? null : p.id;
+          loadProjects();
+          loadSidebarChats();
+        });
+        listEl.append(item);
+      });
+    } catch {}
   }
 
   function finishAssistant(text) {
@@ -264,15 +534,29 @@
     live = null;
     steps = null;
     scrollDown();
+    loadSidebarChats(); // Update title or preview in sidebar
   }
 
   function addEntry({ kind, text }) {
     if (kind === 'user') {
       steps = null;
       const row = el('div', 'turn user');
-      row.append(el('div', 'msg user', text));
+      const bubble = el('div', 'msg user');
+
+      if (pendingAttachments.length > 0) {
+        const attWrap = el('div', 'msg-attachments-wrap');
+        pendingAttachments.forEach((att) => {
+          const chip = el('div', 'attachment-chip');
+          const icon = att.file.type === 'image' ? '🖼️' : att.file.type === 'video' ? '🎬' : '📄';
+          chip.innerHTML = `<span>${icon}</span> <span>${escapeHtml(att.file.name)}</span>`;
+          attWrap.append(chip);
+        });
+        bubble.append(attWrap);
+      }
+
+      bubble.append(document.createTextNode(text));
+      row.append(bubble);
       add(row);
-      recordTaskInSidebar(text);
       if (thinking) { $('log').append(thinking); scrollDown(); }
       return;
     }
@@ -368,10 +652,19 @@
     if (e) e.preventDefault();
     if (running) { api.invoke('task:stop'); return; }
     const text = $('prompt').value.trim();
-    if (!text) return;
+    if (!text && pendingAttachments.length === 0) return;
+
+    const attachmentsToSend = [...pendingAttachments];
+    pendingAttachments = [];
+    renderAttachmentsPreview();
+
     $('prompt').value = '';
     autosize();
-    await api.invoke('task:run', text);
+
+    await api.invoke('task:run', text, {
+      attachments: attachmentsToSend,
+      threadId: activeThreadId,
+    });
   }
 
   // 1-Click Copy button delegation on code blocks
@@ -389,55 +682,189 @@
           copyCodeBtn.classList.remove('copied');
         }, 2000);
       }
-
-      const approvalBtn = e.target.closest('.btn-approval');
-      if (approvalBtn) {
-        const decision = approvalBtn.dataset.decision;
-        if (decision) {
-          approvalBtn.disabled = true;
-          approvalBtn.style.opacity = '0.6';
-          if ($('prompt')) $('prompt').value = decision;
-          submit();
-        }
-      }
     });
   }
 
-  // Data Tab SQL Presets & Execution
-  document.querySelectorAll('.sql-chip').forEach((chip) => {
-    chip.addEventListener('click', () => {
-      const sql = chip.dataset.sql;
-      if ($('data-sql-input') && sql) {
-        $('data-sql-input').value = sql;
-      }
+  // Composer Attach Dropdown & Picker
+  if ($('composer-attach-btn')) {
+    $('composer-attach-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const drop = $('composer-actions-dropdown');
+      if (drop) drop.hidden = !drop.hidden;
     });
+  }
+
+  document.addEventListener('click', (e) => {
+    const drop = $('composer-actions-dropdown');
+    if (drop && !drop.hidden && !drop.contains(e.target) && e.target !== $('composer-attach-btn')) {
+      drop.hidden = true;
+    }
   });
 
-  if ($('data-sql-run-btn')) {
-    $('data-sql-run-btn').addEventListener('click', () => {
-      const query = $('data-sql-input')?.value?.trim();
-      if (!query) return;
-      $('data-sql-run-btn').textContent = 'Running...';
-      setTimeout(() => {
-        $('data-sql-run-btn').textContent = 'Execute SQL';
-        if ($('data-results-title')) $('data-results-title').textContent = `Query Results: ${query}`;
-      }, 300);
+  if ($('cad-upload-file')) {
+    $('cad-upload-file').addEventListener('click', async () => {
+      $('composer-actions-dropdown').hidden = true;
+      const files = await api.invoke('file:pick', { multiple: true });
+      if (Array.isArray(files)) {
+        pendingAttachments.push(...files.filter((f) => f && f.ok));
+        renderAttachmentsPreview();
+      }
     });
   }
 
-  // Multi-Agent Channels Round-Table Buttons
-  document.querySelectorAll('.round-table-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const channel = btn.dataset.channel;
-      const topic = btn.dataset.topic;
-      const homeNav = document.querySelector('nav button[data-section="home"]');
-      if (homeNav) homeNav.click();
+  if ($('cad-create-image')) {
+    $('cad-create-image').addEventListener('click', () => {
+      $('composer-actions-dropdown').hidden = true;
       if ($('prompt')) {
-        $('prompt').value = `Convene a multi-agent round-table debate in channel #${channel} on the topic: "${topic}"`;
+        $('prompt').value = 'Generate an image of ';
         autosize();
-        submit();
+        $('prompt').focus();
       }
     });
+  }
+
+  if ($('cad-create-video')) {
+    $('cad-create-video').addEventListener('click', () => {
+      $('composer-actions-dropdown').hidden = true;
+      if ($('prompt')) {
+        $('prompt').value = 'Generate a cinematic video of ';
+        autosize();
+        $('prompt').focus();
+      }
+    });
+  }
+
+  if ($('cad-select-region')) {
+    $('cad-select-region').addEventListener('click', () => {
+      $('composer-actions-dropdown').hidden = true;
+      api.invoke('region:start');
+    });
+  }
+
+  // Drag and Drop Files onto Composer / Window
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      for (const f of e.dataTransfer.files) {
+        if (f.path) {
+          try {
+            const analysis = await api.invoke('media:analyze-file', f.path);
+            if (analysis && analysis.ok) {
+              pendingAttachments.push(analysis);
+            }
+          } catch {}
+        }
+      }
+      renderAttachmentsPreview();
+    }
+  });
+
+  // Chat Search
+  if ($('chat-search')) {
+    $('chat-search').addEventListener('input', () => {
+      loadSidebarChats();
+    });
+  }
+
+  // New Chat buttons
+  if ($('new-chat')) $('new-chat').addEventListener('click', startNewChat);
+  if ($('sidebar-new-chat')) $('sidebar-new-chat').addEventListener('click', startNewChat);
+
+  // Archive current chat button in titlebar
+  if ($('chat-archive-btn')) {
+    $('chat-archive-btn').addEventListener('click', async () => {
+      if (activeThreadId) {
+        await api.invoke('threads:archive', activeThreadId);
+        startNewChat();
+      }
+    });
+  }
+
+  // Rename current chat button in titlebar
+  if ($('chat-rename-btn')) {
+    $('chat-rename-btn').addEventListener('click', async () => {
+      if (!activeThreadId) return;
+      const current = $('chat-header-title')?.textContent || '';
+      const newTitle = prompt('Rename conversation:', current);
+      if (newTitle && newTitle.trim()) {
+        await api.invoke('threads:rename', activeThreadId, newTitle.trim());
+        if ($('chat-header-title')) $('chat-header-title').textContent = newTitle.trim();
+        loadSidebarChats();
+      }
+    });
+  }
+
+  // --- Projects Modal Controls ---
+  if ($('btn-new-project')) {
+    $('btn-new-project').addEventListener('click', () => {
+      if ($('project-name-input')) $('project-name-input').value = '';
+      if ($('project-instructions-input')) $('project-instructions-input').value = '';
+      if ($('modal-projects')) $('modal-projects').hidden = false;
+    });
+  }
+  if ($('btn-close-project-modal')) $('btn-close-project-modal').addEventListener('click', () => { $('modal-projects').hidden = true; });
+  if ($('btn-cancel-project')) $('btn-cancel-project').addEventListener('click', () => { $('modal-projects').hidden = true; });
+  if ($('btn-save-project')) {
+    $('btn-save-project').addEventListener('click', async () => {
+      const name = $('project-name-input')?.value?.trim();
+      const instructions = $('project-instructions-input')?.value?.trim() || '';
+      if (!name) return;
+      await api.invoke('projects:create', name, instructions);
+      $('modal-projects').hidden = true;
+      loadProjects();
+    });
+  }
+
+  // --- Archived Chats Modal Controls ---
+  if ($('open-archived-btn')) {
+    $('open-archived-btn').addEventListener('click', async () => {
+      if ($('modal-archived')) $('modal-archived').hidden = false;
+      renderArchivedList();
+    });
+  }
+  if ($('btn-close-archived-modal')) $('btn-close-archived-modal').addEventListener('click', () => { $('modal-archived').hidden = true; });
+  if ($('btn-close-archived')) $('btn-close-archived').addEventListener('click', () => { $('modal-archived').hidden = true; });
+
+  async function renderArchivedList() {
+    const listEl = $('archived-chats-list');
+    if (!listEl) return;
+    const archived = await api.invoke('threads:archived');
+    listEl.innerHTML = '';
+    if (!Array.isArray(archived) || archived.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-3);font-size:13px;">No archived conversations</div>`;
+      return;
+    }
+    archived.forEach((t) => {
+      const row = el('div', 'archived-chat-item');
+      row.innerHTML = `
+        <span class="archived-chat-title">${escapeHtml(t.title)}</span>
+        <div class="archived-chat-actions">
+          <button type="button" class="btn small plain restore-btn" data-id="${t.id}">Restore</button>
+          <button type="button" class="btn small danger del-btn" data-id="${t.id}">Delete</button>
+        </div>
+      `;
+      row.querySelector('.restore-btn').addEventListener('click', async () => {
+        await api.invoke('threads:unarchive', t.id);
+        renderArchivedList();
+        loadSidebarChats();
+      });
+      row.querySelector('.del-btn').addEventListener('click', async () => {
+        if (confirm(`Permanently delete "${t.title}"?`)) {
+          await api.invoke('threads:delete', t.id);
+          renderArchivedList();
+        }
+      });
+      listEl.append(row);
+    });
+  }
+
+  // Global Keybindings (Ctrl+N for New Chat)
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+      e.preventDefault();
+      startNewChat();
+    }
   });
 
   if ($('composer')) $('composer').addEventListener('submit', submit);
@@ -447,10 +874,31 @@
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); }
     });
   }
+
+  // Startup Initialization
+  api.invoke('threads:get').then((active) => {
+    if (active) {
+      activeThreadId = active.id;
+      renderThreadMessages(active);
+    }
+    loadSidebarChats();
+    loadProjects();
+  });
+
+  // Empty state chips
+  document.querySelectorAll('.empty-chip').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const p = btn.dataset.prompt;
+      if (p && $('prompt')) {
+        $('prompt').value = p;
+        autosize();
+        $('prompt').focus();
+      }
+    });
+  });
+
   if ($('btn-setup')) $('btn-setup').addEventListener('click', () => api.invoke('app:open-settings', 'account'));
   if ($('region-clear')) $('region-clear').addEventListener('click', () => api.invoke('region:clear'));
-
-  let jarvisHudActive = false;
 
   async function toggleVoiceMode() {
     const on = await api.invoke('voice-mode:toggle');
@@ -473,143 +921,15 @@
   if ($('vso-close-btn')) $('vso-close-btn').addEventListener('click', toggleVoiceMode);
   if ($('vso-end-btn')) $('vso-end-btn').addEventListener('click', toggleVoiceMode);
 
-  if ($('vso-toggle-hud')) {
-    $('vso-toggle-hud').addEventListener('click', () => {
-      jarvisHudActive = !jarvisHudActive;
-      if ($('vso-chatgpt-mode')) $('vso-chatgpt-mode').hidden = jarvisHudActive;
-      if ($('vso-jarvis-mode')) $('vso-jarvis-mode').hidden = !jarvisHudActive;
-      if ($('vso-hud-icon')) $('vso-hud-icon').textContent = jarvisHudActive ? '✨ ChatGPT Dots' : '🦾 JARVIS HUD';
-    });
-  }
-
-  if ($('vso-mute-btn')) {
-    $('vso-mute-btn').addEventListener('click', () => {
-      $('vso-mute-btn').classList.toggle('muted');
-    });
-  }
-
-  // Audio-reactive fluid scaling on the ChatGPT Dots Orb
-  api.on('engine:level', (lvl) => {
-    const orb = $('chatgpt-voice-orb');
-    if (orb) {
-      const scale = 1 + Math.min(0.45, lvl * 1.5);
-      orb.style.transform = `scale(${scale})`;
-    }
-  });
-
-  // Claude Interactive Artifacts Slide-Out Panel
-  window.showArtifact = function({ title = 'Artifact Preview', code = '', html = '' } = {}) {
-    const pane = $('claude-artifacts-pane');
-    if (!pane) return;
-    pane.hidden = false;
-    if ($('cap-title')) $('cap-title').textContent = title;
-    if ($('cap-code-content')) $('cap-code-content').textContent = code || html;
-    const frame = $('cap-preview-frame');
-    if (frame) {
-      frame.srcdoc = html || `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:24px;background:#fff;color:#111;"><h3>${title}</h3><pre style="background:#f4f4f4;padding:12px;border-radius:6px;overflow:auto;"><code>${code ? code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</code></pre></body></html>`;
-    }
-  };
-
-  if ($('cap-tab-preview')) {
-    $('cap-tab-preview').addEventListener('click', () => {
-      $('cap-tab-preview').classList.add('active');
-      $('cap-tab-code').classList.remove('active');
-      $('cap-preview-frame').hidden = false;
-      $('cap-code-view').hidden = true;
-    });
-  }
-  if ($('cap-tab-code')) {
-    $('cap-tab-code').addEventListener('click', () => {
-      $('cap-tab-code').classList.add('active');
-      $('cap-tab-preview').classList.remove('active');
-      $('cap-preview-frame').hidden = true;
-      $('cap-code-view').hidden = false;
-    });
-  }
-  if ($('cap-copy-btn')) {
-    $('cap-copy-btn').addEventListener('click', () => {
-      const code = ($('cap-code-content') && $('cap-code-content').textContent) || '';
-      if (code) navigator.clipboard.writeText(code);
-    });
-  }
-  if ($('cap-close-btn')) {
-    $('cap-close-btn').addEventListener('click', () => {
-      const pane = $('claude-artifacts-pane');
-      if (pane) pane.hidden = true;
-    });
-  }
-
   api.on('voice-mode', (on) => updateVoiceModeUI(on));
   api.invoke('voice-mode:status').then((on) => updateVoiceModeUI(on)).catch(() => {});
-
-  // ChatGPT empty-state chips & composer attach button
-  document.querySelectorAll('.empty-chip').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const p = btn.dataset.prompt;
-      if (p && $('prompt')) {
-        $('prompt').value = p;
-        autosize();
-        $('prompt').focus();
-      }
-    });
-  });
-
-  if ($('composer-attach-btn')) {
-    $('composer-attach-btn').addEventListener('click', () => {
-      api.invoke('region:start');
-    });
-  }
-
-  if ($('new-chat')) {
-    $('new-chat').addEventListener('click', async () => {
-      await api.invoke('conversation:reset');
-      [...$('log').children].forEach((n) => { if (n.id !== 'empty') n.remove(); });
-      live = null;
-      thinking = null;
-      steps = null;
-      if ($('empty')) $('empty').hidden = false;
-      if ($('prompt')) $('prompt').focus();
-    });
-  }
 
   api.on('state', setState);
   api.on('log', addEntry);
   api.on('log-live', ({ text }) => streamText(text));
   api.on('recommendations', (recs) => renderRecommendations(recs));
 
-  // While the AI loads (at startup, after a model change), questions wait for it: say so.
-  function renderLoader(status) {
-    if (!status) return;
-    const { ai, voice } = status;
-    const box = $('ai-loading');
-    if (!box) return;
-    const loading = ai.state === 'loading' || ai.state === 'preparing';
-    box.hidden = !(loading || ai.state === 'failed');
-    box.dataset.state = ai.state === 'preparing' ? 'loading' : ai.state;
-    if ($('ai-loading-retry')) $('ai-loading-retry').hidden = ai.state !== 'failed';
-    if (ai.state === 'preparing') {
-      if ($('ai-loading-text')) $('ai-loading-text').textContent = 'Getting ready for first use';
-      const secs = Math.round((ai.elapsed || 0) / 1000);
-      if ($('ai-loading-pct')) $('ai-loading-pct').textContent = ai.percent ? `${ai.percent}%` : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-      if ($('ai-loading-bar')) $('ai-loading-bar').style.width = `${ai.percent}%`;
-      if ($('ai-loading-note')) $('ai-loading-note').textContent = 'One time only: Mave is reading its instructions and tools, then saves them so every later start is instant. You can type now; your answer comes right after.';
-    } else if (loading) {
-      if ($('ai-loading-text')) $('ai-loading-text').textContent = `Loading the AI · ${ai.label}`;
-      if ($('ai-loading-pct')) $('ai-loading-pct').textContent = `${ai.percent}%`;
-      if ($('ai-loading-bar')) $('ai-loading-bar').style.width = `${ai.percent}%`;
-      const secs = Math.round((ai.elapsed || 0) / 1000);
-      if ($('ai-loading-note')) $('ai-loading-note').textContent = `You can type now; I’ll answer as soon as it’s loaded.${secs > 30 ? ' This PC is busy, so it’s taking longer: closing a few browser tabs helps.' : ''}${voice.state === 'loading' ? ' Voice is starting too.' : ''}`;
-    } else if (ai.state === 'failed') {
-      if ($('ai-loading-text')) $('ai-loading-text').textContent = 'The AI couldn’t load';
-      if ($('ai-loading-pct')) $('ai-loading-pct').textContent = '';
-      if ($('ai-loading-note')) $('ai-loading-note').textContent = ai.label;
-    }
-  }
-  api.on('loader', renderLoader);
-  api.invoke('loader:status').then(renderLoader).catch(() => {});
-  if ($('ai-loading-retry')) $('ai-loading-retry').addEventListener('click', () => { $('ai-loading-retry').hidden = true; api.invoke('loader:retry'); });
-
-  // The area the user marked, attached to the question it belongs to.
+  // The area the user marked
   api.on('log-image', ({ src }) => {
     if (!/^data:image\/(png|jpeg);base64,/.test(String(src))) return;
     const bubbles = $('log').querySelectorAll('.msg.user');
@@ -621,7 +941,8 @@
     img.addEventListener('load', scrollDown);
     last.prepend(img);
   });
-  api.on('settings', (s) => { if (s && s.models && $('prompt')) { $('prompt').placeholder = `Message ${s.assistantName}...`; renderSetup(); } });
+
+  api.on('settings', (s) => { if (s && s.models && $('prompt')) { $('prompt').placeholder = `Message ${s.assistantName}... (attach files, ask to create images or videos)`; renderSetup(); } });
   api.on('local:progress', (st) => { if (st.status === 'ready' || st.status === 'none') renderSetup(); });
   api.on('region', (r) => {
     if ($('region-chip')) $('region-chip').hidden = !r;
@@ -631,9 +952,8 @@
       setTimeout(() => $('prompt').focus(), 50);
     }
   });
-  document.addEventListener('section-shown', (e) => { if (e.detail === 'home' && $('prompt')) setTimeout(() => $('prompt').focus(), 60); });
 
-  api.invoke('settings:get').then((s) => { if ($('prompt')) $('prompt').placeholder = `Message ${s.assistantName}...`; });
+  document.addEventListener('section-shown', (e) => { if (e.detail === 'home' && $('prompt')) setTimeout(() => $('prompt').focus(), 60); });
   renderSetup();
   api.invoke('app:info').then((info) => setState(info.state));
   api.send('panel:ready');

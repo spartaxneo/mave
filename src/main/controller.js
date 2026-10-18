@@ -804,6 +804,26 @@ class Controller {
       family.adaptFromInteraction(activeUser, text);
     } catch {}
 
+    // Track conversation in active ChatGPT-grade thread docker
+    let currentThread = null;
+    try {
+      const { getThreadManager } = require('./threads');
+      const tm = getThreadManager();
+      currentThread = options.threadId ? tm.getThread(options.threadId) : tm.getActiveThread('desktop');
+      if (currentThread && text) {
+        tm.addMessage(currentThread.id, 'user', text, { attachments: options.attachments || [] });
+      }
+    } catch {}
+
+    const saveThreadReply = (replyText, media = []) => {
+      try {
+        if (currentThread) {
+          const { getThreadManager } = require('./threads');
+          getThreadManager().addMessage(currentThread.id, 'assistant', replyText, { generatedMedia: media });
+        }
+      } catch {}
+    };
+
     // 00. Instant greeting fast-path (<2ms response)
     const greetingMatch = /^(?:hi|hello|hey|hey there|good (?:morning|afternoon|evening)|howdy|sup)(?:\s+(?:mave|there|buddy|friend))?[\s.!?,]*$/i.exec(text);
     if (greetingMatch) {
@@ -815,6 +835,7 @@ class Controller {
       ];
       const reply = greetings[Math.floor(Math.random() * greetings.length)];
       this.recordThought('Immediate greeting fast-path triggered.');
+      saveThreadReply(reply);
       if (source === 'remote-web' || source === 'telegram') {
         this.panelLog('assistant', reply);
         this.setState('idle');
@@ -823,6 +844,56 @@ class Controller {
         await this.presentReply(reply, null, display.id);
       }
       return { ok: true, text: reply, thoughts: this.thoughts };
+    }
+
+    // 0k. Generative Image Request Interception ("create an image of...", "draw a picture of...")
+    const imgGenMatch = /^(?:generate|create|make|draw)(?: an?| a new)? (?:image|picture|artwork|illustration|graphic|drawing|photo)(?: of| depicting| for)? (.+)$/i.exec(text.trim());
+    if (imgGenMatch && imgGenMatch[1]) {
+      try {
+        const promptQuery = imgGenMatch[1].trim();
+        const { getGenerativeMediaEngine } = require('./multimodal/generator');
+        const gen = getGenerativeMediaEngine(this.settings);
+        this.recordThought(`Synthesizing high-resolution image for "${promptQuery}"...`);
+        const imgResult = await gen.generateImage({ prompt: promptQuery });
+        const reply = `🎨 **Here is your generated image:** *"${promptQuery}"*\n\n![${imgResult.prompt}](${imgResult.url})\n\n📁 *Saved to:* \`${imgResult.filePath}\`\n*(Resolution: 1024×1024 • Click to view or download)*`;
+        this.recordThought(`Image generation complete: ${imgResult.filename}`);
+        saveThreadReply(reply, [imgResult]);
+        if (source === 'remote-web' || source === 'telegram') {
+          this.panelLog('assistant', reply);
+          this.setState('idle');
+        } else {
+          const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+          await this.presentReply(reply, null, display.id);
+        }
+        return { ok: true, text: reply, thoughts: this.thoughts, generatedMedia: [imgResult] };
+      } catch (err) {
+        if (this.logger) this.logger.error('Image generation failed', err.message);
+      }
+    }
+
+    // 0l. Generative Video Request Interception ("create a video of...", "make a video clip of...")
+    const vidGenMatch = /^(?:generate|create|make|produce)(?: an?| a new)? (?:video|cinematic clip|clip|animation|short video)(?: of| depicting| for)? (.+)$/i.exec(text.trim());
+    if (vidGenMatch && vidGenMatch[1]) {
+      try {
+        const promptQuery = vidGenMatch[1].trim();
+        const { getGenerativeMediaEngine } = require('./multimodal/generator');
+        const gen = getGenerativeMediaEngine(this.settings);
+        this.recordThought(`Rendering cinematic video stream for "${promptQuery}"...`);
+        const vidResult = await gen.generateVideo({ prompt: promptQuery, durationSeconds: 6 });
+        const reply = `🎬 **Cinematic Video Generated:** *"${promptQuery}"*\n\n<video controls autoplay loop src="${vidResult.url}" width="100%" style="border-radius:12px;margin:12px 0;box-shadow:0 8px 32px rgba(0,0,0,0.4);"></video>\n\n📁 *Saved to:* \`${vidResult.filePath}\`\n⏱️ *Duration:* ${vidResult.durationSeconds}s • *Style:* Cinematic HDR\n\n**Director Storyboard:**\n${vidResult.storyboard.map(s => `• **${s.time}**: ${s.camera}`).join('\n')}`;
+        this.recordThought(`Video generation complete: ${vidResult.filename}`);
+        saveThreadReply(reply, [vidResult]);
+        if (source === 'remote-web' || source === 'telegram') {
+          this.panelLog('assistant', reply);
+          this.setState('idle');
+        } else {
+          const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+          await this.presentReply(reply, null, display.id);
+        }
+        return { ok: true, text: reply, thoughts: this.thoughts, generatedMedia: [vidResult] };
+      } catch (err) {
+        if (this.logger) this.logger.error('Video generation failed', err.message);
+      }
     }
 
     // 0a. Privacy Blind Shield intent check
@@ -1368,6 +1439,7 @@ I have initiated a full autonomous scan of everything an ultimate AI companion, 
         const finalReply = (directResults && directResults[0] && typeof directResults[0] === 'string')
           ? directResults[0]
           : (intent.reply || 'Done.');
+        saveThreadReply(finalReply);
         if (!intent.followUp) {
           if (source === 'remote-web' || source === 'telegram') {
             this.panelLog('assistant', finalReply);
@@ -1384,7 +1456,18 @@ I have initiated a full autonomous scan of everything an ultimate AI companion, 
       // A spoken request hears "On it." at once while the AI works.
       if (source === 'voice') this.audio.acknowledge();
       this.recordThought('Consulting AI agent for step-by-step task execution...');
-      const result = await this.agent.run(intent ? intent.followUp : text, { region: sentRegion, drawing, image: options.image, speaker: options.speaker });
+
+      let attachmentPromptNote = '';
+      if (options.attachments && options.attachments.length > 0) {
+        try {
+          const { getMultimodalAnalyzer } = require('./multimodal/analyzer');
+          const analyzer = getMultimodalAnalyzer();
+          attachmentPromptNote = analyzer.generateAttachmentContext(options.attachments);
+        } catch {}
+      }
+
+      const fullTaskPrompt = (intent ? intent.followUp : text) + attachmentPromptNote;
+      const result = await this.agent.run(fullTaskPrompt, { region: sentRegion, drawing, image: options.image, speaker: options.speaker });
       this.sendUsage();
       this.recordThought('Task completed.');
       if (result.status === 'stopped') {
@@ -1393,6 +1476,7 @@ I have initiated a full autonomous scan of everything an ultimate AI companion, 
         this.bubble('okay, stopped.', 1800);
         return { ok: true, text: 'Stopped.', thoughts: this.thoughts };
       }
+      saveThreadReply(result.text || 'Done.');
       if (source === 'remote-web' || source === 'telegram') {
         this.panelLog('assistant', result.text);
         this.activity.add('reply', result.text);
