@@ -17,6 +17,57 @@ class IslandMascot {
     this.initAvatar();
     this.initInteractions();
     this.initIpcListeners();
+    this.pollTelemetry();
+    setInterval(() => this.pollTelemetry(), 4000);
+  }
+
+  async pollTelemetry() {
+    if (!api || !api.invoke) return;
+    try {
+      const [host, hw, mesh, dagStatus] = await Promise.all([
+        api.invoke('host:info').catch(() => null),
+        api.invoke('local:hardware').catch(() => null),
+        api.invoke('mesh:status').catch(() => null),
+        api.invoke('autonomous:status').catch(() => null),
+      ]);
+
+      // 1. Role & Device
+      const roleEl = document.getElementById('im-node-role');
+      const pillEl = document.getElementById('island-node-pill');
+      if (host) {
+        const isSat = host.nodeRole === 'satellite';
+        const roleText = isSat ? 'Satellite Co-Proc' : 'Host Core Brain';
+        if (roleEl) roleEl.textContent = roleText;
+        if (pillEl) pillEl.textContent = isSat ? 'Satellite' : 'Host Core';
+      }
+
+      // 2. Platform & Specs
+      const platEl = document.getElementById('im-platform-val');
+      if (platEl && hw && hw.hardware) {
+        const h = hw.hardware;
+        const gpuName = (h.gpu && h.gpu !== 'No dedicated GPU') ? h.gpu.split(' ')[0] : 'Windows PC';
+        platEl.textContent = `${gpuName} (${h.ramGB || 16}GB)`;
+      }
+
+      // 3. Mesh Link
+      const meshEl = document.getElementById('im-mesh-val');
+      if (meshEl && mesh) {
+        const peers = (mesh.activePeers && mesh.activePeers.length) || mesh.peerCount || 0;
+        meshEl.textContent = peers > 0 ? `${peers} Peer${peers > 1 ? 's' : ''} (UDP:4045)` : 'UDP:4045 Active';
+      }
+
+      // 4. Autonomous DAG
+      const dagEl = document.getElementById('im-dag-val');
+      if (dagEl) {
+        if (dagStatus && dagStatus.progress) {
+          dagEl.textContent = `DAG ${dagStatus.progress.percentage}% Done`;
+        } else {
+          dagEl.textContent = 'DAG Ready';
+        }
+      }
+    } catch {
+      // Telemetry poll non-fatal
+    }
   }
 
   initAvatar() {
@@ -48,9 +99,15 @@ class IslandMascot {
     }, 450);
   }
 
-  pet() {
+  async pet() {
     this.hop();
-    this.setStatus('Loved! 🐾', 'happy');
+    if (api && api.invoke) {
+      const res = await api.invoke('pet:feed').catch(() => null);
+      const mood = res && res.happiness ? `Loved! (${res.happiness}%) 🐾` : 'Loved! 🐾';
+      this.setStatus(mood, 'happy');
+    } else {
+      this.setStatus('Loved! 🐾', 'happy');
+    }
     setTimeout(() => this.setStatus('Mave Core', 'idle'), 2400);
   }
 
@@ -71,6 +128,7 @@ class IslandMascot {
     if (api && api.invoke) {
       await api.invoke('island:expand').catch(() => {});
     }
+    this.pollTelemetry();
   }
 
   async collapse() {
@@ -119,9 +177,17 @@ class IslandMascot {
 
     const toolVoice = document.getElementById('tool-voice');
     if (toolVoice) {
-      toolVoice.addEventListener('click', () => {
-        this.collapse();
-        if (api && api.invoke) api.invoke('island:open-main', 'voice').catch(() => {});
+      toolVoice.addEventListener('click', async () => {
+        if (api && api.invoke) {
+          const active = await api.invoke('voice-mode:toggle').catch(() => false);
+          if (active) {
+            this.hop();
+            this.setStatus('🎙️ Voice Active', 'listening');
+          } else {
+            this.setStatus('Voice Muted', 'idle');
+            setTimeout(() => this.setStatus('Mave Core', 'idle'), 1800);
+          }
+        }
       });
     }
 
@@ -129,7 +195,11 @@ class IslandMascot {
     if (toolCmd) {
       toolCmd.addEventListener('click', () => {
         this.collapse();
-        if (api && api.invoke) api.invoke('island:open-main', 'terminal').catch(() => {});
+        if (api && api.invoke) {
+          api.invoke('terminal:open').catch(() => {
+            api.invoke('island:open-main', 'terminal').catch(() => {});
+          });
+        }
       });
     }
 
@@ -137,7 +207,7 @@ class IslandMascot {
     if (toolSettings) {
       toolSettings.addEventListener('click', () => {
         this.collapse();
-        if (api && api.invoke) api.invoke('island:open-main', 'assistant').catch(() => {});
+        if (api && api.invoke) api.invoke('app:open-settings', 'assistant').catch(() => {});
       });
     }
   }

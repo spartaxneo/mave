@@ -284,6 +284,33 @@ class GenerativeMediaEngine {
       summary: `🎬 **Video Generated**: "${prompt.trim()}" (${durationSeconds}s, ${style})`,
     };
   }
+
+  /**
+   * Retrieves list of recently generated images from local pictures directory.
+   */
+  listRecentImages(limit = 20) {
+    const dir = getMavePicturesDir();
+    if (!fs.existsSync(dir)) return [];
+    try {
+      return fs.readdirSync(dir)
+        .filter((f) => f.endsWith('.svg'))
+        .map((f) => {
+          const fullPath = path.join(dir, f);
+          const stat = fs.statSync(fullPath);
+          return {
+            id: path.basename(f, '.svg'),
+            filename: f,
+            filePath: fullPath,
+            createdAt: stat.mtimeMs,
+            url: `data:image/svg+xml;base64,${Buffer.from(fs.readFileSync(fullPath, 'utf8'), 'utf8').toString('base64')}`,
+          };
+        })
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .slice(0, limit);
+    } catch {
+      return [];
+    }
+  }
 }
 
 let instance = null;

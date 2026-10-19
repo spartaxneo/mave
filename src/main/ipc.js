@@ -312,10 +312,22 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
 
   handle('routines:briefing', async () => {
     try {
-      const { ExecutiveBriefing } = require('./routines/circadian');
-      const briefing = new ExecutiveBriefing({ controller, logger });
-      const summary = await briefing.generateBriefing();
+      const { getProactiveScheduler } = require('./routines/proactive_scheduler');
+      const scheduler = getProactiveScheduler();
+      const summary = await scheduler.generateMorningBriefing(settings.get('userName') || 'Commander');
       return { ok: true, summary };
+    } catch (err) {
+      return { ok: false, message: err.message };
+    }
+  });
+
+  handle('routines:tidy', async (opts = {}) => {
+    try {
+      const { getProactiveScheduler } = require('./routines/proactive_scheduler');
+      const scheduler = getProactiveScheduler();
+      const targetDir = opts.targetDir || path.join(os.homedir(), 'Downloads');
+      const res = scheduler.tidyDirectory(targetDir, opts.execute !== false);
+      return { ok: true, ...res };
     } catch (err) {
       return { ok: false, message: err.message };
     }
@@ -323,12 +335,62 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
 
   handle('knowledge:reindex', async () => {
     try {
-      const { PersonalKnowledgeVault } = require('./rag/vault');
-      const vault = new PersonalKnowledgeVault({ dir: settings.get('knowledgeVaultDir') || 'E:\\AI-Models', logger });
-      const stats = await vault.reindex();
-      return { ok: true, stats };
+      const { getMemoryStore } = require('./memory');
+      const store = getMemoryStore();
+      store.rebuildIndex();
+      return {
+        ok: true,
+        stats: {
+          totalMemories: store.memories.length,
+          indexedKeywords: store.keywordIndex ? store.keywordIndex.size : 0,
+        },
+      };
     } catch (err) {
       return { ok: false, message: err.message };
+    }
+  });
+
+  handle('knowledge:list', async (opts = {}) => {
+    try {
+      const { getMemoryStore } = require('./memory');
+      const store = getMemoryStore();
+      const list = store.list({ topic: opts.topic || null, limit: opts.limit || 100 });
+      return { ok: true, list, total: store.memories.length };
+    } catch (err) {
+      return { ok: false, message: err.message, list: [] };
+    }
+  });
+
+  handle('knowledge:add', async (fact, opts = {}) => {
+    try {
+      const { getMemoryStore } = require('./memory');
+      const store = getMemoryStore();
+      const item = store.remember(fact, { topic: opts.topic || 'general', keywords: opts.keywords || [] });
+      return { ok: true, item };
+    } catch (err) {
+      return { ok: false, message: err.message };
+    }
+  });
+
+  handle('knowledge:delete', async (idOrFact) => {
+    try {
+      const { getMemoryStore } = require('./memory');
+      const store = getMemoryStore();
+      const removed = store.forget(idOrFact);
+      return { ok: true, removed };
+    } catch (err) {
+      return { ok: false, message: err.message };
+    }
+  });
+
+  handle('knowledge:search', async (query, opts = {}) => {
+    try {
+      const { getMemoryStore } = require('./memory');
+      const store = getMemoryStore();
+      const list = store.recall(query, { topic: opts.topic || null, limit: opts.limit || 20 });
+      return { ok: true, list };
+    } catch (err) {
+      return { ok: false, message: err.message, list: [] };
     }
   });
 
@@ -457,6 +519,20 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('media:generate-image', async (opts = {}) => {
     const { getGenerativeMediaEngine } = require('./multimodal/generator');
     return getGenerativeMediaEngine(settings).generateImage(opts);
+  });
+  handle('media:list-images', async (limit = 20) => {
+    try {
+      const { getGenerativeMediaEngine } = require('./multimodal/generator');
+      return { ok: true, images: getGenerativeMediaEngine(settings).listRecentImages(limit) };
+    } catch (err) {
+      return { ok: false, images: [], message: err.message };
+    }
+  });
+  handle('media:reveal-folder', async () => {
+    const dir = path.join(os.homedir(), 'Pictures', 'Mave_Generations');
+    fs.mkdirSync(dir, { recursive: true });
+    shell.openPath(dir);
+    return true;
   });
   handle('media:generate-video', async (opts = {}) => {
     const { getGenerativeMediaEngine } = require('./multimodal/generator');

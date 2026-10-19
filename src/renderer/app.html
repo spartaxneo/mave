@@ -1752,6 +1752,174 @@
         <button type="button" class="btn small plain" id="btn-close-archived">Close</button>
       </div>
     </div>
+  </div>
+
+  <!-- Images Studio Modal -->
+  <div class="chatgpt-modal-backdrop" id="modal-images" hidden>
+    <div class="chatgpt-modal-card wide">
+      <div class="modal-card-head">
+        <div>
+          <h3>🎨 Images Studio</h3>
+          <p style="font-size:12px; color:var(--text-3); margin-top:2px;">Generative Visual Artwork & DALL-E 3 Synthesis</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-images-modal">✕</button>
+      </div>
+      <div class="modal-card-body">
+        <div style="display:flex; gap:16px; margin-bottom:12px;">
+          <div style="flex:1;">
+            <label class="modal-label">Image Prompt</label>
+            <textarea id="images-prompt-input" class="modal-textarea" rows="3" placeholder="Describe the artwork or visual scene in detail..."></textarea>
+          </div>
+          <div style="width:200px; display:flex; flex-direction:column; gap:10px;">
+            <div>
+              <label class="modal-label">Aesthetic Style</label>
+              <select id="images-style-select" class="modal-input" style="padding:6px 10px;">
+                <option value="photorealistic">Photorealistic</option>
+                <option value="cyberpunk">Cyberpunk Neon</option>
+                <option value="emerald">Emerald Forest</option>
+                <option value="golden">Golden Hour</option>
+                <option value="space">Deep Space</option>
+                <option value="anime">Anime / Manga</option>
+                <option value="3d-render">3D Octane Render</option>
+              </select>
+            </div>
+            <div>
+              <label class="modal-label">Dimensions</label>
+              <select id="images-dim-select" class="modal-input" style="padding:6px 10px;">
+                <option value="1024x1024">1024 × 1024 (1:1)</option>
+                <option value="1920x1080">1920 × 1080 (16:9)</option>
+                <option value="1080x1920">1080 × 1920 (9:16)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px;">
+          <button type="button" class="btn small primary" id="btn-generate-image">✨ Generate Image</button>
+          <button type="button" class="btn small plain" id="btn-images-reveal-dir">📁 Open Pictures Folder</button>
+          <span id="images-status-text" style="font-size:12px; color:var(--text-3);"></span>
+        </div>
+
+        <div class="images-preview-section" id="images-preview-section" style="background:rgba(0,0,0,0.25); border:1px solid var(--border-subtle); border-radius:12px; padding:12px; min-height:220px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <div id="images-empty-placeholder" style="color:var(--text-3); font-size:13px; text-align:center;">
+            Enter a prompt and click "Generate Image" to create artwork saved directly to your Pictures folder.
+          </div>
+          <div id="images-result-card" style="display:none; width:100%; text-align:center;">
+            <img id="images-result-img" style="max-height:260px; max-width:100%; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.4); object-fit:contain; margin-bottom:10px;" alt="Generated Artwork" />
+            <div style="display:flex; justify-content:center; gap:8px;">
+              <button type="button" class="btn small secondary" id="btn-use-in-prompt">💬 Send to Chat</button>
+              <button type="button" class="btn small secondary" id="btn-copy-image">📋 Copy Prompt</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-card-foot">
+        <button type="button" class="btn small plain" id="btn-close-images">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Knowledge Library Modal -->
+  <div class="chatgpt-modal-backdrop" id="modal-library" hidden>
+    <div class="chatgpt-modal-card wide">
+      <div class="modal-card-head">
+        <div>
+          <h3>📚 Knowledge Library & Memory Vault</h3>
+          <p style="font-size:12px; color:var(--text-3); margin-top:2px;">Persistent facts, habits, and long-term memory</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-library-modal">✕</button>
+      </div>
+      <div class="modal-card-body">
+        <div style="display:flex; gap:10px; margin-bottom:14px;">
+          <input type="search" id="library-search-input" class="modal-input" placeholder="Search memories, facts, preferences..." style="flex:1;">
+          <button type="button" class="btn small secondary" id="btn-reindex-knowledge">⚡ Reindex Vault</button>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:10px; padding:12px; margin-bottom:14px;">
+          <div style="font-size:12px; font-weight:600; margin-bottom:8px; color:var(--text-2);">Add New Knowledge / Fact</div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="library-new-fact" class="modal-input" placeholder="e.g. Always respond in concise bullet points with TypeScript code" style="flex:1;">
+            <select id="library-new-topic" class="modal-input" style="width:110px;">
+              <option value="general">General</option>
+              <option value="work">Work</option>
+              <option value="taste">Taste</option>
+              <option value="rules">Rules</option>
+            </select>
+            <button type="button" class="btn small primary" id="btn-save-knowledge">Save</button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:12px; color:var(--text-3);" id="library-count-text">Loading memories...</span>
+        </div>
+
+        <div class="archived-chats-list scroll" id="library-items-list" style="max-height:260px; min-height:140px;">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+      <div class="modal-card-foot">
+        <button type="button" class="btn small plain" id="btn-close-library">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scheduled Routines Modal -->
+  <div class="chatgpt-modal-backdrop" id="modal-scheduled" hidden>
+    <div class="chatgpt-modal-card wide">
+      <div class="modal-card-head">
+        <div>
+          <h3>⏰ Scheduled Routines & Circadian Engine</h3>
+          <p style="font-size:12px; color:var(--text-3); margin-top:2px;">Proactive morning briefings, workspace hygiene, and desktop automations</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-scheduled-modal">✕</button>
+      </div>
+      <div class="modal-card-body">
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <!-- Routine 1: Circadian Morning Briefing -->
+          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="flex:1; padding-right:16px;">
+              <div style="font-size:14px; font-weight:600; display:flex; align-items:center; gap:8px;">
+                <span>🌅 Circadian Executive Morning Briefing</span>
+                <span class="rc-tag" style="background:rgba(16,185,129,0.2); color:#10b981; font-size:10px; padding:2px 6px; border-radius:4px;">Active</span>
+              </div>
+              <p style="font-size:12px; color:var(--text-3); margin-top:4px;">Delivers speech briefing covering system RAM/health, calendar, and curated soundtrack at 08:00 AM.</p>
+              <div id="briefing-live-result" style="display:none; font-size:12px; color:var(--text-1); background:rgba(0,0,0,0.3); border-radius:6px; padding:8px; margin-top:8px;"></div>
+            </div>
+            <button type="button" class="btn small secondary" id="btn-run-briefing-now">🎙️ Run Now</button>
+          </div>
+
+          <!-- Routine 2: Workspace Downloads Hygiene -->
+          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="flex:1; padding-right:16px;">
+              <div style="font-size:14px; font-weight:600; display:flex; align-items:center; gap:8px;">
+                <span>🧹 Automated Downloads & Workspace Tidying</span>
+                <span class="rc-tag" style="background:rgba(59,130,246,0.2); color:#60a5fa; font-size:10px; padding:2px 6px; border-radius:4px;">Scheduled Weekly</span>
+              </div>
+              <p style="font-size:12px; color:var(--text-3); margin-top:4px;">Automatically organizes cluttered Downloads into Documents, Installers, Images, Code, and Archives.</p>
+              <div id="tidy-live-result" style="display:none; font-size:12px; color:var(--text-1); background:rgba(0,0,0,0.3); border-radius:6px; padding:8px; margin-top:8px;"></div>
+            </div>
+            <button type="button" class="btn small secondary" id="btn-run-tidy-now">⚡ Tidy Now</button>
+          </div>
+
+          <!-- Routine 3: Autonomous Health Sentinel -->
+          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="flex:1; padding-right:16px;">
+              <div style="font-size:14px; font-weight:600; display:flex; align-items:center; gap:8px;">
+                <span>🛡️ Autonomous Health & Memory Sentinel</span>
+                <span class="rc-tag" style="background:rgba(168,85,247,0.2); color:#c084fc; font-size:10px; padding:2px 6px; border-radius:4px;">Continuous</span>
+              </div>
+              <p style="font-size:12px; color:var(--text-3); margin-top:4px;">Watches available system memory, mesh synchronization, and triggers graceful cache flushing if RAM &lt; 15%.</p>
+            </div>
+            <span style="font-size:12px; color:var(--text-3);">Auto-managed</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-card-foot">
+        <button type="button" class="btn small plain" id="btn-close-scheduled">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Mave First-Time Onboarding & Core vs Satellite Setup Modal -->
   <div class="chatgpt-modal-backdrop" id="node-onboarding-modal" hidden>
     <div class="nom-card">

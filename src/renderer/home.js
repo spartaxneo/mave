@@ -1130,39 +1130,302 @@
     });
   }
 
-  // Nav item shortcuts
-  if ($('nav-item-images')) {
-    $('nav-item-images').addEventListener('click', () => {
-      if ($('prompt')) {
-        $('prompt').value = 'Generate an image of ';
-        autosize();
-        $('prompt').focus();
+  // ==========================================
+  // Real Interactive Modals: Images, Library, Scheduled, Plugins
+  // ==========================================
+
+  // 1. Real Images Studio Modal
+  let currentGeneratedImage = null;
+  function openImagesModal() {
+    if ($('modal-images')) $('modal-images').hidden = false;
+  }
+  function closeImagesModal() {
+    if ($('modal-images')) $('modal-images').hidden = true;
+  }
+  if ($('nav-item-images')) $('nav-item-images').addEventListener('click', openImagesModal);
+  if ($('btn-close-images-modal')) $('btn-close-images-modal').addEventListener('click', closeImagesModal);
+  if ($('btn-close-images')) $('btn-close-images').addEventListener('click', closeImagesModal);
+  if ($('modal-images')) {
+    $('modal-images').addEventListener('click', (e) => {
+      if (e.target === $('modal-images')) closeImagesModal();
+    });
+  }
+
+  if ($('btn-images-reveal-dir')) {
+    $('btn-images-reveal-dir').addEventListener('click', () => {
+      api.invoke('media:reveal-folder');
+    });
+  }
+
+  if ($('btn-generate-image')) {
+    $('btn-generate-image').addEventListener('click', async () => {
+      const promptInput = $('images-prompt-input');
+      const styleSelect = $('images-style-select');
+      const dimSelect = $('images-dim-select');
+      const statusEl = $('images-status-text');
+      const genBtn = $('btn-generate-image');
+
+      const prompt = promptInput ? promptInput.value.trim() : '';
+      if (!prompt) {
+        if (statusEl) statusEl.textContent = '⚠️ Please enter an image prompt first.';
+        if (promptInput) promptInput.focus();
+        return;
+      }
+
+      genBtn.disabled = true;
+      if (statusEl) statusEl.textContent = '✨ Synthesizing high-fidelity artwork...';
+
+      try {
+        const res = await api.invoke('media:generate-image', {
+          prompt,
+          style: styleSelect ? styleSelect.value : 'photorealistic',
+          size: dimSelect ? dimSelect.value : '1024x1024',
+        });
+
+        if (res && res.ok) {
+          currentGeneratedImage = res;
+          if ($('images-empty-placeholder')) $('images-empty-placeholder').style.display = 'none';
+          if ($('images-result-card')) $('images-result-card').style.display = 'block';
+          if ($('images-result-img')) {
+            $('images-result-img').src = res.url;
+            $('images-result-img').alt = res.prompt;
+          }
+          if (statusEl) statusEl.textContent = `✓ Generated & saved to Pictures: ${res.filename}`;
+        } else {
+          if (statusEl) statusEl.textContent = `Generation error: ${(res && res.message) || 'Failed'}`;
+        }
+      } catch (err) {
+        if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+      } finally {
+        genBtn.disabled = false;
       }
     });
   }
-  if ($('nav-item-library')) {
-    $('nav-item-library').addEventListener('click', () => {
-      if ($('prompt')) {
-        $('prompt').value = 'Search my personal knowledge vault and recent screen memory for ';
+
+  if ($('btn-use-in-prompt')) {
+    $('btn-use-in-prompt').addEventListener('click', () => {
+      if (currentGeneratedImage && $('prompt')) {
+        $('prompt').value = `Generated image [${currentGeneratedImage.filename}]: ${currentGeneratedImage.prompt}`;
         autosize();
         $('prompt').focus();
       }
+      closeImagesModal();
     });
   }
-  if ($('nav-item-scheduled')) {
-    $('nav-item-scheduled').addEventListener('click', () => {
-      if ($('prompt')) {
-        $('prompt').value = 'Show my scheduled routines and circadian executive briefing status.';
-        autosize();
-        $('prompt').focus();
+
+  if ($('btn-copy-image')) {
+    $('btn-copy-image').addEventListener('click', () => {
+      if (currentGeneratedImage) {
+        navigator.clipboard.writeText(currentGeneratedImage.filePath || currentGeneratedImage.prompt);
+        const statusEl = $('images-status-text');
+        if (statusEl) statusEl.textContent = '✓ Copied file path to clipboard!';
       }
     });
   }
+
+  // 2. Real Knowledge Library Modal
+  function openLibraryModal() {
+    if ($('modal-library')) $('modal-library').hidden = false;
+    loadLibraryMemories();
+  }
+  function closeLibraryModal() {
+    if ($('modal-library')) $('modal-library').hidden = true;
+  }
+  if ($('nav-item-library')) $('nav-item-library').addEventListener('click', openLibraryModal);
+  if ($('btn-close-library-modal')) $('btn-close-library-modal').addEventListener('click', closeLibraryModal);
+  if ($('btn-close-library')) $('btn-close-library').addEventListener('click', closeLibraryModal);
+  if ($('modal-library')) {
+    $('modal-library').addEventListener('click', (e) => {
+      if (e.target === $('modal-library')) closeLibraryModal();
+    });
+  }
+
+  async function loadLibraryMemories(query = '') {
+    const listEl = $('library-items-list');
+    const countEl = $('library-count-text');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<div style="color:var(--text-3); font-size:12px; padding:10px;">Loading memories...</div>';
+    try {
+      let res;
+      if (query && query.trim()) {
+        res = await api.invoke('knowledge:search', query.trim());
+      } else {
+        res = await api.invoke('knowledge:list', { limit: 100 });
+      }
+
+      const items = res.list || [];
+      if (countEl) countEl.textContent = `${items.length} Knowledge entries indexed in memory vault`;
+
+      if (items.length === 0) {
+        listEl.innerHTML = '<div style="color:var(--text-3); font-size:12px; padding:12px; text-align:center;">No memory records found. Add your first knowledge fact above!</div>';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      for (const m of items) {
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:8px; padding:8px 12px; margin-bottom:6px;';
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.style.cssText = 'flex:1; padding-right:12px;';
+        
+        const topRow = document.createElement('div');
+        topRow.style.cssText = 'display:flex; align-items:center; gap:6px; margin-bottom:2px;';
+        
+        const tag = document.createElement('span');
+        tag.className = 'rc-tag';
+        tag.style.cssText = 'background:rgba(59,130,246,0.18); color:#60a5fa; font-size:10px; padding:2px 6px; border-radius:4px; text-transform:uppercase; font-weight:600;';
+        tag.textContent = m.topic || 'general';
+        
+        const dateSpan = document.createElement('span');
+        dateSpan.style.cssText = 'font-size:11px; color:var(--text-3);';
+        dateSpan.textContent = m.createdAt ? new Date(m.createdAt).toLocaleDateString() : '';
+        
+        topRow.appendChild(tag);
+        topRow.appendChild(dateSpan);
+        
+        const factText = document.createElement('div');
+        factText.style.cssText = 'font-size:13px; color:var(--text-1); line-height:1.4;';
+        factText.textContent = m.fact || m.text || '';
+        
+        contentDiv.appendChild(topRow);
+        contentDiv.appendChild(factText);
+        
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'btn small plain';
+        delBtn.style.cssText = 'color:#ef4444; padding:4px 8px; font-size:11px;';
+        delBtn.textContent = 'Forget';
+        delBtn.addEventListener('click', async () => {
+          await api.invoke('knowledge:delete', m.id || m.fact);
+          loadLibraryMemories($('library-search-input') ? $('library-search-input').value : '');
+        });
+
+        item.appendChild(contentDiv);
+        item.appendChild(delBtn);
+        listEl.appendChild(item);
+      }
+    } catch (err) {
+      listEl.innerHTML = `<div style="color:#ef4444; font-size:12px; padding:10px;">Error loading memory vault: ${err.message}</div>`;
+    }
+  }
+
+  if ($('btn-save-knowledge')) {
+    $('btn-save-knowledge').addEventListener('click', async () => {
+      const factInput = $('library-new-fact');
+      const topicSelect = $('library-new-topic');
+      const fact = factInput ? factInput.value.trim() : '';
+      if (!fact) return;
+
+      const topic = topicSelect ? topicSelect.value : 'general';
+      await api.invoke('knowledge:add', fact, { topic });
+      if (factInput) factInput.value = '';
+      loadLibraryMemories();
+    });
+  }
+
+  if ($('library-search-input')) {
+    let searchDebounce = null;
+    $('library-search-input').addEventListener('input', (e) => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        loadLibraryMemories(e.target.value);
+      }, 250);
+    });
+  }
+
+  if ($('btn-reindex-knowledge')) {
+    $('btn-reindex-knowledge').addEventListener('click', async () => {
+      const countEl = $('library-count-text');
+      if (countEl) countEl.textContent = '⚡ Reindexing memory index...';
+      const res = await api.invoke('knowledge:reindex');
+      if (res && res.stats) {
+        if (countEl) countEl.textContent = `✓ Index synced: ${res.stats.totalMemories} memories, ${res.stats.indexedKeywords} keywords.`;
+      }
+      loadLibraryMemories();
+    });
+  }
+
+  // 3. Real Scheduled Routines Modal
+  function openScheduledModal() {
+    if ($('modal-scheduled')) $('modal-scheduled').hidden = false;
+  }
+  function closeScheduledModal() {
+    if ($('modal-scheduled')) $('modal-scheduled').hidden = true;
+  }
+  if ($('nav-item-scheduled')) $('nav-item-scheduled').addEventListener('click', openScheduledModal);
+  if ($('btn-close-scheduled-modal')) $('btn-close-scheduled-modal').addEventListener('click', closeScheduledModal);
+  if ($('btn-close-scheduled')) $('btn-close-scheduled').addEventListener('click', closeScheduledModal);
+  if ($('modal-scheduled')) {
+    $('modal-scheduled').addEventListener('click', (e) => {
+      if (e.target === $('modal-scheduled')) closeScheduledModal();
+    });
+  }
+
+  if ($('btn-run-briefing-now')) {
+    $('btn-run-briefing-now').addEventListener('click', async () => {
+      const resEl = $('briefing-live-result');
+      const btn = $('btn-run-briefing-now');
+      btn.disabled = true;
+      if (resEl) {
+        resEl.style.display = 'block';
+        resEl.textContent = '🎙️ Generating executive briefing from circadian context...';
+      }
+
+      try {
+        const res = await api.invoke('routines:briefing');
+        if (res && res.ok && res.summary) {
+          const s = res.summary;
+          if (resEl) {
+            resEl.textContent = `📢 "${s.spokenBriefing}" (Soundtrack: ${s.musicRecommendation})`;
+          }
+          // Speak aloud if Kokoro/speech is active
+          api.invoke('speech:speak', s.spokenBriefing).catch(() => {});
+        } else {
+          if (resEl) resEl.textContent = `Briefing status: ${(res && res.message) || 'Completed'}`;
+        }
+      } catch (err) {
+        if (resEl) resEl.textContent = `Error: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+
+  if ($('btn-run-tidy-now')) {
+    $('btn-run-tidy-now').addEventListener('click', async () => {
+      const resEl = $('tidy-live-result');
+      const btn = $('btn-run-tidy-now');
+      btn.disabled = true;
+      if (resEl) {
+        resEl.style.display = 'block';
+        resEl.textContent = '🧹 Scanning and categorizing Downloads folder...';
+      }
+
+      try {
+        const res = await api.invoke('routines:tidy', { execute: true });
+        if (res && res.ok) {
+          if (resEl) resEl.textContent = `✓ Organized ${res.totalClassified} files into categorised folders in ${res.directory}.`;
+        } else {
+          if (resEl) resEl.textContent = `Tidy status: ${(res && res.message) || 'No loose files needed tidying.'}`;
+        }
+      } catch (err) {
+        if (resEl) resEl.textContent = `Error: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+
+  // 4. Real Plugins Button
   if ($('nav-item-plugins')) {
     $('nav-item-plugins').addEventListener('click', () => {
-      api.invoke('app:open-settings', 'general');
+      api.invoke('app:open-settings', 'superpowers');
     });
   }
+
+  // 5. Real Projects Button
   if ($('nav-item-projects')) {
     $('nav-item-projects').addEventListener('click', () => {
       if ($('modal-projects')) $('modal-projects').hidden = false;
