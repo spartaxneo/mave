@@ -2737,6 +2737,14 @@
   const maveIsland = new DynamicIslandController(maveAvatar);
   const maveNodeMgr = new NodeManager(maveAvatar, maveIsland);
 
+  const emw = document.querySelector('.empty-mark-wrap');
+  if (emw) {
+    emw.addEventListener('click', () => {
+      maveAvatar.hop();
+      maveAvatar.setMood('happy');
+    });
+  }
+
   // Hook into voice and state updates
   api.on('voice:speaking', (isSpeaking) => {
     if (isSpeaking) {
