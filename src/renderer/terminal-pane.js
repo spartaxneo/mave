@@ -61,9 +61,11 @@
     if (entries.length > 3000) entries.shift();
     $('count').textContent = `${entries.length.toLocaleString()} events`;
     if (!matches(e)) return;
-    const empty = out.querySelector('.empty');
-    if (empty) empty.remove();
-    out.insertBefore(row(e), prompt);
+    if (prompt && prompt.parentNode === out) {
+      out.insertBefore(row(e), prompt);
+    } else {
+      out.append(row(e));
+    }
     scroll();
   });
 
