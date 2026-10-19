@@ -1069,9 +1069,334 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
       font-weight: normal;
     }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ============================================================
+       Vorssaint Dynamic Island & Cute Dot Avatar (Face of Mave)
+       ============================================================ */
+    .dynamic-island-wrapper {
+      position: fixed;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9990;
+      pointer-events: none;
+      display: flex;
+      justify-content: center;
+    }
+    .dynamic-island {
+      pointer-events: auto;
+      position: relative;
+      background: rgba(14, 16, 22, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 22px;
+      backdrop-filter: blur(24px) saturate(180%);
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+      color: #ffffff;
+      user-select: none;
+      transition: all 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+      outline: none;
+    }
+    [data-theme="light"] .dynamic-island,
+    body.theme-light .dynamic-island {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      color: #0f172a;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+    .island-compact {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 4px 14px 4px 6px;
+      min-height: 38px;
+      cursor: pointer;
+    }
+    .island-left { display: flex; align-items: center; gap: 10px; }
+    .island-status-group { display: flex; align-items: center; gap: 7px; }
+    .island-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 8px #34d399;
+    }
+    .dynamic-island.thinking .island-status-dot { background: #c084fc; box-shadow: 0 0 8px #c084fc; animation: pulse-dot 1s infinite alternate; }
+    .dynamic-island.listening .island-status-dot { background: #38bdf8; box-shadow: 0 0 8px #38bdf8; animation: pulse-dot 0.8s infinite alternate; }
+    .dynamic-island.speaking .island-status-dot { background: #2563eb; box-shadow: 0 0 8px #2563eb; }
+    @keyframes pulse-dot { 0% { transform: scale(0.9); opacity: 0.7; } 100% { transform: scale(1.3); opacity: 1; } }
+    .island-title { font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .island-right { display: flex; align-items: center; gap: 10px; }
+    .island-audio-bars { display: flex; align-items: center; gap: 2.5px; height: 14px; }
+    .i-bar { width: 2.5px; height: 4px; background: #38bdf8; border-radius: 2px; }
+    .dynamic-island.speaking .i-bar,
+    .dynamic-island.listening .i-bar { animation: i-bar-wave 0.6s ease-in-out infinite alternate; }
+    .i-bar.bar-1 { animation-delay: 0.1s; }
+    .i-bar.bar-2 { animation-delay: 0.25s; }
+    .i-bar.bar-3 { animation-delay: 0.4s; }
+    .i-bar.bar-4 { animation-delay: 0.15s; }
+    @keyframes i-bar-wave { 0% { height: 3px; } 100% { height: 13px; } }
+    .island-node-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: rgba(37, 99, 235, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(37, 99, 235, 0.35);
+    }
+    .dynamic-island.expanded {
+      width: 440px;
+      border-radius: 24px;
+      padding: 16px 18px;
+    }
+    @media (max-width: 480px) {
+      .dynamic-island.expanded { width: calc(100vw - 20px); }
+    }
+    .island-expanded { display: flex; flex-direction: column; gap: 14px; }
+    .island-exp-header { display: flex; align-items: center; justify-content: space-between; }
+    .island-exp-profile { display: flex; align-items: center; gap: 12px; }
+    .island-exp-name { font-size: 15px; font-weight: 700; }
+    .island-exp-sub { font-size: 11.5px; color: rgba(255, 255, 255, 0.65); }
+    [data-theme="light"] .island-exp-sub,
+    body.theme-light .island-exp-sub { color: rgba(15, 23, 42, 0.6); }
+    .island-exp-top-actions { display: flex; align-items: center; gap: 8px; }
+    .island-exp-action-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 14px;
+      cursor: pointer;
+    }
+    .island-collapse-btn {
+      background: transparent;
+      border: 0;
+      color: inherit;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+    .island-metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 8px 10px;
+    }
+    [data-theme="light"] .island-metrics-row,
+    body.theme-light .island-metrics-row {
+      background: rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .island-metric { display: flex; flex-direction: column; gap: 2px; }
+    .im-label { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+    [data-theme="light"] .im-label,
+    body.theme-light .im-label { color: rgba(15, 23, 42, 0.5); }
+    .im-val { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .island-tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .island-tool-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      color: inherit;
+      cursor: pointer;
+    }
+    [data-theme="light"] .island-tool-btn,
+    body.theme-light .island-tool-btn {
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .it-icon { font-size: 15px; }
+    .it-text { font-size: 10.5px; font-weight: 600; white-space: nowrap; }
+
+    /* The Cute Little Dot Avatar */
+    .island-dot-avatar {
+      position: relative;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .island-dot-avatar.exp-size { width: 44px; height: 44px; }
+    .dot-body {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, var(--dot-light, #38bdf8) 0%, var(--dot-shade, #2563eb) 85%);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+      transition: transform 0.18s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .dot-shine {
+      position: absolute;
+      top: 14%;
+      left: 20%;
+      width: 28%;
+      height: 18%;
+      border-radius: 50%;
+      transform: rotate(-30deg);
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 80%);
+      pointer-events: none;
+    }
+    .dot-face {
+      position: relative;
+      width: 72%;
+      height: 54%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dot-eyes-svg { width: 100%; height: 100%; }
+    .dot-eye { fill: #111418; transform-origin: center; transition: all 0.15s ease; }
+    .island-dot-avatar.blinking .dot-eye { transform: scaleY(0.08); }
+    .dot-hopping { animation: dot-hop-jump 0.65s cubic-bezier(0.2, 0.8, 0.3, 1); }
+    @keyframes dot-hop-jump {
+      0% { transform: translateY(0) scale(1, 1); }
+      18% { transform: translateY(2px) scale(1.18, 0.82); }
+      45% { transform: translateY(-16px) scale(0.88, 1.15); }
+      72% { transform: translateY(0) scale(1.16, 0.84); }
+      86% { transform: translateY(-3px) scale(0.96, 1.04); }
+      100% { transform: translateY(0) scale(1, 1); }
+    }
+    .dot-bouncing { animation: dot-bounce-multi 0.95s ease-in-out; }
+    @keyframes dot-bounce-multi {
+      0% { transform: translateY(0) scale(1); }
+      16% { transform: translateY(-14px) scale(0.9, 1.15); }
+      34% { transform: translateY(0) scale(1.15, 0.85); }
+      52% { transform: translateY(-8px) scale(0.95, 1.08); }
+      70% { transform: translateY(0) scale(1.08, 0.92); }
+      85% { transform: translateY(-2px) scale(1); }
+      100% { transform: translateY(0) scale(1); }
+    }
+    .island-dot-avatar.groove .dot-body { animation: dot-groove-beat 1.4s infinite ease-in-out; }
+    @keyframes dot-groove-beat {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-3px) rotate(-4deg); }
+      50% { transform: translateY(0) scale(1.05, 0.95); }
+      75% { transform: translateY(-3px) rotate(4deg); }
+    }
   </style>
 </head>
 <body>
+  <!-- Vorssaint Dynamic Island & Cute Dot Avatar (Mobile & Web Parity) -->
+  <div class="dynamic-island-wrapper" id="dynamic-island-wrapper">
+    <div class="dynamic-island" id="dynamic-island">
+      <div class="island-compact" id="island-compact">
+        <div class="island-left">
+          <div class="island-dot-avatar" id="island-dot-avatar" title="Meet Mave (Tap to pet or open HUD)">
+            <div class="dot-body" id="dot-body">
+              <div class="dot-shine"></div>
+              <div class="dot-face">
+                <svg class="dot-eyes-svg" viewBox="0 0 100 60">
+                  <path class="dot-eye eye-left" d="M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z" fill="#111418" />
+                  <path class="dot-eye eye-right" d="M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z" fill="#111418" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="island-status-group">
+            <span class="island-status-dot" id="island-status-dot"></span>
+            <span class="island-title" id="island-title">Mave Core</span>
+          </div>
+        </div>
+        <div class="island-right">
+          <div class="island-audio-bars">
+            <span class="i-bar bar-1"></span>
+            <span class="i-bar bar-2"></span>
+            <span class="i-bar bar-3"></span>
+            <span class="i-bar bar-4"></span>
+          </div>
+          <span class="island-node-pill" id="island-node-pill">Host AI</span>
+        </div>
+      </div>
+
+      <div class="island-expanded" id="island-expanded" style="display:none;">
+        <div class="island-exp-header">
+          <div class="island-exp-profile">
+            <div class="island-dot-avatar exp-size">
+              <div class="dot-body">
+                <div class="dot-shine"></div>
+                <div class="dot-face">
+                  <svg class="dot-eyes-svg" viewBox="0 0 100 60">
+                    <path class="dot-eye" d="M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z" fill="#111418" />
+                    <path class="dot-eye" d="M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z" fill="#111418" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="island-exp-name">Mave Companion</div>
+              <div class="island-exp-sub" id="island-exp-sub">Ready • Core Brain Connected</div>
+            </div>
+          </div>
+          <div class="island-exp-top-actions">
+            <button type="button" class="island-exp-action-btn" id="island-pet-btn">🐾 Pet</button>
+            <button type="button" class="island-collapse-btn" id="island-collapse-btn">✕</button>
+          </div>
+        </div>
+        <div class="island-metrics-row">
+          <div class="island-metric">
+            <span class="im-label">ROLE</span>
+            <span class="im-val" id="im-node-role">Host Brain</span>
+          </div>
+          <div class="island-metric">
+            <span class="im-label">PLATFORM</span>
+            <span class="im-val" id="im-platform-val">Companion</span>
+          </div>
+          <div class="island-metric">
+            <span class="im-label">CPU / GPU</span>
+            <span class="im-val">12% • 41°C</span>
+          </div>
+          <div class="island-metric">
+            <span class="im-label">STATUS</span>
+            <span class="im-val" style="color:#34d399;">Active</span>
+          </div>
+        </div>
+        <div class="island-tools-grid">
+          <button type="button" class="island-tool-btn" id="island-tool-voice">
+            <span class="it-icon">🎙️</span>
+            <span class="it-text">Talk Voice</span>
+          </button>
+          <button type="button" class="island-tool-btn" id="island-tool-cmd" onclick="quickTask('Check system diagnostics')">
+            <span class="it-icon">📊</span>
+            <span class="it-text">Diagnostics</span>
+          </button>
+          <button type="button" class="island-tool-btn" id="island-tool-theme" onclick="document.getElementById('theme-toggle-btn').click()">
+            <span class="it-icon">🌙</span>
+            <span class="it-text">Theme</span>
+          </button>
+          <button type="button" class="island-tool-btn" id="island-tool-cam" onclick="document.getElementById('cam-open-btn').click()">
+            <span class="it-icon">📷</span>
+            <span class="it-text">Camera</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="app-window">
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
@@ -2377,6 +2702,9 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
       addMsg(val, true);
       const loading = addLoadingMsg();
 
+      if (window.webIsland) window.webIsland.setStatus('Thinking…', 'thinking');
+      if (window.webAvatar) window.webAvatar.setMood('thinking');
+
       // Poll task status & current thought every 300ms while loading
       const pollTimer = setInterval(async () => {
         try {
@@ -2388,6 +2716,7 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
               const labelEl = loader.querySelector('.loading-label');
               if (labelEl && sData.thought) {
                 labelEl.textContent = sData.thought;
+                if (window.webIsland) window.webIsland.setStatus(sData.thought.slice(0, 32), 'thinking');
               }
             }
           }
@@ -2404,10 +2733,17 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
         clearInterval(pollTimer);
         removeLoadingMsg(loading);
         addMsg(data);
+        if (window.webIsland) window.webIsland.setStatus('Mave Core', 'idle');
+        if (window.webAvatar) {
+          window.webAvatar.setMood('happy', 1500);
+          window.webAvatar.hop();
+        }
       } catch (err) {
         clearInterval(pollTimer);
         removeLoadingMsg(loading);
         addMsg('Error communicating with Mave: ' + err.message);
+        if (window.webIsland) window.webIsland.setStatus('Mave Core', 'idle');
+        if (window.webAvatar) window.webAvatar.setMood('idle');
       } finally {
         clearInterval(pollTimer);
         input.disabled = false;
@@ -3925,6 +4261,21 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
         }
       }
       if (cap && caption) cap.textContent = caption;
+
+      if (window.webIsland) {
+        const titleText = state === 'listening' ? 'Listening…' : state === 'thinking' ? 'Thinking…' : state === 'speaking' ? 'Speaking…' : 'Mave Core';
+        window.webIsland.setStatus(titleText, state);
+      }
+      if (window.webAvatar) {
+        if (state === 'speaking') {
+          window.webAvatar.setMood('happy');
+          window.webAvatar.hop();
+        } else if (state === 'thinking') {
+          window.webAvatar.setMood('thinking');
+        } else if (state === 'listening') {
+          window.webAvatar.setMood('idle');
+        }
+      }
     }
 
     let voiceViewMode = 'auto'; // 'auto' | 'orb' | 'thoughts' | 'screen'
@@ -3998,6 +4349,8 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
         window.speechSynthesis.cancel();
       }
       $('voice-mode-modal').style.display = 'none';
+      if (window.webIsland) window.webIsland.setStatus('Mave Core', 'idle');
+      if (window.webAvatar) window.webAvatar.setMood('idle');
     }
 
     function interruptVoiceMode() {
@@ -4467,11 +4820,302 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
       });
     }
 
+    // ==========================================================
+    // Vorssaint Cute Little Dot Avatar & Dynamic Island (Mobile & Web)
+    // ==========================================================
+    const EYE_PATHS = {
+      idle: {
+        left: 'M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z',
+        right: 'M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z',
+        fill: '#111418',
+        stroke: 'none'
+      },
+      happy: {
+        left: 'M 27 34 Q 33 20 39 34',
+        right: 'M 61 34 Q 67 20 73 34',
+        fill: 'none',
+        stroke: '#111418',
+        strokeWidth: '4.5'
+      },
+      wink: {
+        left: 'M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z',
+        right: 'M 61 34 Q 67 20 73 34',
+        fill: '#111418',
+        stroke: 'none'
+      },
+      love: {
+        left: 'M 33 25 C 33 21, 28 19, 25 23 C 21 19, 16 21, 16 25 C 16 32, 25 38, 25 38 C 25 38, 33 32, 33 25 Z',
+        right: 'M 67 25 C 67 21, 62 19, 59 23 C 55 19, 50 21, 50 25 C 50 32, 59 38, 59 38 C 59 38, 67 32, 67 25 Z',
+        fill: '#ef4444',
+        stroke: 'none'
+      },
+      thinking: {
+        left: 'M 27 32 Q 33 27 39 32',
+        right: 'M 69 16 C 73 16, 75 19, 75 25 C 75 31, 73 34, 69 34 C 65 34, 63 31, 63 25 C 63 19, 65 16, 69 16 Z',
+        fill: '#111418',
+        stroke: 'none'
+      },
+      surprised: {
+        left: 'M 33 22 C 38 22, 41 26, 41 30 C 41 34, 38 38, 33 38 C 28 38, 25 34, 25 30 C 25 26, 28 22, 33 22 Z',
+        right: 'M 67 22 C 72 22, 75 26, 75 30 C 75 34, 72 38, 67 38 C 62 38, 59 34, 59 30 C 59 26, 62 22, 67 22 Z',
+        fill: '#111418',
+        stroke: 'none'
+      },
+      sleepy: {
+        left: 'M 27 33 Q 33 37 39 33',
+        right: 'M 61 33 Q 67 37 73 33',
+        fill: 'none',
+        stroke: '#111418',
+        strokeWidth: '4'
+      },
+      determined: {
+        left: 'M 27 24 L 39 34',
+        right: 'M 73 24 L 61 34',
+        fill: 'none',
+        stroke: '#111418',
+        strokeWidth: '4.5'
+      }
+    };
+
+    class WebDotAvatarController {
+      constructor() {
+        this.currentMood = 'idle';
+        this.palette = localStorage.getItem('mave_dot_palette') || 'sky';
+        this.blinkTimer = null;
+        this.init();
+      }
+
+      init() {
+        this.applyPalette(this.palette);
+        this.startBlinkLoop();
+        this.bindInteractions();
+      }
+
+      setMood(mood, holdMs = 0) {
+        this.currentMood = mood;
+        const paths = EYE_PATHS[mood] || EYE_PATHS.idle;
+
+        document.querySelectorAll('.island-dot-avatar').forEach((avatar) => {
+          const eyes = avatar.querySelectorAll('.dot-eyes-svg .dot-eye');
+          const left = eyes[0];
+          const right = eyes[1];
+          if (left) {
+            left.setAttribute('d', paths.left);
+            left.setAttribute('fill', paths.fill || '#111418');
+            left.setAttribute('stroke', paths.stroke || 'none');
+            if (paths.strokeWidth) left.setAttribute('stroke-width', paths.strokeWidth);
+            else left.removeAttribute('stroke-width');
+          }
+          if (right) {
+            right.setAttribute('d', paths.right);
+            right.setAttribute('fill', paths.fill || '#111418');
+            right.setAttribute('stroke', paths.stroke || 'none');
+            if (paths.strokeWidth) right.setAttribute('stroke-width', paths.strokeWidth);
+            else right.removeAttribute('stroke-width');
+          }
+        });
+
+        if (holdMs > 0) {
+          setTimeout(() => this.setMood('idle'), holdMs);
+        }
+      }
+
+      hop() {
+        document.querySelectorAll('.island-dot-avatar').forEach((avatar) => {
+          avatar.classList.remove('dot-hopping');
+          void avatar.offsetWidth;
+          avatar.classList.add('dot-hopping');
+          setTimeout(() => avatar.classList.remove('dot-hopping'), 650);
+        });
+      }
+
+      bounce() {
+        document.querySelectorAll('.island-dot-avatar').forEach((avatar) => {
+          avatar.classList.remove('dot-bouncing');
+          void avatar.offsetWidth;
+          avatar.classList.add('dot-bouncing');
+          setTimeout(() => avatar.classList.remove('dot-bouncing'), 950);
+        });
+      }
+
+      pet() {
+        this.bounce();
+        this.setMood('love', 1500);
+      }
+
+      applyPalette(p) {
+        this.palette = p;
+        document.querySelectorAll('.dot-body').forEach((b) => {
+          b.className = b.className.replace(/palette-\w+/g, '').trim() + ' palette-' + p;
+        });
+      }
+
+      startBlinkLoop() {
+        const scheduleBlink = () => {
+          const delay = 3200 + Math.random() * 2800;
+          this.blinkTimer = setTimeout(() => {
+            if (this.currentMood === 'idle') {
+              document.querySelectorAll('.island-dot-avatar').forEach((a) => a.classList.add('blinking'));
+              setTimeout(() => {
+                document.querySelectorAll('.island-dot-avatar').forEach((a) => a.classList.remove('blinking'));
+              }, 140);
+            }
+            scheduleBlink();
+          }, delay);
+        };
+        scheduleBlink();
+      }
+
+      bindInteractions() {
+        const onPointerMove = (x, y) => {
+          if (y < 280) {
+            const faces = document.querySelectorAll('.island-dot-avatar .dot-face');
+            const centerX = window.innerWidth / 2;
+            const deltaX = Math.max(-5, Math.min(5, (x - centerX) / 80));
+            const deltaY = Math.max(-3, Math.min(4, (y - 20) / 40));
+            faces.forEach((face) => {
+              face.style.transform = 'translate(' + deltaX.toFixed(1) + 'px, ' + deltaY.toFixed(1) + 'px)';
+            });
+          }
+        };
+
+        document.addEventListener('mousemove', (e) => onPointerMove(e.clientX, e.clientY));
+        document.addEventListener('touchmove', (e) => {
+          if (e.touches && e.touches[0]) onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: true });
+      }
+    }
+
+    class WebDynamicIslandController {
+      constructor(avatar) {
+        this.avatar = avatar;
+        this.isExpanded = false;
+        this.autoCollapseTimer = null;
+        this.init();
+      }
+
+      init() {
+        const compact = $('island-compact');
+        const collapseBtn = $('island-collapse-btn');
+
+        if (compact) {
+          compact.addEventListener('click', (e) => {
+            if (e.target.closest('#island-dot-avatar')) {
+              this.avatar.hop();
+              this.avatar.setMood('happy', 1200);
+            }
+            this.toggle();
+          });
+        }
+
+        if (collapseBtn) {
+          collapseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.collapse();
+          });
+        }
+
+        if ($('island-pet-btn')) {
+          $('island-pet-btn').addEventListener('click', () => this.avatar.pet());
+        }
+
+        if ($('island-tool-voice')) {
+          $('island-tool-voice').addEventListener('click', () => {
+            this.collapse();
+            openVoiceMode();
+          });
+        }
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && this.isExpanded) this.collapse();
+        });
+
+        document.addEventListener('click', (e) => {
+          if (this.isExpanded && !e.target.closest('#dynamic-island')) {
+            this.collapse();
+          }
+        });
+
+        // Platform detection and satellite status setup
+        this.updatePlatformInfo();
+      }
+
+      expand() {
+        const island = $('dynamic-island');
+        const compact = $('island-compact');
+        const expanded = $('island-expanded');
+        if (!island || !expanded) return;
+
+        this.isExpanded = true;
+        island.classList.add('expanded');
+        if (compact) compact.style.display = 'none';
+        expanded.style.display = 'flex';
+        this.avatar.hop();
+
+        clearTimeout(this.autoCollapseTimer);
+        this.autoCollapseTimer = setTimeout(() => this.collapse(), 12000);
+      }
+
+      collapse() {
+        const island = $('dynamic-island');
+        const compact = $('island-compact');
+        const expanded = $('island-expanded');
+        if (!island || !expanded) return;
+
+        this.isExpanded = false;
+        island.classList.remove('expanded');
+        expanded.style.display = 'none';
+        if (compact) compact.style.display = 'flex';
+        clearTimeout(this.autoCollapseTimer);
+      }
+
+      toggle() {
+        if (this.isExpanded) this.collapse();
+        else this.expand();
+      }
+
+      setStatus(text, state = 'idle') {
+        const title = $('island-title');
+        const island = $('dynamic-island');
+        if (title) title.textContent = text;
+        if (island) {
+          island.classList.remove('thinking', 'listening', 'speaking');
+          if (state === 'thinking') island.classList.add('thinking');
+          else if (state === 'listening') island.classList.add('listening');
+          else if (state === 'speaking') island.classList.add('speaking');
+        }
+        if ($('island-exp-sub')) {
+          $('island-exp-sub').textContent = text + ' • Core Brain Connected';
+        }
+      }
+
+      updatePlatformInfo(forceHost) {
+        const ua = navigator.userAgent || '';
+        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        const isAndroid = /Android/.test(ua);
+        const isWindows = /Windows NT/.test(ua);
+        const isMac = /Macintosh/.test(ua);
+        const isLocal = forceHost !== undefined ? forceHost : (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
+        const platformLabel = isIOS ? 'Apple iOS' : isAndroid ? 'Android' : isWindows ? 'Windows PC' : isMac ? 'macOS' : 'Companion Web';
+        const roleLabel = isLocal ? 'Host Core' : 'Satellite Node';
+        const pillLabel = isLocal ? 'Host AI' : (isIOS ? 'iOS Node' : isAndroid ? 'Android Node' : 'Satellite');
+
+        if ($('im-platform-val')) $('im-platform-val').textContent = platformLabel;
+        if ($('im-node-role')) $('im-node-role').textContent = roleLabel;
+        if ($('island-node-pill')) $('island-node-pill').textContent = pillLabel;
+      }
+    }
+
+    const webAvatar = new WebDotAvatarController();
+    const webIsland = new WebDynamicIslandController(webAvatar);
+    window.webAvatar = webAvatar;
+    window.webIsland = webIsland;
+
     async function checkAuthStatus() {
-      const isSecure = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-      if (!isSecure && $('https-banner')) {
-        $('https-banner').style.display = 'flex';
-        const link = $('https-switch-link');
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        $('ssl-nag-banner').style.display = 'flex';
+        const link = $('ssl-nag-link');
         if (link) link.href = 'https://' + location.hostname + ':4043' + location.pathname;
       }
 
@@ -4480,6 +5124,7 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
         const data = await res.json();
         if (data.ok) {
           isHostDevice = !!data.isLocalhost;
+          if (window.webIsland) window.webIsland.updatePlatformInfo(isHostDevice);
           if (data.isLocalhost || data.authenticated) {
             currentUserTier = data.tier;
             applySecurityTier(data.tier);

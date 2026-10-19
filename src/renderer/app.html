@@ -11,6 +11,120 @@
   <title>Mave</title>
 </head>
 <body>
+  <!-- Vorssaint-Style Dynamic Island with Official Cute Dot Avatar Face of Mave -->
+  <div class="dynamic-island-wrapper" id="dynamic-island-wrapper">
+    <div class="dynamic-island" id="dynamic-island" tabindex="0" role="region" aria-label="Dynamic Island">
+      <!-- Compact Capsule -->
+      <div class="island-compact" id="island-compact">
+        <div class="island-left">
+          <!-- The Cute Little Dot Avatar (Vorssaint Mascot - Official Face of Mave) -->
+          <div class="island-dot-avatar" id="island-dot-avatar" title="Meet Mave (Click to pet or open HUD)">
+            <div class="dot-body" id="dot-body">
+              <div class="dot-shine"></div>
+              <div class="dot-visor" id="dot-visor" style="display:none;"></div>
+              <div class="dot-face" id="dot-face">
+                <svg class="dot-eyes-svg" viewBox="0 0 100 60" id="dot-eyes-svg">
+                  <path class="dot-eye eye-left" id="dot-eye-left" d="M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z" fill="#111418" />
+                  <path class="dot-eye eye-right" id="dot-eye-right" d="M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z" fill="#111418" />
+                </svg>
+              </div>
+              <div class="dot-ears" id="dot-ears" style="display:none;"></div>
+              <div class="dot-antenna" id="dot-antenna" style="display:none;">
+                <div class="dot-bulb" id="dot-bulb"></div>
+              </div>
+            </div>
+          </div>
+          <div class="island-status-group">
+            <span class="island-status-dot" id="island-status-dot"></span>
+            <span class="island-title" id="island-title">Mave Core</span>
+          </div>
+        </div>
+
+        <div class="island-right" id="island-right">
+          <!-- Live Audio Activity Waveform Bars -->
+          <div class="island-audio-bars" id="island-audio-bars">
+            <span class="i-bar bar-1"></span>
+            <span class="i-bar bar-2"></span>
+            <span class="i-bar bar-3"></span>
+            <span class="i-bar bar-4"></span>
+          </div>
+          <span class="island-node-pill" id="island-node-pill">Host AI</span>
+        </div>
+      </div>
+
+      <!-- Expanded Vorssaint HUD Card -->
+      <div class="island-expanded" id="island-expanded" style="display:none;">
+        <div class="island-exp-header">
+          <div class="island-exp-profile">
+            <div class="island-exp-avatar-wrap" id="island-exp-avatar-wrap">
+              <div class="island-dot-avatar exp-size" id="island-dot-avatar-exp">
+                <div class="dot-body exp-body">
+                  <div class="dot-shine"></div>
+                  <div class="dot-face">
+                    <svg class="dot-eyes-svg" viewBox="0 0 100 60">
+                      <path class="dot-eye exp-eye-left" d="M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z" fill="#111418" />
+                      <path class="dot-eye exp-eye-right" d="M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z" fill="#111418" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="island-exp-name" id="island-exp-name">Mave Companion</div>
+              <div class="island-exp-sub" id="island-exp-sub">Ready • Core Brain Connected</div>
+            </div>
+          </div>
+          <div class="island-exp-top-actions">
+            <button type="button" class="island-exp-action-btn" id="island-pet-btn" title="Pet Mave">🐾 Pet</button>
+            <button type="button" class="island-collapse-btn" id="island-collapse-btn" title="Collapse Island (Esc)">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Metrics Row -->
+        <div class="island-metrics-row">
+          <div class="island-metric">
+            <span class="im-label">NODE ROLE</span>
+            <span class="im-val" id="im-node-role">Host Brain (Core)</span>
+          </div>
+          <div class="island-metric">
+            <span class="im-label">PLATFORM</span>
+            <span class="im-val" id="im-platform-val">Windows Desktop</span>
+          </div>
+          <div class="island-metric">
+            <span class="im-label">SYSTEM / GPU</span>
+            <span class="im-val" id="im-system-load">12% CPU • 41°C</span>
+          </div>
+          <div class="island-metric">
+            <span class="im-label">MESH SATELLITES</span>
+            <span class="im-val" id="im-satellites-count">2 Active Nodes</span>
+          </div>
+        </div>
+
+        <!-- Vorssaint Quick Island Utilities -->
+        <div class="island-tools-grid">
+          <button type="button" class="island-tool-btn" id="island-tool-voice">
+            <span class="it-icon">🎙️</span>
+            <span class="it-text">Talk with Mave</span>
+          </button>
+          <button type="button" class="island-tool-btn" id="island-tool-cmd">
+            <span class="it-icon">⚡</span>
+            <span class="it-text">Command Bar</span>
+          </button>
+          <button type="button" class="island-tool-btn" id="island-tool-nodes">
+            <span class="it-icon">🌐</span>
+            <span class="it-text">Node Setup</span>
+          </button>
+          <button type="button" class="island-tool-btn" id="island-tool-snip">
+            <span class="it-icon">📸</span>
+            <span class="it-text">Screen & Tools</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="window">
     <aside class="sidebar">
       <div class="sidebar-head">
@@ -569,6 +683,14 @@
               <svg class="tab-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5.6" r="2.6"/><path d="M3 13.5c.7-2.4 2.7-3.7 5-3.7s4.3 1.3 5 3.7"/></svg>
               <span>Assistant</span>
             </button>
+            <button class="settings-tab-btn" data-tab="nodes" id="tab-btn-nodes">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              <span>Core & Mesh Nodes</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="companion" id="tab-btn-companion">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/></svg>
+              <span>Face & Dynamic Island</span>
+            </button>
           </aside>
           <div class="settings-content scroll" id="settings-content">
 
@@ -1112,6 +1234,216 @@
             </div>
           </div>
         </section>
+
+        <!-- Core & Mesh Nodes (Platform Adaptive) -->
+        <section data-tab="nodes" hidden>
+          <div class="settings-panel-head">
+            <h2 class="settings-panel-title">Core & Mesh Nodes</h2>
+            <span class="settings-panel-subtitle">Manage device topology, role (Host Brain vs Satellite Client), and cross-platform sync.</span>
+          </div>
+          <div class="settings-panel-body">
+            <div class="node-detected-banner" id="node-detected-banner">
+              <span class="ndb-icon">💻</span>
+              <div class="ndb-text">
+                <div class="ndb-title" id="ndb-platform-title">Windows Desktop (Host AI Capable)</div>
+                <div class="ndb-sub" id="ndb-platform-sub">Running native Ollama, Kokoro TTS, Whisper & PowerShell Automation.</div>
+              </div>
+              <span class="ndb-badge" id="ndb-role-badge">Host AI (Brain)</span>
+            </div>
+
+            <!-- Role Selector -->
+            <div class="section-label">Device Architecture Role</div>
+            <div class="group">
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Role Configuration</span>
+                  <span class="hint">Decide whether this computer is the Host Core Brain or a lightweight Satellite Client</span>
+                </div>
+                <div class="control">
+                  <select class="field" id="settings-node-role-select">
+                    <option value="host">🧠 Host AI (The Brain / Core Engine)</option>
+                    <option value="satellite">🛰️ Satellite Client (Connects to Host Brain)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row" id="row-host-address-field" style="display:none;">
+                <div class="label">
+                  <span class="headline">Host Brain Address</span>
+                  <span class="hint">IP / domain of the Host AI (e.g. 192.168.1.50:4040)</span>
+                </div>
+                <div class="control" style="display:flex; gap:8px;">
+                  <input class="field mono" id="settings-host-address-input" placeholder="192.168.1.50:4040" value="127.0.0.1:4040" style="width:180px;">
+                  <button type="button" class="btn secondary small" id="settings-ping-host-btn">Ping</button>
+                </div>
+              </div>
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Host Security PIN</span>
+                  <span class="hint">3-Tier security PIN for satellite authentication</span>
+                </div>
+                <div class="control">
+                  <input class="field mono" id="settings-node-pin-input" type="password" value="8080" style="width:120px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Cross-Platform Usecases & Capabilities -->
+            <div class="section-label">Platform Capabilities & Usecases</div>
+            <div class="group">
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Windows GPU / NPU DirectML Acceleration</span>
+                  <span class="hint">Accelerates local models using DirectML / CUDA / Vulkan</span>
+                </div>
+                <label class="switch"><input type="checkbox" id="node-toggle-gpu" checked><span class="track"></span></label>
+              </div>
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Mobile & Android Camera Vision Relay</span>
+                  <span class="hint">Allows connected phones to stream camera frames to Host AI</span>
+                </div>
+                <label class="switch"><input type="checkbox" id="node-toggle-cam" checked><span class="track"></span></label>
+              </div>
+              <div class="row">
+                <div class="label">
+                  <span class="headline">iOS Safari WebKit Audio Unlock</span>
+                  <span class="hint">Enables gapless voice talk and Live Activities on iOS devices</span>
+                </div>
+                <label class="switch"><input type="checkbox" id="node-toggle-ios" checked><span class="track"></span></label>
+              </div>
+            </div>
+
+            <!-- Connected Nodes Registry -->
+            <div class="section-label">Active Mesh Nodes (Connected Satellites)</div>
+            <div class="group">
+              <div style="padding:10px 14px; display:flex; flex-direction:column; gap:8px;" id="node-mesh-list">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--hairline);">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:16px;">💻</span>
+                    <div>
+                      <div style="font-size:13px; font-weight:600; color:var(--text-1);">Host PC (This Computer)</div>
+                      <div style="font-size:11px; color:var(--text-3);">127.0.0.1 • Core Brain • Active</div>
+                    </div>
+                  </div>
+                  <span class="status-pill" style="color:#34d399; background:rgba(52,211,153,0.15);">Hosting</span>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:16px;">📱</span>
+                    <div>
+                      <div style="font-size:13px; font-weight:600; color:var(--text-1);">Mobile Companion (LAN / Wi-Fi)</div>
+                      <div style="font-size:11px; color:var(--text-3);">Port 4040 / 4043 • Ready for Android / iOS</div>
+                    </div>
+                  </div>
+                  <button type="button" class="btn secondary small" id="btn-show-qr-code">Show Pairing QR</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row" style="justify-content:flex-end; margin-top:14px;">
+              <button class="btn secondary small" id="btn-relaunch-onboarding">Relaunch Node Setup Wizard…</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Face & Dynamic Island (Vorssaint Mascot) -->
+        <section data-tab="companion" hidden>
+          <div class="settings-panel-head">
+            <h2 class="settings-panel-title">Face & Dynamic Island</h2>
+            <span class="settings-panel-subtitle">Customize the official face of Mave (the cute dot mascot) and the Dynamic Island HUD.</span>
+          </div>
+          <div class="settings-panel-body">
+            <!-- Live Mascot Preview Card -->
+            <div class="mascot-preview-card" style="background:var(--surface-2); border:1px solid var(--border-subtle); border-radius:18px; padding:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; margin-bottom:18px;">
+              <div class="mascot-interactive-preview" id="mascot-interactive-preview" style="cursor:pointer;" title="Click to pet Mave!">
+                <div class="island-dot-avatar preview-size" id="island-dot-avatar-preview">
+                  <div class="dot-body preview-body" id="preview-dot-body">
+                    <div class="dot-shine"></div>
+                    <div class="dot-visor" id="preview-dot-visor" style="display:none;"></div>
+                    <div class="dot-face">
+                      <svg class="dot-eyes-svg" viewBox="0 0 100 60" id="preview-dot-eyes">
+                        <path class="dot-eye" id="p-eye-left" d="M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z" fill="#111418" />
+                        <path class="dot-eye" id="p-eye-right" d="M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z" fill="#111418" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:14px; font-size:14px; font-weight:700; color:var(--text-1);" id="preview-mood-name">Mave (Idle & Happy)</div>
+              <div style="font-size:12px; color:var(--text-3); margin-top:2px;">Click to pet, make Mave hop, or trigger expressions!</div>
+              <div style="display:flex; gap:8px; margin-top:12px;">
+                <button type="button" class="btn secondary small" id="btn-preview-hop">🐰 Hop</button>
+                <button type="button" class="btn secondary small" id="btn-preview-love">💖 Love</button>
+                <button type="button" class="btn secondary small" id="btn-preview-think">🧠 Think</button>
+                <button type="button" class="btn secondary small" id="btn-preview-groove">🎵 Groove</button>
+              </div>
+            </div>
+
+            <!-- Avatar Face Customization -->
+            <div class="section-label">Avatar Style & Palettes</div>
+            <div class="group">
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Avatar Face Style</span>
+                  <span class="hint">Choose between the Minimal Dot or Robot Visor</span>
+                </div>
+                <div class="control">
+                  <select class="field" id="mascot-style-select">
+                    <option value="minimal">⚪ Minimal Dot (Official Face)</option>
+                    <option value="robot">🤖 Robot (Visor & Antenna)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Color Palette Swatches</span>
+                  <span class="hint">Choose Mave's body hue and gradient</span>
+                </div>
+                <div class="control" style="display:flex; gap:8px;" id="mascot-palette-swatches">
+                  <button type="button" class="palette-swatch active" data-palette="sky" style="background:linear-gradient(135deg, #38bdf8, #2563eb);" title="Sky Blue (Default)"></button>
+                  <button type="button" class="palette-swatch" data-palette="pearl" style="background:linear-gradient(135deg, #fcfaf5, #cbd5e1);" title="Pearl White"></button>
+                  <button type="button" class="palette-swatch" data-palette="mint" style="background:linear-gradient(135deg, #6ee7b7, #059669);" title="Emerald Mint"></button>
+                  <button type="button" class="palette-swatch" data-palette="lilac" style="background:linear-gradient(135deg, #c084fc, #7c3aed);" title="Lilac Purple"></button>
+                  <button type="button" class="palette-swatch" data-palette="peach" style="background:linear-gradient(135deg, #fbcfe8, #f43f5e);" title="Peach"></button>
+                  <button type="button" class="palette-swatch" data-palette="rose" style="background:linear-gradient(135deg, #fda4af, #e11d48);" title="Rose"></button>
+                  <button type="button" class="palette-swatch" data-palette="lemon" style="background:linear-gradient(135deg, #fde047, #d97706);" title="Golden Lemon"></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dynamic Island Options -->
+            <div class="section-label">Dynamic Island Controls</div>
+            <div class="group">
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Enable Dynamic Island</span>
+                  <span class="hint">Floating pill at the top of the screen with Mave's face</span>
+                </div>
+                <label class="switch"><input type="checkbox" id="toggle-dynamic-island" checked><span class="track"></span></label>
+              </div>
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Avatar Stroll & Peeking Frequency</span>
+                  <span class="hint">How often Mave takes a stroll or peeks from the island</span>
+                </div>
+                <div class="control">
+                  <select class="field" id="mascot-visit-freq">
+                    <option value="frequent">✨ Playful (Every 1-2 mins)</option>
+                    <option value="normal" selected>Normal (Every 3-5 mins)</option>
+                    <option value="rare">Calm (Every 10-15 mins)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Audio Reactivity (Groove to Voice)</span>
+                  <span class="hint">Avatar eyes and body bob in sync with speaking voice</span>
+                </div>
+                <label class="switch"><input type="checkbox" id="toggle-avatar-audio-react" checked><span class="track"></span></label>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
     <!-- "Meet Voice" Modal (Screenshot 5) -->
@@ -1223,6 +1555,94 @@
       </div>
       <div class="modal-card-foot">
         <button type="button" class="btn small plain" id="btn-close-archived">Close</button>
+      </div>
+    </div>
+  <!-- Mave First-Time Onboarding & Core vs Satellite Setup Modal -->
+  <div class="chatgpt-modal-backdrop" id="node-onboarding-modal" hidden>
+    <div class="nom-card">
+      <div class="nom-header">
+        <div class="nom-avatar-preview">
+          <!-- The Cute Little Dot Avatar preview hopping cheerfully -->
+          <div class="island-dot-avatar onboarding-size" id="onboarding-dot-avatar">
+            <div class="dot-body onboarding-body">
+              <div class="dot-shine"></div>
+              <div class="dot-face">
+                <svg class="dot-eyes-svg" viewBox="0 0 100 60">
+                  <path class="dot-eye" d="M 27 34 Q 33 20 39 34" fill="none" stroke="#111418" stroke-width="5" stroke-linecap="round" />
+                  <path class="dot-eye" d="M 61 34 Q 67 20 73 34" fill="none" stroke="#111418" stroke-width="5" stroke-linecap="round" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h2 class="nom-title">Welcome to Mave</h2>
+        <p class="nom-desc">The sovereign AI nervous system for your computer and mobile devices.</p>
+      </div>
+
+      <!-- Step 1: Account Login / Local Setup -->
+      <div class="nom-step" id="nom-step-auth">
+        <div class="nom-badge-pill" id="nom-platform-badge">Detected: Windows PC</div>
+        <div class="nom-form-group">
+          <label>Account or Device Profile Name</label>
+          <input type="text" class="nom-input" id="nom-account-name" value="From Near" placeholder="Your Name or Account ID">
+        </div>
+        <div class="nom-actions">
+          <button type="button" class="nom-btn primary" id="nom-auth-next-btn">Continue to Architecture Setup →</button>
+          <button type="button" class="nom-btn text" id="nom-auth-guest-btn">Use Offline (Air-Gapped Local Mode)</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Choose Role - Host Core Brain vs Satellite Client -->
+      <div class="nom-step" id="nom-step-role" style="display:none;">
+        <h3 class="nom-subtitle">Choose this computer's role</h3>
+        <div class="nom-role-cards">
+          <!-- Role 1: Make this PC the Core Brain (Host AI) -->
+          <div class="nom-role-card selected" id="nom-role-host" data-role="host">
+            <div class="nom-rc-icon">🧠</div>
+            <div class="nom-rc-content">
+              <div class="nom-rc-title">Make this PC the Host AI (Core Brain)</div>
+              <div class="nom-rc-desc">Runs local neural models, Kokoro TTS, Whisper STT, ComfyUI, automation hands, and acts as the brain for your phone and other PCs.</div>
+              <div class="nom-rc-tags">
+                <span class="rc-tag">Ollama / Local LLM</span>
+                <span class="rc-tag">Kokoro TTS</span>
+                <span class="rc-tag">LAN Mesh Host (Port 4040)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Role 2: Connect to Host AI (Satellite Client) -->
+          <div class="nom-role-card" id="nom-role-satellite" data-role="satellite">
+            <div class="nom-rc-icon">🛰️</div>
+            <div class="nom-rc-content">
+              <div class="nom-rc-title">Connect to Host AI (Satellite Client)</div>
+              <div class="nom-rc-desc">Zero heavy model downloads. Connects directly to your Core Host PC for thinking and voice, perfect for laptops, Android, or iOS.</div>
+              <div class="nom-rc-tags">
+                <span class="rc-tag">Lightweight Client</span>
+                <span class="rc-tag">mDNS Auto-Discovery</span>
+                <span class="rc-tag">QR Code Pairing</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Satellite Connection Fields (shown when Satellite chosen) -->
+        <div class="nom-satellite-fields" id="nom-satellite-fields" style="display:none;">
+          <div class="nom-form-group">
+            <label>Host AI Address or mDNS</label>
+            <div style="display:flex; gap:8px;">
+              <input type="text" class="nom-input" id="nom-host-address" placeholder="e.g. 192.168.1.50:4040 or mave-core.local" value="127.0.0.1:4040">
+              <button type="button" class="nom-btn secondary" id="nom-scan-lan-btn" title="Scan Wi-Fi for Host AI">🔍 Discover</button>
+            </div>
+          </div>
+          <div class="nom-form-group">
+            <label>Security PIN</label>
+            <input type="password" class="nom-input" id="nom-host-pin" placeholder="PIN (default: 8080 or 0509)" value="8080">
+          </div>
+        </div>
+
+        <div class="nom-actions">
+          <button type="button" class="nom-btn primary" id="nom-role-finish-btn">Initialize Mave & Start</button>
+        </div>
       </div>
     </div>
   </div>

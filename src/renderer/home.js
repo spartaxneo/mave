@@ -1219,6 +1219,544 @@
     last.prepend(img);
   });
 
+  // ==========================================================
+  // Vorssaint Cute Little Dot Avatar (Official Face of Mave)
+  // ==========================================================
+  const EYE_PATHS = {
+    idle: {
+      left: 'M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z',
+      right: 'M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z',
+      fill: '#111418',
+      stroke: 'none'
+    },
+    happy: {
+      left: 'M 27 34 Q 33 20 39 34',
+      right: 'M 61 34 Q 67 20 73 34',
+      fill: 'none',
+      stroke: '#111418',
+      strokeWidth: '4.5'
+    },
+    wink: {
+      left: 'M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z',
+      right: 'M 61 34 Q 67 20 73 34',
+      fill: '#111418',
+      stroke: 'none'
+    },
+    love: {
+      left: 'M 33 25 C 33 21, 28 19, 25 23 C 21 19, 16 21, 16 25 C 16 32, 25 38, 25 38 C 25 38, 33 32, 33 25 Z',
+      right: 'M 67 25 C 67 21, 62 19, 59 23 C 55 19, 50 21, 50 25 C 50 32, 59 38, 59 38 C 59 38, 67 32, 67 25 Z',
+      fill: '#ef4444',
+      stroke: 'none'
+    },
+    thinking: {
+      left: 'M 27 32 Q 33 27 39 32',
+      right: 'M 69 16 C 73 16, 75 19, 75 25 C 75 31, 73 34, 69 34 C 65 34, 63 31, 63 25 C 63 19, 65 16, 69 16 Z',
+      fill: '#111418',
+      stroke: 'none'
+    },
+    surprised: {
+      left: 'M 33 22 C 38 22, 41 26, 41 30 C 41 34, 38 38, 33 38 C 28 38, 25 34, 25 30 C 25 26, 28 22, 33 22 Z',
+      right: 'M 67 22 C 72 22, 75 26, 75 30 C 75 34, 72 38, 67 38 C 62 38, 59 34, 59 30 C 59 26, 62 22, 67 22 Z',
+      fill: '#111418',
+      stroke: 'none'
+    },
+    sleepy: {
+      left: 'M 27 33 Q 33 37 39 33',
+      right: 'M 61 33 Q 67 37 73 33',
+      fill: 'none',
+      stroke: '#111418',
+      strokeWidth: '4'
+    },
+    determined: {
+      left: 'M 27 24 L 39 34',
+      right: 'M 73 24 L 61 34',
+      fill: 'none',
+      stroke: '#111418',
+      strokeWidth: '4.5'
+    }
+  };
+
+  class DotAvatarController {
+    constructor() {
+      this.currentMood = 'idle';
+      this.palette = localStorage.getItem('mave_dot_palette') || 'sky';
+      this.style = localStorage.getItem('mave_dot_style') || 'minimal';
+      this.blinkTimer = null;
+      this.init();
+    }
+
+    init() {
+      this.applyPalette(this.palette);
+      this.applyStyle(this.style);
+      this.startBlinkLoop();
+      this.bindInteractions();
+    }
+
+    setMood(mood, holdMs = 0) {
+      this.currentMood = mood;
+      const paths = EYE_PATHS[mood] || EYE_PATHS.idle;
+      const isRobot = this.style === 'robot';
+
+      document.querySelectorAll('.island-dot-avatar').forEach((avatar) => {
+        const left = avatar.querySelector('.eye-left, #p-eye-left');
+        const right = avatar.querySelector('.eye-right, #p-eye-right');
+        if (left) {
+          left.setAttribute('d', paths.left);
+          left.setAttribute('fill', paths.fill === 'none' ? 'none' : (isRobot ? '#38bdf8' : paths.fill));
+          left.setAttribute('stroke', paths.stroke === 'none' ? 'none' : (isRobot ? '#38bdf8' : paths.stroke));
+          if (paths.strokeWidth) left.setAttribute('stroke-width', paths.strokeWidth);
+        }
+        if (right) {
+          right.setAttribute('d', paths.right);
+          right.setAttribute('fill', paths.fill === 'none' ? 'none' : (isRobot ? '#38bdf8' : paths.fill));
+          right.setAttribute('stroke', paths.stroke === 'none' ? 'none' : (isRobot ? '#38bdf8' : paths.stroke));
+          if (paths.strokeWidth) right.setAttribute('stroke-width', paths.strokeWidth);
+        }
+      });
+
+      if (holdMs > 0) {
+        setTimeout(() => this.setMood('idle'), holdMs);
+      }
+    }
+
+    hop() {
+      document.querySelectorAll('.island-dot-avatar').forEach((avatar) => {
+        avatar.classList.remove('dot-hopping');
+        void avatar.offsetWidth;
+        avatar.classList.add('dot-hopping');
+        setTimeout(() => avatar.classList.remove('dot-hopping'), 650);
+      });
+    }
+
+    bounce() {
+      document.querySelectorAll('.island-dot-avatar').forEach((avatar) => {
+        avatar.classList.remove('dot-bouncing');
+        void avatar.offsetWidth;
+        avatar.classList.add('dot-bouncing');
+        setTimeout(() => avatar.classList.remove('dot-bouncing'), 950);
+      });
+    }
+
+    wobble() {
+      document.querySelectorAll('.island-dot-avatar').forEach((avatar) => {
+        avatar.classList.remove('dot-wobbling');
+        void avatar.offsetWidth;
+        avatar.classList.add('dot-wobbling');
+        setTimeout(() => avatar.classList.remove('dot-wobbling'), 500);
+      });
+    }
+
+    pet() {
+      this.bounce();
+      this.setMood('love', 1500);
+    }
+
+    applyPalette(p) {
+      this.palette = p;
+      localStorage.setItem('mave_dot_palette', p);
+      document.querySelectorAll('.dot-body').forEach((b) => {
+        b.className = b.className.replace(/palette-\w+/g, '').trim() + ' palette-' + p;
+      });
+    }
+
+    applyStyle(s) {
+      this.style = s;
+      localStorage.setItem('mave_dot_style', s);
+      const isRobot = s === 'robot';
+      document.querySelectorAll('.dot-body').forEach((b) => {
+        b.classList.toggle('style-robot', isRobot);
+      });
+      document.querySelectorAll('.dot-visor, .dot-ears, .dot-antenna').forEach((el) => {
+        el.style.display = isRobot ? 'block' : 'none';
+      });
+      this.setMood(this.currentMood);
+    }
+
+    startBlinkLoop() {
+      const scheduleBlink = () => {
+        const delay = 3200 + Math.random() * 2800;
+        this.blinkTimer = setTimeout(() => {
+          if (this.currentMood === 'idle') {
+            document.querySelectorAll('.island-dot-avatar').forEach((a) => a.classList.add('blinking'));
+            setTimeout(() => {
+              document.querySelectorAll('.island-dot-avatar').forEach((a) => a.classList.remove('blinking'));
+            }, 140);
+          }
+          scheduleBlink();
+        }, delay);
+      };
+      scheduleBlink();
+    }
+
+    bindInteractions() {
+      document.addEventListener('mousemove', (e) => {
+        if (e.clientY < 300) {
+          const avatars = document.querySelectorAll('.island-dot-avatar .dot-face');
+          const centerX = window.innerWidth / 2;
+          const deltaX = Math.max(-6, Math.min(6, (e.clientX - centerX) / 80));
+          const deltaY = Math.max(-3, Math.min(4, (e.clientY - 20) / 40));
+          avatars.forEach((face) => {
+            face.style.transform = `translate(${deltaX.toFixed(1)}px, ${deltaY.toFixed(1)}px)`;
+          });
+        }
+      });
+    }
+  }
+
+  // ==========================================================
+  // Vorssaint Dynamic Island Controller
+  // ==========================================================
+  class DynamicIslandController {
+    constructor(avatar) {
+      this.avatar = avatar;
+      this.isExpanded = false;
+      this.autoCollapseTimer = null;
+      this.init();
+    }
+
+    init() {
+      const island = $('dynamic-island');
+      const compact = $('island-compact');
+      const collapseBtn = $('island-collapse-btn');
+
+      if (compact) {
+        compact.addEventListener('click', (e) => {
+          if (e.target.closest('#island-dot-avatar')) {
+            this.avatar.hop();
+            this.avatar.setMood('happy', 1200);
+          }
+          this.toggle();
+        });
+      }
+
+      if (collapseBtn) {
+        collapseBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.collapse();
+        });
+      }
+
+      if ($('island-pet-btn')) {
+        $('island-pet-btn').addEventListener('click', () => this.avatar.pet());
+      }
+
+      if ($('island-tool-voice')) {
+        $('island-tool-voice').addEventListener('click', () => {
+          this.collapse();
+          if ($('talk-btn')) $('talk-btn').click();
+        });
+      }
+
+      if ($('island-tool-cmd')) {
+        $('island-tool-cmd').addEventListener('click', () => {
+          this.collapse();
+          if ($('prompt')) $('prompt').focus();
+        });
+      }
+
+      if ($('island-tool-nodes')) {
+        $('island-tool-nodes').addEventListener('click', () => {
+          this.collapse();
+          if ($('node-onboarding-modal')) $('node-onboarding-modal').hidden = false;
+        });
+      }
+
+      if ($('island-tool-snip')) {
+        $('island-tool-snip').addEventListener('click', () => {
+          this.collapse();
+          if ($('cad-select-region')) $('cad-select-region').click();
+        });
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isExpanded) this.collapse();
+      });
+
+      // Close when clicking outside
+      document.addEventListener('click', (e) => {
+        if (this.isExpanded && !e.target.closest('#dynamic-island')) {
+          this.collapse();
+        }
+      });
+    }
+
+    expand() {
+      const island = $('dynamic-island');
+      const compact = $('island-compact');
+      const expanded = $('island-expanded');
+      if (!island || !expanded) return;
+
+      this.isExpanded = true;
+      island.classList.add('expanded');
+      if (compact) compact.style.display = 'none';
+      expanded.style.display = 'flex';
+      this.avatar.hop();
+
+      clearTimeout(this.autoCollapseTimer);
+      this.autoCollapseTimer = setTimeout(() => this.collapse(), 12000);
+    }
+
+    collapse() {
+      const island = $('dynamic-island');
+      const compact = $('island-compact');
+      const expanded = $('island-expanded');
+      if (!island || !expanded) return;
+
+      this.isExpanded = false;
+      island.classList.remove('expanded');
+      expanded.style.display = 'none';
+      if (compact) compact.style.display = 'flex';
+      clearTimeout(this.autoCollapseTimer);
+    }
+
+    toggle() {
+      if (this.isExpanded) this.collapse();
+      else this.expand();
+    }
+
+    setStatus(text, state = 'idle') {
+      const title = $('island-title');
+      const island = $('dynamic-island');
+      if (title) title.textContent = text;
+      if (island) {
+        island.classList.remove('thinking', 'listening', 'speaking');
+        if (state === 'thinking') island.classList.add('thinking');
+        else if (state === 'listening') island.classList.add('listening');
+        else if (state === 'speaking') island.classList.add('speaking');
+      }
+      if ($('island-exp-sub')) {
+        $('island-exp-sub').textContent = text + ' • Core Brain Connected';
+      }
+    }
+  }
+
+  // ==========================================================
+  // Node Architecture & Platform Adapter Controller
+  // ==========================================================
+  class NodeManager {
+    constructor(avatar, island) {
+      this.avatar = avatar;
+      this.island = island;
+      this.role = localStorage.getItem('mave_node_role') || 'host';
+      this.hostAddress = localStorage.getItem('mave_host_address') || '127.0.0.1:4040';
+      this.hostPin = localStorage.getItem('mave_host_pin') || '8080';
+      this.accountName = localStorage.getItem('mave_account_name') || 'From Near';
+      this.platform = this.detectPlatform();
+      this.init();
+    }
+
+    detectPlatform() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return 'android';
+      if (/iphone|ipad|ipod/i.test(ua)) return 'ios';
+      return 'windows';
+    }
+
+    init() {
+      this.applyPlatformUI();
+      this.updateNodeDisplay();
+      this.bindOnboardingModal();
+      this.bindSettingsPanel();
+
+      if (!localStorage.getItem('mave_onboarding_completed')) {
+        setTimeout(() => {
+          if ($('node-onboarding-modal')) $('node-onboarding-modal').hidden = false;
+        }, 600);
+      }
+    }
+
+    applyPlatformUI() {
+      document.body.setAttribute('data-platform', this.platform);
+      const platLabel = {
+        windows: 'Windows Desktop (Core Host Capable)',
+        android: 'Android Mobile (Camera, Audio & Sensor Companion)',
+        ios: 'iOS Safari Companion (Dynamic Island & WebKit Audio)'
+      }[this.platform] || 'Personal Computer';
+
+      if ($('nom-platform-badge')) $('nom-platform-badge').textContent = `Detected: ${platLabel}`;
+      if ($('im-platform-val')) $('im-platform-val').textContent = platLabel.split(' (')[0];
+      if ($('ndb-platform-title')) $('ndb-platform-title').textContent = platLabel;
+    }
+
+    updateNodeDisplay() {
+      const isHost = this.role === 'host';
+      const roleText = isHost ? 'Host AI (Core Brain)' : 'Satellite Client';
+      if ($('im-node-role')) $('im-node-role').textContent = roleText;
+      if ($('island-node-pill')) $('island-node-pill').textContent = isHost ? 'Host AI' : 'Satellite';
+      if ($('ndb-role-badge')) $('ndb-role-badge').textContent = isHost ? 'Host AI (Brain)' : 'Satellite';
+      if ($('settings-node-role-select')) $('settings-node-role-select').value = this.role;
+      if ($('row-host-address-field')) $('row-host-address-field').style.display = isHost ? 'none' : 'flex';
+    }
+
+    bindOnboardingModal() {
+      const modal = $('node-onboarding-modal');
+      const stepAuth = $('nom-step-auth');
+      const stepRole = $('nom-step-role');
+      const authNext = $('nom-auth-next-btn');
+      const authGuest = $('nom-auth-guest-btn');
+      const hostCard = $('nom-role-host');
+      const satCard = $('nom-role-satellite');
+      const finishBtn = $('nom-role-finish-btn');
+      const satFields = $('nom-satellite-fields');
+
+      let selectedRole = 'host';
+
+      if (authNext) {
+        authNext.addEventListener('click', () => {
+          const name = $('nom-account-name') ? $('nom-account-name').value.trim() : 'From Near';
+          this.accountName = name || 'From Near';
+          localStorage.setItem('mave_account_name', this.accountName);
+          if (stepAuth) stepAuth.style.display = 'none';
+          if (stepRole) stepRole.style.display = 'block';
+        });
+      }
+
+      if (authGuest) {
+        authGuest.addEventListener('click', () => {
+          this.accountName = 'Local Guest';
+          localStorage.setItem('mave_account_name', this.accountName);
+          if (stepAuth) stepAuth.style.display = 'none';
+          if (stepRole) stepRole.style.display = 'block';
+        });
+      }
+
+      if (hostCard) {
+        hostCard.addEventListener('click', () => {
+          selectedRole = 'host';
+          hostCard.classList.add('selected');
+          if (satCard) satCard.classList.remove('selected');
+          if (satFields) satFields.style.display = 'none';
+        });
+      }
+
+      if (satCard) {
+        satCard.addEventListener('click', () => {
+          selectedRole = 'satellite';
+          satCard.classList.add('selected');
+          if (hostCard) hostCard.classList.remove('selected');
+          if (satFields) satFields.style.display = 'block';
+        });
+      }
+
+      if ($('nom-scan-lan-btn')) {
+        $('nom-scan-lan-btn').addEventListener('click', () => {
+          $('nom-scan-lan-btn').textContent = 'Scanning…';
+          setTimeout(() => {
+            $('nom-scan-lan-btn').textContent = '✅ Found';
+            if ($('nom-host-address')) $('nom-host-address').value = '192.168.1.50:4040';
+          }, 800);
+        });
+      }
+
+      if (finishBtn) {
+        finishBtn.addEventListener('click', () => {
+          this.role = selectedRole;
+          if (selectedRole === 'satellite') {
+            this.hostAddress = $('nom-host-address') ? $('nom-host-address').value.trim() : '127.0.0.1:4040';
+            this.hostPin = $('nom-host-pin') ? $('nom-host-pin').value.trim() : '8080';
+            localStorage.setItem('mave_host_address', this.hostAddress);
+            localStorage.setItem('mave_host_pin', this.hostPin);
+          }
+          localStorage.setItem('mave_node_role', this.role);
+          localStorage.setItem('mave_onboarding_completed', '1');
+          this.updateNodeDisplay();
+
+          if (modal) modal.hidden = true;
+          this.avatar.bounce();
+          this.avatar.setMood('happy', 2000);
+        });
+      }
+    }
+
+    bindSettingsPanel() {
+      if ($('settings-node-role-select')) {
+        $('settings-node-role-select').addEventListener('change', () => {
+          const val = $('settings-node-role-select').value;
+          this.role = val;
+          localStorage.setItem('mave_node_role', val);
+          this.updateNodeDisplay();
+        });
+      }
+
+      if ($('btn-relaunch-onboarding')) {
+        $('btn-relaunch-onboarding').addEventListener('click', () => {
+          if ($('node-onboarding-modal')) {
+            $('node-onboarding-modal').hidden = false;
+            if ($('nom-step-auth')) $('nom-step-auth').style.display = 'block';
+            if ($('nom-step-role')) $('nom-step-role').style.display = 'none';
+          }
+        });
+      }
+
+      if ($('btn-show-qr-code')) {
+        $('btn-show-qr-code').addEventListener('click', () => {
+          alert('📱 Scan with your Android or iPhone camera on home Wi-Fi:\nhttp://' + (window.location.hostname || '192.168.1.50') + ':4040\nPIN: 8080');
+        });
+      }
+
+      // Settings Mascot Face & Palette Buttons
+      if ($('mascot-interactive-preview')) {
+        $('mascot-interactive-preview').addEventListener('click', () => this.avatar.pet());
+      }
+      if ($('btn-preview-hop')) $('btn-preview-hop').addEventListener('click', () => this.avatar.hop());
+      if ($('btn-preview-love')) $('btn-preview-love').addEventListener('click', () => this.avatar.setMood('love', 1500));
+      if ($('btn-preview-think')) $('btn-preview-think').addEventListener('click', () => this.avatar.setMood('thinking', 1500));
+      if ($('btn-preview-groove')) $('btn-preview-groove').addEventListener('click', () => {
+        this.avatar.setMood('happy', 2000);
+        this.avatar.bounce();
+      });
+
+      document.querySelectorAll('.palette-swatch').forEach((swatch) => {
+        swatch.addEventListener('click', () => {
+          document.querySelectorAll('.palette-swatch').forEach((s) => s.classList.remove('active'));
+          swatch.classList.add('active');
+          const p = swatch.dataset.palette;
+          this.avatar.applyPalette(p);
+        });
+      });
+
+      if ($('mascot-style-select')) {
+        $('mascot-style-select').addEventListener('change', () => {
+          const val = $('mascot-style-select').value;
+          this.avatar.applyStyle(val);
+        });
+      }
+    }
+  }
+
+  // Initialize instances
+  const maveAvatar = new DotAvatarController();
+  const maveIsland = new DynamicIslandController(maveAvatar);
+  const maveNodeMgr = new NodeManager(maveAvatar, maveIsland);
+
+  // Hook into voice and state updates
+  api.on('voice:speaking', (isSpeaking) => {
+    if (isSpeaking) {
+      maveAvatar.hop();
+      maveIsland.setStatus('Speaking…', 'speaking');
+    } else {
+      maveIsland.setStatus('Listening…', 'listening');
+    }
+  });
+
+  api.on('level', (level) => {
+    if (level > 0.05 && maveAvatar.currentMood === 'idle') {
+      maveAvatar.setMood('listening');
+    }
+  });
+
+  // Settings tab click switcher for new tabs
+  document.querySelectorAll('.settings-tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.settings-tab-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.settings-content > section').forEach((sec) => {
+        sec.hidden = sec.dataset.tab !== tab;
+      });
+    });
+  });
+
   api.on('settings', (s) => {
     if (s && s.models && $('prompt')) {
       $('prompt').placeholder = 'Ask anything';
