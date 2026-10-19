@@ -2224,6 +2224,20 @@
     }
   });
 
+  api.on('autonomous:update', (data) => {
+    if (!data) return;
+    const pct = data.progress ? data.progress.percentage : 0;
+    const shortGoal = (data.goal || '').slice(0, 22);
+    if (pct === 100) {
+      maveAvatar.setMood('happy');
+      maveAvatar.hop();
+      maveIsland.setStatus(`Goal Done: ${shortGoal}`, 'idle');
+    } else {
+      maveAvatar.setMood('working');
+      maveIsland.setStatus(`DAG ${pct}%: ${shortGoal}…`, 'thinking');
+    }
+  });
+
   // Settings tab click switcher for new tabs
   document.querySelectorAll('.settings-tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {

@@ -32,6 +32,7 @@ const INVOKE = new Set([
   'users:apikeys', 'users:create-key', 'users:revoke-key', 'host:info', 'host:update-settings',
   'mesh:status', 'mesh:auto-join', 'mesh:offload-page', 'mesh:merge-attn', 'mesh:disconnect',
   'promptcache:stats', 'promptcache:clear',
+  'autonomous:plan', 'autonomous:execute', 'autonomous:status', 'autonomous:audit',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',
@@ -39,7 +40,7 @@ const SEND = new Set([
 ]);
 const RECEIVE = new Set([
   'cursor', 'state', 'bubble', 'bubble-live', 'fly', 'banner', 'welcome', 'settings', 'log', 'log-live', 'log-image', 'usage', 'level',
-  'thought', 'recommendations', 'voice:speaking',
+  'thought', 'recommendations', 'voice:speaking', 'autonomous:update',
   'engine:cmd', 'approval:show', 'buddy:visible', 'annotate', 'select', 'region', 'terminal:line',
   'local:progress', 'local:runtime', 'toolbar:show', 'ink', 'voice-mode', 'loader', 'tools-blocked', 'term:data', 'term:exit', 'term:list', 'term:focus',
 ]);

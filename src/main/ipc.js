@@ -13,6 +13,9 @@ const { userManager } = require('./users');
 const { backburnerMeshEngine } = require('./local/backburner_mesh');
 const { promptCacheManager } = require('./local/prompt_cache');
 const { meshDiscoveryManager } = require('./remote/mesh_discovery');
+const { AutonomousGoalDAG } = require('./autonomous/goal_graph');
+const { defaultAuditor } = require('./autonomous/fresh_auditor');
+const { reflexionEngine } = require('./autonomous/reflexion_engine');
 
 const LINKS = {
   anthropic: 'https://platform.claude.com/settings/keys',
@@ -620,6 +623,55 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('mesh:disconnect', (deviceId) => backburnerMeshEngine.disconnectCoProcessor(deviceId));
   handle('promptcache:stats', () => promptCacheManager.getStats());
   handle('promptcache:clear', () => promptCacheManager.clear());
+
+  // AutoGPT-Inspired Autonomous Goal DAG & Reflexion Loop
+  handle('autonomous:plan', (opts) => {
+    const { goal, context, customSubtasks } = opts || {};
+    let dag;
+    if (Array.isArray(customSubtasks) && customSubtasks.length > 0) {
+      dag = new AutonomousGoalDAG({ goal, context: context || '' });
+      for (const st of customSubtasks) dag.addNode(st);
+    } else {
+      dag = AutonomousGoalDAG.decompose(goal, context || '');
+    }
+    reflexionEngine.activeGoals.set(dag.id, dag);
+    return {
+      dag: dag.toJSON(),
+      checklist: dag.toChecklistMarkdown(),
+      mermaid: dag.toMermaidDiagram(),
+      progress: dag.getProgress(),
+    };
+  });
+  handle('autonomous:execute', async (opts) => {
+    const { goalId, goal } = opts || {};
+    let dag = goalId ? reflexionEngine.getGoal(goalId) : (goal ? AutonomousGoalDAG.decompose(goal) : null);
+    if (!dag) throw new Error('Valid goal or goalId required.');
+    const onUpdate = (d) => {
+      if (windows && windows.broadcast) {
+        windows.broadcast('autonomous:update', {
+          id: d.id,
+          goal: d.goal,
+          progress: d.getProgress(),
+          checklist: d.toChecklistMarkdown(),
+        });
+      }
+    };
+    return reflexionEngine.executeGoal(dag, { onUpdate });
+  });
+  handle('autonomous:status', (goalId) => {
+    if (goalId) {
+      const dag = reflexionEngine.getGoal(goalId);
+      return dag ? { dag: dag.toJSON(), checklist: dag.toChecklistMarkdown(), progress: dag.getProgress() } : null;
+    }
+    return reflexionEngine.listGoals();
+  });
+  handle('autonomous:audit', (opts) => {
+    const { tool, parameters, commitment, userGoal } = opts || {};
+    return defaultAuditor.auditAction({
+      goal: userGoal || '',
+      proposal: { tool, params: parameters, commitment },
+    });
+  });
 
   handle('app:info', () => ({
     version: app.getVersion(), state: controller.state, running: agent.running,
