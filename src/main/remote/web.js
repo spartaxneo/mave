@@ -4408,6 +4408,126 @@ class MobileWebServer {
       }
     }
 
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/eyes/screen-detailed') {
+      try {
+        const body = await parseBody(req).catch(() => ({}));
+        const result = await this.chatgptBridge.captureScreenDetailed(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/eyes/elements') {
+      try {
+        const body = await parseBody(req).catch(() => ({}));
+        const result = await this.chatgptBridge.findScreenElements(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/motor/mouse/click') {
+      try {
+        const body = await parseBody(req);
+        const result = await this.chatgptBridge.mouseClick(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/motor/mouse/move') {
+      try {
+        const body = await parseBody(req);
+        const result = await this.chatgptBridge.mouseMove(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/motor/mouse/scroll') {
+      try {
+        const body = await parseBody(req).catch(() => ({}));
+        const result = await this.chatgptBridge.mouseScroll(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/motor/keyboard/type') {
+      try {
+        const body = await parseBody(req);
+        const result = await this.chatgptBridge.keyboardType(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/motor/keyboard/key') {
+      try {
+        const body = await parseBody(req);
+        const result = await this.chatgptBridge.keyboardPressKey(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/fs/read') {
+      try {
+        const body = await parseBody(req);
+        const result = await this.chatgptBridge.readFileContent(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/fs/write') {
+      try {
+        const body = await parseBody(req);
+        const result = await this.chatgptBridge.writeFileContent(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/fs/list') {
+      try {
+        const body = await parseBody(req).catch(() => ({}));
+        const result = await this.chatgptBridge.listFiles(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/chatgpt/eyes/screen') {
       try {
         const body = await parseBody(req).catch(() => ({}));

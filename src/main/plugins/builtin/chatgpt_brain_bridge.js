@@ -26,12 +26,14 @@ module.exports = [
       return `🧠 **CHATGPT CENTRAL BRAIN + MAVE NERVOUS SYSTEM (HANDS & EYES) SETUP**:
 
 ### 1. What This Connects:
-• **ChatGPT (Your Account)** ➔ **The Central Brain** (high-level reasoning, vision cognition, voice planning, strategy).
+• **ChatGPT (Your Account)** ➔ **The Central Cognitive Brain** (both high-level strategy and low-level step-by-step thinking & coordinate calculation).
 • **Mave (On Your Windows PC)** ➔ **The Physical Nervous System**:
-  - 👁️ **Eyes**: Screen perception (\`mave_see_screen\`) and room camera (\`mave_see_camera\`).
-  - 🖐️ **Hands**: Physical mouse clicking, typing, hotkeys, and app launching (\`mave_execute_action\`).
+  - 👁️ **Eyes & Spatial Perception**: Full screen layout, cursor coordinates & UI elements (\`mave_see_screen_detailed\`, \`mave_find_screen_elements\`, \`mave_see_screen\`, \`mave_see_camera\`).
+  - 🖐️ **Granular Motor Hands**: Precise pixel clicking (\`mave_mouse_click\`), moving (\`mave_mouse_move\`), scrolling (\`mave_mouse_scroll\`), typing (\`mave_keyboard_type\`), and hotkeys (\`mave_keyboard_press_key\`).
+  - 📁 **Filesystem Access**: Read and write local files and source code (\`mave_read_file\`, \`mave_write_file\`, \`mave_list_files\`).
   - ⚡ **Terminal**: Direct PowerShell shell execution with stdout feedback (\`mave_run_terminal_command\`).
   - 🗣️ **Voice**: Physical room speaker voice broadcast (\`mave_speak\`).
+  - 🤖 **Macro Delegation**: Optional high-level autonomous task delegation (\`mave_instruct\`).
 
 ---
 
