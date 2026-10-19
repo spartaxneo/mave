@@ -10,6 +10,8 @@ const { MCPServer, MCPClientManager, AGUIRuntime, A2UI, A2AEngine } = require('.
 const { HybridSearchEngine } = require('./hybrid_search');
 const { GhostSecurityGuard } = require('./security_guard');
 const { GhostReActEngine } = require('./react_engine');
+const { GhostFileWatcher } = require('./file_watcher');
+const { getGhostHardwareProfiler } = require('./hardware_profiler');
 
 class GhostAICore {
   constructor(options = {}) {
@@ -19,7 +21,7 @@ class GhostAICore {
     // 1. Initialize Protocol Stack
     this.mcpServer = new MCPServer({ name: 'Mave Ghost AI Core', version: this.version });
     this.mcpClientManager = new MCPClientManager();
-    this.agui = new AGUIRuntime();
+    this.agui = new AGUIRuntime({ windows: options.windows });
     this.a2a = new A2AEngine({ name: this.name, version: this.version });
     this.a2ui = A2UI;
 
@@ -27,6 +29,14 @@ class GhostAICore {
     this.search = new HybridSearchEngine();
     this.security = new GhostSecurityGuard({ posture: options.securityPosture || 'balanced' });
     this.react = new GhostReActEngine({ agui: this.agui, security: this.security });
+
+    // 3. Initialize Real-Time File Watcher & Adaptive Hardware Profiler
+    this.fileWatcher = new GhostFileWatcher({ searchEngine: this.search });
+    this.hardwareProfiler = getGhostHardwareProfiler();
+
+    // Start background file watcher (non-blocking)
+    Promise.resolve().then(() => this.fileWatcher.start()).catch(() => {});
+    Promise.resolve().then(() => this.hardwareProfiler.profile()).catch(() => {});
 
     this._registerCoreTools();
   }
@@ -94,6 +104,26 @@ class GhostAICore {
         const html = this.a2ui.toHtml(comp);
         this.agui.broadcast('ui_render', { component: comp, html });
         return { ok: true, component: comp, html };
+      },
+    });
+
+    // Tool 4: File Indexer Stats
+    this.mcpServer.registerTool({
+      name: 'file_indexer_stats',
+      description: 'Returns real-time background file indexing metrics and watched folders.',
+      inputSchema: { type: 'object', properties: {} },
+      handler: async () => {
+        return this.fileWatcher.getStats();
+      },
+    });
+
+    // Tool 5: Adaptive Hardware AI Profiler
+    this.mcpServer.registerTool({
+      name: 'hardware_ai_profile',
+      description: 'Inspects host GPU, VRAM, and RAM to determine optimal model tiers (Ultra, High, Balanced, Featherlight).',
+      inputSchema: { type: 'object', properties: {} },
+      handler: async () => {
+        return this.hardwareProfiler.getProfile();
       },
     });
   }
@@ -181,6 +211,30 @@ class GhostAICore {
       return true;
     }
 
+    // 7. File Watcher Stats API: GET /api/ghost/file-watcher/stats
+    if (pathname === '/api/ghost/file-watcher/stats' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      return res.end(JSON.stringify({ ok: true, stats: this.fileWatcher.getStats() }));
+    }
+
+    // 8. File Watcher Trigger Crawl: POST /api/ghost/file-watcher/crawl
+    if (pathname === '/api/ghost/file-watcher/crawl' && req.method === 'POST') {
+      this.fileWatcher.crawlAll().then((stats) => {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ ok: true, stats }));
+      }).catch((err) => {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: err.message }));
+      });
+      return true;
+    }
+
+    // 9. Hardware Profile API: GET /api/ghost/hardware-profile
+    if (pathname === '/api/ghost/hardware-profile' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      return res.end(JSON.stringify({ ok: true, profile: this.hardwareProfiler.getProfile() }));
+    }
+
     return false; // Handled by standard web routes
   }
 
@@ -199,6 +253,8 @@ class GhostAICore {
         documentsIndexed: this.search.documents.size,
         invertedTermsCount: this.search.invertedIndex.size,
       },
+      fileWatcher: this.fileWatcher.getStats(),
+      hardwareProfile: this.hardwareProfiler.getProfile(),
       security: {
         posture: this.security.posture,
         auditCount: this.security.auditLog.length,

@@ -1,8 +1,11 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 const { getGhostAICore } = require('../src/main/ghost_core');
-const { computeDenseEmbedding, cosineSimilarity } = require('../src/main/ghost_core/hybrid_search');
+const { HybridSearchEngine, computeDenseEmbedding, cosineSimilarity } = require('../src/main/ghost_core/hybrid_search');
 
 test('Ghost AI Core initializes complete 2026 agent stack', () => {
   const core = getGhostAICore();
@@ -87,24 +90,27 @@ test('A2UI formats structured component trees and renders native HTML', () => {
 
 // 4. Hybrid Search Engine with Reciprocal Rank Fusion (RRF) Tests
 test('HybridSearchEngine indexes documents and ranks via RRF', () => {
-  const core = getGhostAICore();
+  const tmpIndexDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ghost-rrf-test-'));
+  const search = new HybridSearchEngine({ indexDir: tmpIndexDir });
 
-  core.search.indexDocument({
+  search.indexDocument({
     id: 'doc_ghost_arch',
     title: 'Ghost AI Core Architecture',
     content: 'Ghost AI Core implements MCP, AG-UI, A2UI, and A2A protocols with on-device local search and zero cloud telemetry.',
   }, false);
 
-  core.search.indexDocument({
+  search.indexDocument({
     id: 'doc_sentinel',
     title: 'Autonomous Sentinel Awareness',
     content: 'The sensory sentinel monitors foreground desktop apps, internet connectivity changes, and daily work activity.',
   }, false);
 
-  const results = core.search.search('Ghost AI architecture protocols');
+  const results = search.search('Ghost AI architecture protocols');
   assert.ok(results.length >= 1);
   assert.equal(results[0].id, 'doc_ghost_arch');
   assert.ok(Number(results[0].rrfScore) > 0);
+
+  fs.rmSync(tmpIndexDir, { recursive: true, force: true });
 });
 
 // 5. Ghost 3-Tier Security Guard Tests

@@ -1021,7 +1021,10 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
 
   // Ghost AI Core Handlers (MCP, AG-UI, A2UI, A2A, Hybrid Search, 3-Tier Security)
   const { getGhostAICore } = require('./ghost_core');
-  const ghostCore = getGhostAICore();
+  const ghostCore = getGhostAICore({ windows: controller.windows, logger: controller.logger });
+  if (ghostCore.agui && ghostCore.agui.setWindows) {
+    ghostCore.agui.setWindows(controller.windows);
+  }
 
   handle('ghost:status', () => ghostCore.getStatus());
 
@@ -1059,6 +1062,25 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     const html = ghostCore.a2ui.toHtml(component);
     ghostCore.agui.broadcast('ui_render', { component, html });
     return { ok: true, html };
+  });
+
+  handle('ghost:file-watcher-stats', () => ghostCore.fileWatcher.getStats());
+  handle('ghost:file-watcher-crawl', async () => ghostCore.fileWatcher.crawlAll());
+  handle('ghost:hardware-profile', () => ghostCore.hardwareProfiler.getProfile());
+  handle('ghost:open-file', async (filePath) => {
+    const { shell } = require('electron');
+    if (filePath && typeof filePath === 'string') {
+      return shell.openPath(filePath);
+    }
+    return '';
+  });
+  handle('ghost:reveal-file', async (filePath) => {
+    const { shell } = require('electron');
+    if (filePath && typeof filePath === 'string') {
+      shell.showItemInFolder(filePath);
+      return true;
+    }
+    return false;
   });
 
   handle('app:info', () => ({

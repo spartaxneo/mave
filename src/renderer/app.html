@@ -219,6 +219,15 @@
           <span class="project-tag-badge" id="chat-project-badge" hidden>📁 Project</span>
         </div>
 
+        <!-- Ghost Omnibox Trigger (Ctrl+K) -->
+        <div class="omnibox-trigger-wrap">
+          <button type="button" class="omnibox-trigger-btn" id="omnibox-trigger-btn" title="Ghost Omnibox: Instant Sub-5ms RRF Hybrid Search (Ctrl+K)">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="omnibox-trigger-text">Search files, MCP tools, actions…</span>
+            <kbd class="omnibox-trigger-kbd">Ctrl K</kbd>
+          </button>
+        </div>
+
         <div class="titlebar-actions">
           <span class="status" id="status"><span class="dot"></span><span id="status-text">Ready</span></span>
           <button class="btn plain small" id="island-toggle-btn" title="Toggle System Dynamic Island (Device Extension)">
@@ -2873,12 +2882,47 @@
         </div>
       </div>
     </div>
+  <!-- Ghost AI Core Omnibox Modal (Spotlight / Command Palette Ctrl+K) -->
+  <div class="ghost-omnibox-modal" id="ghost-omnibox-modal" hidden>
+    <div class="ghost-omnibox-backdrop" id="ghost-omnibox-backdrop"></div>
+    <div class="ghost-omnibox-window">
+      <div class="ghost-omnibox-header">
+        <svg class="ghost-omnibox-search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="ghost-omnibox-input" id="ghost-omnibox-input" placeholder="Search local files, MCP tools, actions, or ask Mave..." autocomplete="off" spellcheck="false">
+        <div class="ghost-omnibox-meta-badges">
+          <span class="ghost-badge-rrf" title="Reciprocal Rank Fusion Hybrid Search (BM25 + Semantic Vector)">RRF Hybrid</span>
+          <kbd class="ghost-badge-esc" id="ghost-omnibox-close">Esc</kbd>
+        </div>
+      </div>
+      <div class="ghost-omnibox-filters" id="ghost-omnibox-filters">
+        <button type="button" class="gof-tab active" data-filter="all">All</button>
+        <button type="button" class="gof-tab" data-filter="file">Files & Code</button>
+        <button type="button" class="gof-tab" data-filter="tool">MCP Tools</button>
+        <button type="button" class="gof-tab" data-filter="action">System Actions</button>
+        <button type="button" class="gof-tab" data-filter="setting">Settings</button>
+      </div>
+      <div class="ghost-omnibox-body" id="ghost-omnibox-body">
+        <!-- Results dynamically inserted here -->
+      </div>
+      <div class="ghost-omnibox-footer">
+        <div class="ghost-omnibox-tips">
+          <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+          <span><kbd>↵</kbd> Execute / Open</span>
+          <span><kbd>Esc</kbd> Close</span>
+        </div>
+        <div class="ghost-omnibox-indexer-status" id="ghost-omnibox-indexer-status">
+          <span class="status-dot green"></span>
+          <span id="ghost-indexer-text">RRF Hybrid Search Ready</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="ui.js"></script>
   <script src="local-ai.js"></script>
   <script src="app.js"></script>
   <script src="home.js"></script>
+  <script src="ghost-omnibox.js"></script>
   <script src="terminal-pane.js"></script>
   <script src="../../node_modules/@xterm/xterm/lib/xterm.js"></script>
   <script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>

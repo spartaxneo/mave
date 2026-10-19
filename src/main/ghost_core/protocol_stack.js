@@ -271,9 +271,14 @@ class MCPClientManager extends EventEmitter {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class AGUIRuntime extends EventEmitter {
-  constructor() {
+  constructor(options = {}) {
     super();
+    this.windows = options.windows || null;
     this.subscribers = new Set();
+  }
+
+  setWindows(windows) {
+    this.windows = windows;
   }
 
   addSubscriber(res) {
@@ -298,6 +303,16 @@ class AGUIRuntime extends EventEmitter {
     };
 
     this.emit(eventType, event);
+
+    if (this.windows && this.windows.broadcast) {
+      try {
+        if (eventType === 'ui_render') {
+          this.windows.broadcast('ghost:a2ui', payload);
+        } else if (eventType === 'thought_stream') {
+          this.windows.broadcast('ghost:thought', payload);
+        }
+      } catch {}
+    }
 
     const sseMessage = `event: ${eventType}\ndata: ${JSON.stringify(event)}\n\n`;
     for (const res of this.subscribers) {
@@ -408,7 +423,7 @@ const A2UI = {
         return `
           <div class="a2ui-actions" style="display:flex; flex-wrap:wrap; gap:8px; margin:8px 0;">
             ${component.actions.map((b) => `
-              <button type="button" class="btn ${b.variant} small a2ui-action-btn" data-action="${b.action}" data-action-id="${b.id}">${b.label}</button>
+              <button type="button" class="btn ${b.variant} small a2ui-btn a2ui-action-btn" data-action="${b.action}" data-action-id="${b.id}">${b.label}</button>
             `).join('')}
           </div>
         `;

@@ -205,8 +205,11 @@ class HybridSearchEngine {
         id: entry.doc.id,
         title: entry.doc.title,
         path: entry.doc.path,
+        content: entry.doc.content,
         snippet: entry.doc.content.slice(0, 240) + (entry.doc.content.length > 240 ? '...' : ''),
+        score: Number(entry.rrfScore.toFixed(4)),
         rrfScore: entry.rrfScore.toFixed(4),
+        metadata: entry.doc.metadata || {},
         keywordRank: entry.keywordRank,
         semanticRank: entry.semanticRank,
       }));

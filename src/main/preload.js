@@ -42,6 +42,8 @@ const INVOKE = new Set([
   'trusted-contact:test-alert', 'plugins:toggle',
   'ghost:status', 'ghost:search', 'ghost:index-doc', 'ghost:mcp-catalog',
   'ghost:mcp-install', 'ghost:mcp-uninstall', 'ghost:mcp-call', 'ghost:render-a2ui',
+  'ghost:file-watcher-stats', 'ghost:file-watcher-crawl', 'ghost:hardware-profile',
+  'ghost:open-file', 'ghost:reveal-file',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',
@@ -52,7 +54,7 @@ const RECEIVE = new Set([
   'thought', 'recommendations', 'voice:speaking', 'autonomous:update', 'island:update',
   'engine:cmd', 'approval:show', 'buddy:visible', 'annotate', 'select', 'region', 'terminal:line',
   'local:progress', 'local:runtime', 'toolbar:show', 'ink', 'voice-mode', 'loader', 'tools-blocked', 'term:data', 'term:exit', 'term:list', 'term:focus',
-  'sentinel:network-change', 'sentinel:incoming-activity',
+  'sentinel:network-change', 'sentinel:incoming-activity', 'ghost:a2ui', 'ghost:thought',
 ]);
 
 contextBridge.exposeInMainWorld('buddy', {

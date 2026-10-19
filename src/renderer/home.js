@@ -1474,6 +1474,59 @@
   api.on('log-live', ({ text }) => streamText(text));
   api.on('recommendations', (recs) => renderRecommendations(recs));
 
+  // Ghost AI Core: Interactive A2UI Generative Component Rendering & Action Handling
+  api.on('ghost:a2ui', (payload) => {
+    if (!payload || !payload.html) return;
+    const card = el('div', 'a2ui-turn-card');
+    card.innerHTML = payload.html;
+    add(card);
+    scrollDown();
+  });
+
+  if ($('log')) {
+    $('log').addEventListener('click', async (e) => {
+      const btn = e.target.closest('.a2ui-btn');
+      if (!btn) return;
+      e.preventDefault();
+      const action = btn.dataset.action;
+      const tool = btn.dataset.tool;
+      const initialText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '⏳ Processing...';
+
+      try {
+        if (tool) {
+          const args = btn.dataset.args ? JSON.parse(btn.dataset.args) : {};
+          const res = await api.invoke('ghost:mcp-call', { name: tool, args });
+          btn.textContent = '✅ Completed';
+          if (res && res.result) {
+            addEntry({ kind: 'progress', text: `Tool ${tool} output: ${JSON.stringify(res.result).slice(0, 100)}` });
+          }
+        } else if (action === 'omnibox') {
+          if (window.__openGhostOmnibox) window.__openGhostOmnibox();
+          btn.textContent = initialText;
+          btn.disabled = false;
+        } else if (action === 'terminal') {
+          const termBtn = document.querySelector('button[data-section="terminal"]');
+          if (termBtn) termBtn.click();
+          btn.textContent = initialText;
+          btn.disabled = false;
+        } else if (action === 'settings') {
+          const section = btn.dataset.section || 'general';
+          if (window.__showSettingsSection) window.__showSettingsSection(section);
+          btn.textContent = initialText;
+          btn.disabled = false;
+        } else if (action === 'run_task') {
+          const task = btn.dataset.task || 'run system check';
+          api.invoke('task:run', task);
+          btn.textContent = '✅ Dispatched';
+        }
+      } catch (err) {
+        btn.textContent = `❌ ${err.message || 'Error'}`;
+      }
+    });
+  }
+
   // The area the user marked
   api.on('log-image', ({ src }) => {
     if (!/^data:image\/(png|jpeg);base64,/.test(String(src))) return;
