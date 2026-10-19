@@ -16,6 +16,10 @@ const { ensureSslCert } = require('./ssl');
 const { getChatGPTNervousSystemBridge } = require('../chatgpt_brain/chatgpt_bridge');
 const { getDictationManager } = require('../dictation');
 const { cleanTranscription } = require('../local/text_cleaner');
+const { getVoiceDesigner } = require('../voice_studio/voice_designer');
+const { getVoiceCloner } = require('../voice_studio/voice_cloner');
+const { getVideoDubber } = require('../voice_studio/video_dubber');
+const { getAudiobookProducer } = require('../voice_studio/audiobook_producer');
 
 function getLocalIp() {
   const nets = os.networkInterfaces();
@@ -4599,6 +4603,83 @@ class MobileWebServer {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ ok: false, error: err.message }));
       }
+    }
+
+    // --- Voice Studio & OmniVoice Parity Endpoints ---
+    if (req.method === 'POST' && url.pathname === '/api/voice/design') {
+      try {
+        const body = await parseBody(req);
+        const designer = getVoiceDesigner();
+        const voice = designer.designVoiceFromPrompt(body.prompt, body.name);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, voice }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/voice/clone') {
+      try {
+        const body = await parseBody(req);
+        const cloner = getVoiceCloner();
+        const clone = await cloner.cloneVoice({
+          name: body.name,
+          audioPath: body.audioPath || body.audio_path,
+          description: body.description
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, clone }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/voice/dub') {
+      try {
+        const body = await parseBody(req);
+        const dubber = getVideoDubber();
+        const result = await dubber.dubVideo({
+          videoPath: body.videoPath || body.video_path,
+          targetLanguage: body.targetLanguage || body.target_language || 'es',
+          voiceId: body.voiceId || body.voice_id || 'default',
+          customSegments: body.segments || null
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/voice/story') {
+      try {
+        const body = await parseBody(req);
+        const producer = getAudiobookProducer();
+        const result = await producer.produceAudiobook({
+          title: body.title || 'Untitled Story',
+          scriptText: body.scriptText || body.script_text || '',
+          voiceCast: body.voiceCast || body.voice_cast || {}
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/voice/personas') {
+      const designer = getVoiceDesigner();
+      const cloner = getVoiceCloner();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        ok: true,
+        designed: designer.listVoices(),
+        cloned: cloner.listClones()
+      }));
     }
 
     if (req.method === 'POST' && url.pathname === '/api/chatgpt/eyes/screen') {
