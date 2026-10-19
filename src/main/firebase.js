@@ -83,7 +83,15 @@ function decodeValue(field) {
 
 class FirebaseService {
   constructor(options = {}) {
-    this.config = { ...DEFAULT_FIREBASE_CONFIG, ...(options.config || {}) };
+    const envConfig = {};
+    if (process.env.FIREBASE_API_KEY) envConfig.apiKey = process.env.FIREBASE_API_KEY;
+    if (process.env.FIREBASE_PROJECT_ID) envConfig.projectId = process.env.FIREBASE_PROJECT_ID;
+    if (process.env.FIREBASE_AUTH_DOMAIN) envConfig.authDomain = process.env.FIREBASE_AUTH_DOMAIN;
+    if (process.env.FIREBASE_STORAGE_BUCKET) envConfig.storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
+    if (process.env.FIREBASE_APP_ID) envConfig.appId = process.env.FIREBASE_APP_ID;
+    if (process.env.FIREBASE_MESSAGING_SENDER_ID) envConfig.messagingSenderId = process.env.FIREBASE_MESSAGING_SENDER_ID;
+
+    this.config = { ...DEFAULT_FIREBASE_CONFIG, ...envConfig, ...(options.config || {}) };
     this.storageDir = options.storageDir || (process.env.APPDATA ? path.join(process.env.APPDATA, 'mave') : path.join(process.cwd(), '.mave'));
     this.sessionFile = path.join(this.storageDir, 'firebase_session.json');
     this.cacheFile = path.join(this.storageDir, 'firebase_db_cache.json');

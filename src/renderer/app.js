@@ -191,11 +191,12 @@
 
   // Assistant
   function renderName() {
-    const n = s.assistantName;
-    $('hero-name').textContent = n;
-    $('nav-name').textContent = n;
+    const n = s.assistantName || 'Mave';
+    if ($('hero-name')) $('hero-name').textContent = n;
+    if ($('nav-name')) $('nav-name').textContent = n;
     document.querySelectorAll('.name-slot').forEach((el) => { el.textContent = n; });
-    if (!document.querySelector('[data-pane="assistant"]').hidden) $('section-title').textContent = n;
+    const pane = document.querySelector('[data-pane="assistant"]');
+    if (pane && !pane.hidden && $('section-title')) $('section-title').textContent = n;
     document.title = `${n} Settings`;
   }
   async function refreshWake() {
