@@ -34,6 +34,12 @@ const INVOKE = new Set([
   'promptcache:stats', 'promptcache:clear',
   'autonomous:plan', 'autonomous:execute', 'autonomous:status', 'autonomous:audit',
   'island:expand', 'island:collapse', 'island:open-main', 'island:toggle', 'island:status',
+  'sentinel:status', 'sentinel:summary', 'sentinel:save-summary', 'sentinel:clear-history',
+  'sentinel:update-privacy', 'sentinel:test-connectivity', 'sentinel:notify',
+  'notifications:test', 'storage:stats', 'storage:clean-cache', 'storage:vacuum',
+  'usage:stats', 'usage:reset', 'analytics:stats', 'data:export-all', 'data:clear-history',
+  'security:setup-2fa', 'security:verify-2fa', 'security:disable-2fa', 'security:revoke-sessions',
+  'trusted-contact:test-alert', 'plugins:toggle',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',
@@ -44,6 +50,7 @@ const RECEIVE = new Set([
   'thought', 'recommendations', 'voice:speaking', 'autonomous:update', 'island:update',
   'engine:cmd', 'approval:show', 'buddy:visible', 'annotate', 'select', 'region', 'terminal:line',
   'local:progress', 'local:runtime', 'toolbar:show', 'ink', 'voice-mode', 'loader', 'tools-blocked', 'term:data', 'term:exit', 'term:list', 'term:focus',
+  'sentinel:network-change', 'sentinel:incoming-activity',
 ]);
 
 contextBridge.exposeInMainWorld('buddy', {

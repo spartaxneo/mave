@@ -256,6 +256,29 @@ class IslandMascot {
         if (r) r.textContent = payload.role;
       }
     });
+
+    // Listen for Sentinel Network Connectivity Transitions
+    api.on('sentinel:network-change', (data) => {
+      if (!data) return;
+      if (data.online) {
+        this.hop();
+        this.setStatus('Online 🌐', 'idle');
+        setTimeout(() => this.setStatus('Mave Core', 'idle'), 3000);
+      } else {
+        this.setStatus('Offline 🟡', 'idle');
+        setTimeout(() => this.setStatus('Mave Core', 'idle'), 3000);
+      }
+      this.pollTelemetry();
+    });
+
+    // Listen for Sentinel Incoming Activity (Telegram, Mesh, Mail)
+    api.on('sentinel:incoming-activity', (data) => {
+      if (!data) return;
+      this.hop();
+      const preview = (data.preview || '').slice(0, 16);
+      this.setStatus(`${data.source || 'Msg'}: ${preview}`, 'speaking');
+      setTimeout(() => this.setStatus('Mave Core', 'idle'), 4000);
+    });
   }
 }
 

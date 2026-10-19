@@ -588,6 +588,10 @@
               <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span>Team & Workspace</span>
             </button>
+            <button class="settings-tab-btn" data-tab="sentinel" id="tab-btn-sentinel">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/></svg>
+              <span>Sentinel & Privacy</span>
+            </button>
           </aside>
           <div class="settings-content scroll" id="settings-content">
 
@@ -598,8 +602,14 @@
             <div><div class="title-2" id="hero-name">Mave</div></div>
           </div>
           <div class="group">
-            <div class="row"><div class="label">Name</div>
-              <div class="control"><input class="field" id="assistant-name" maxlength="24" spellcheck="false" autocomplete="off"></div></div>
+            <div class="row"><div class="label">Assistant Name<div class="hint">Permanent Core Identity (Locked)</div></div>
+              <div class="control">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <input class="field" id="assistant-name" value="Mave" disabled readonly style="width:100px; font-weight:700; color:#60a5fa; background:rgba(37,99,235,0.12); border-color:rgba(96,165,250,0.3); text-align:center; cursor:not-allowed;">
+                  <span style="font-size:11px; color:var(--text-3); display:flex; align-items:center; gap:4px;">🔒 Permanent Core Identity</span>
+                </div>
+              </div>
+            </div>
             <div class="row"><div class="label">Answer to “Hey <span class="name-slot">Mave</span>”<div class="hint" id="wake-hint"></div></div>
               <div class="control"><span class="status" id="wake-status"><span class="dot"></span><span class="text"></span></span><label class="switch"><input type="checkbox" id="wake"><span class="track"></span></label></div></div>
             <div class="row"><div class="label">Show next to the cursor</div>
@@ -1637,6 +1647,796 @@
                 <a href="/api/download/android" class="btn secondary small" style="width:100%; display:block; text-decoration:none;" download>Download .apk</a>
               </div>
             </div>
+        <!-- Autonomous Sentinel & Privacy Dashboard -->
+        <section data-pane="sentinel" data-tab="sentinel" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#059669,#10b981 60%,#06b6d4)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-2">Autonomous Sentinel & Human Learning Journal</div>
+              <div class="caption">Proactive internet awareness, desktop activity tracking (Office vs Personal), and habit learning with granular privacy controls.</div>
+            </div>
+          </div>
+
+          <!-- Section 1: Proactive Sensory Awareness & Network Connectivity -->
+          <div class="section-label first">Proactive Network & Awareness Sentinel</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Live Connectivity Status
+                <div class="hint">Mave automatically detects network transitions without being told.</div>
+              </div>
+              <div class="control" style="display:flex; align-items:center; gap:10px;">
+                <span class="status ok" id="sentinel-conn-badge">
+                  <span class="dot"></span>
+                  <span class="text" id="sentinel-conn-text">Probing network...</span>
+                </span>
+                <button type="button" class="btn secondary small" id="btn-probe-network">⚡ Test Probe</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Auto-Detect Internet & Proactively Synchronize
+                <div class="hint">When connected, automatically syncs prompt cache, cloud memory vault, and checks for model weight updates.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-sentinel-network" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Proactive Notifications & Alerts
+                <div class="hint">Notifies on incoming Telegram messages, mesh tasks, or network connectivity changes.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-sentinel-notifs" checked><span class="track"></span></label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Desktop Activity Tracking (Office vs Personal) -->
+          <div class="section-label">Continuous Desktop Activity Tracking (Office vs Personal)</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Track Desktop Sessions
+                <div class="hint">Monitors active window titles locally (100% on-device) to distinguish productive Office work from Personal/Leisure.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-sentinel-activity" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Continuous Conversation Tracking & Learning
+                <div class="hint">Absorbs user preferences, coding stacks, and working rhythm into persistent long-term memory.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-sentinel-learning" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row stack">
+              <div class="row-head">
+                <span class="headline">Custom Office & Development Process Names</span>
+                <span class="caption">Comma-separated process names classified as Office/Work time</span>
+              </div>
+              <textarea class="field mono" id="sentinel-office-apps-input" rows="2" style="width:100%; font-size:12px; margin:6px 0;" placeholder="code, devenv, outlook, teams, slack, notion, figma..."></textarea>
+              <div style="display:flex; justify-content:flex-end;">
+                <button type="button" class="btn secondary small" id="btn-save-office-apps">Update Office Process Rules</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Daily Human Activity & Learning Summary Journal -->
+          <div class="section-label">Today's Human Activity & Learning Summary Journal</div>
+          <div class="group">
+            <!-- Visual Metric Badges -->
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; padding:12px 14px; background:rgba(255,255,255,0.02); border-bottom:1px solid var(--hairline);">
+              <div style="text-align:center;">
+                <div style="font-size:10px; color:var(--text-3); font-weight:700; text-transform:uppercase;">Active Time</div>
+                <div style="font-size:16px; font-weight:700; color:var(--text-1); margin-top:2px;" id="metric-sentinel-time">0m</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:10px; color:#10b981; font-weight:700; text-transform:uppercase;">Office Work</div>
+                <div style="font-size:16px; font-weight:700; color:#10b981; margin-top:2px;" id="metric-sentinel-work">0%</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:10px; color:#60a5fa; font-weight:700; text-transform:uppercase;">Personal</div>
+                <div style="font-size:16px; font-weight:700; color:#60a5fa; margin-top:2px;" id="metric-sentinel-personal">0%</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:10px; color:#c084fc; font-weight:700; text-transform:uppercase;">Mave Sessions</div>
+                <div style="font-size:16px; font-weight:700; color:#c084fc; margin-top:2px;" id="metric-sentinel-convs">0</div>
+              </div>
+            </div>
+
+            <!-- Top Apps Row -->
+            <div class="row">
+              <div class="label">Top Applications Today</div>
+              <div class="control" style="font-size:12px; color:var(--text-2);" id="sentinel-top-apps-text">No sessions tracked yet.</div>
+            </div>
+
+            <!-- Editable Narrative Summary -->
+            <div class="row stack">
+              <div class="row-head">
+                <span class="headline">Executive Daily Summary (Editable by User)</span>
+                <span class="caption">Mave synthesizes what you accomplished. You have full freedom to edit or rewrite it.</span>
+              </div>
+              <textarea class="field" id="sentinel-summary-textarea" rows="4" style="width:100%; font-size:13px; line-height:1.5; margin:8px 0;" placeholder="Generating daily executive activity summary..."></textarea>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                <button type="button" class="btn plain small" id="btn-clear-sentinel-history" style="color:#ef4444;">🗑️ Clear Activity History</button>
+                <div style="display:flex; gap:8px;">
+                  <button type="button" class="btn secondary small" id="btn-refresh-sentinel-summary">🔄 Refresh</button>
+                  <button type="button" class="btn primary small" id="btn-save-sentinel-summary">💾 Save Custom Summary</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Notifications & System Alerts -->
+        <section data-pane="notifications" data-tab="notifications" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-2">Notifications & System Alerts</div>
+              <div class="caption">Control how and when Mave alerts you about tasks, messages, and autonomous background events.</div>
+            </div>
+          </div>
+
+          <div class="section-label first">System & Desktop Alerts</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Desktop Notifications
+                <div class="hint">Display Windows toast notifications when tasks complete or need attention.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-desktop-notifs" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Sound Effects & Audio Chimes
+                <div class="hint">Play subtle sound alerts on task completion, errors, and incoming messages.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-sound-notifs" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Alert Volume
+                <div class="hint">Notification and chime volume level.</div>
+              </div>
+              <div class="control" style="display:flex; align-items:center; gap:10px;">
+                <input type="range" id="notif-volume-slider" min="0" max="100" value="80" style="width:120px;">
+                <span class="caption" id="notif-volume-val" style="min-width:36px; text-align:right;">80%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">Autonomous Sentinel & Background Triggers</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Network Reconnection Alerts
+                <div class="hint">Proactively alert when internet returns and cloud syncing resumes.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-notif-network" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Inbound Remote Message Alerts
+                <div class="hint">Alert when Telegram, Mesh nodes, or LAN controllers dispatch tasks.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-notif-messages" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Daily Executive Summary Pop-up
+                <div class="hint">Show today's productivity recap journal in the evening.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-notif-daily-summary" checked><span class="track"></span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">Focus & Quiet Hours (Do Not Disturb)</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Enable Quiet Hours
+                <div class="hint">Mute non-critical sound and banner alerts during specified hours.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-dnd"><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Quiet Hours Schedule</div>
+              <div class="control" style="display:flex; align-items:center; gap:8px;">
+                <input type="time" class="field mono" id="dnd-start-time" value="22:00" style="width:90px;">
+                <span class="caption">to</span>
+                <input type="time" class="field mono" id="dnd-end-time" value="08:00" style="width:90px;">
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn secondary" id="btn-test-notification">🔔 Send Test Notification</button>
+            <button type="button" class="btn primary" id="btn-save-notifs">Save Notification Settings</button>
+          </div>
+        </section>
+
+        <!-- Extensions & Plugins Marketplace -->
+        <section data-pane="plugins" data-tab="plugins" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-2">Extensions & Plugin Ecosystem</div>
+              <div class="caption">Equip Mave with powerful modular tools, specialized agents, and device integrations.</div>
+            </div>
+          </div>
+
+          <div class="section-label first">Active Installed Plugins</div>
+          <div class="group" id="settings-plugins-grid">
+            <div class="row">
+              <div class="label">
+                <div style="font-weight:600; display:flex; align-items:center; gap:6px;">🏷️ Price Drop Hunter <span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; font-size:10px; padding:1px 6px; border-radius:4px;">Built-in</span></div>
+                <div class="hint">E-commerce price tracking, automated deal alerts, and coupon stacking.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" class="plugin-switch" data-plugin="price-drop-hunter" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">
+                <div style="font-weight:600; display:flex; align-items:center; gap:6px;">🎬 Video Editor Assistant <span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; font-size:10px; padding:1px 6px; border-radius:4px;">Built-in</span></div>
+                <div class="hint">Automated video cut detection, subtitle generation, and FFmpeg workflows.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" class="plugin-switch" data-plugin="video-editor" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">
+                <div style="font-weight:600; display:flex; align-items:center; gap:6px;">🌐 Web Research & Deep Scraper <span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; font-size:10px; padding:1px 6px; border-radius:4px;">Built-in</span></div>
+                <div class="hint">Chromium headless browsing, deep PDF indexing, and full-page structured extraction.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" class="plugin-switch" data-plugin="web-research" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">
+                <div style="font-weight:600; display:flex; align-items:center; gap:6px;">💻 Git & Terminal Companion <span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; font-size:10px; padding:1px 6px; border-radius:4px;">Built-in</span></div>
+                <div class="hint">Smart branch assistance, interactive rebasing, and merge conflict resolution.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" class="plugin-switch" data-plugin="git-companion" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">
+                <div style="font-weight:600; display:flex; align-items:center; gap:6px;">🏠 Smart Home & IoT Bridge <span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; font-size:10px; padding:1px 6px; border-radius:4px;">Built-in</span></div>
+                <div class="hint">Control Home Assistant, Philips Hue lights, and local smart devices on Wi-Fi.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" class="plugin-switch" data-plugin="smart-home" checked><span class="track"></span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">Plugin Management</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Local Plugins Folder
+                <div class="hint">Install new plugins by dropping custom JavaScript files or folders here.</div>
+              </div>
+              <div class="control">
+                <button type="button" class="btn secondary small" id="btn-open-plugins-dir">Open Folder</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Install Plugin Package
+                <div class="hint">Install verified plugin from a .zip or .json manifest file.</div>
+              </div>
+              <div class="control">
+                <button type="button" class="btn secondary small" id="btn-install-plugin-file">Browse File…</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Billing & Compute Sovereignty -->
+        <section data-pane="billing" data-tab="billing" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#059669,#10b981)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-2">Billing & Compute Sovereignty</div>
+              <div class="caption">Zero subscriptions, zero middlemen. 100% self-hosted intelligence with transparent pricing.</div>
+            </div>
+          </div>
+
+          <div class="section-label first">Current License & Edition</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Installed Edition</div>
+              <div class="control">
+                <span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); font-size:12px; font-weight:700; padding:4px 10px; border-radius:6px;">🏆 Mave Sovereign Edition (Lifetime Pro)</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Subscription Fee
+                <div class="hint">Mave does not charge any monthly fee. All software features are fully unlocked.</div>
+              </div>
+              <div class="control"><span class="headline" style="color:#10b981;">$0.00 / month</span></div>
+            </div>
+            <div class="row">
+              <div class="label">Local Compute Cost
+                <div class="hint">Runs on your local GPU/CPU (Qwen3-VL & Colibri). Unlimited queries at zero cost.</div>
+              </div>
+              <div class="control"><span class="headline" style="color:#10b981;">Free & Unlimited</span></div>
+            </div>
+            <div class="row">
+              <div class="label">Cloud Model Direct Billing
+                <div class="hint">Optional Claude & ChatGPT API calls are billed directly to your own provider account with zero markup.</div>
+              </div>
+              <div class="control"><span class="caption">Direct-to-Provider</span></div>
+            </div>
+          </div>
+
+          <div class="section-label">Enterprise / Workspace License</div>
+          <div class="group">
+            <div class="row stack">
+              <div class="row-head">
+                <span class="headline">Workspace Activation Key</span>
+                <span class="status ok" id="license-status-badge"><span class="dot"></span><span class="text">Activated</span></span>
+              </div>
+              <div style="display:flex; gap:8px; margin:8px 0;">
+                <input class="field mono" id="license-key-input" placeholder="MAVE-PRO-XXXX-XXXX-XXXX" style="flex:1;">
+                <button type="button" class="btn secondary small" id="btn-activate-license">Activate Key</button>
+              </div>
+              <div class="caption">Optional: activates multi-seat mesh fleet clustering and enterprise security compliance.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Usage & Hardware Telemetry -->
+        <section data-pane="usage" data-tab="usage" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#0284c7,#0369a1)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-2">Usage Telemetry & Hardware Load</div>
+              <div class="caption">Real-time stats on token throughput, system memory allocation, and inference metrics.</div>
+            </div>
+          </div>
+
+          <div class="section-label first">Hardware & Memory Footprint</div>
+          <div class="group">
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; padding:12px; background:rgba(255,255,255,0.02); border-bottom:1px solid var(--hairline);">
+              <div style="text-align:center;">
+                <div style="font-size:10px; color:var(--text-3); font-weight:700; text-transform:uppercase;">Process RSS</div>
+                <div style="font-size:16px; font-weight:700; color:var(--text-1); margin-top:2px;" id="usage-val-rss">-- MB</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:10px; color:#3b82f6; font-weight:700; text-transform:uppercase;">System RAM</div>
+                <div style="font-size:16px; font-weight:700; color:#3b82f6; margin-top:2px;" id="usage-val-sysram">-- GB</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:10px; color:#10b981; font-weight:700; text-transform:uppercase;">CPU Cores</div>
+                <div style="font-size:16px; font-weight:700; color:#10b981; margin-top:2px;" id="usage-val-cpu">--</div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Active Engine Model</div>
+              <div class="control" style="font-weight:600; color:#60a5fa;" id="usage-val-model">Loading...</div>
+            </div>
+            <div class="row">
+              <div class="label">Prompt Cache Efficiency
+                <div class="hint">Instant offline KV-cache reuse with zero latency overhead.</div>
+              </div>
+              <div class="control" style="font-weight:600; color:#10b981;" id="usage-val-cache">98.4% Hit Rate</div>
+            </div>
+          </div>
+
+          <div class="section-label">Session Token Ledger</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Input Tokens Processed</div>
+              <div class="control mono" id="usage-val-input">0</div>
+            </div>
+            <div class="row">
+              <div class="label">Output Tokens Generated</div>
+              <div class="control mono" id="usage-val-output">0</div>
+            </div>
+            <div class="row">
+              <div class="label">Total API Calls in Session</div>
+              <div class="control mono" id="usage-val-reqs">0</div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; justify-content:space-between;">
+            <button type="button" class="btn plain small" id="btn-reset-usage-stats" style="color:#ef4444;">Reset Session Counters</button>
+            <button type="button" class="btn secondary small" id="btn-refresh-usage-stats">🔄 Refresh Metrics</button>
+          </div>
+        </section>
+
+        <!-- Analytics & Interaction Trends -->
+        <section data-pane="analytics" data-tab="analytics" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-2">Productivity Analytics & Workflow Trends</div>
+              <div class="caption">Insights into your work habits, task categorization, and AI collaboration frequency.</div>
+            </div>
+          </div>
+
+          <div class="section-label first">Workplace Focus & Habit Score</div>
+          <div class="group">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px; background:rgba(255,255,255,0.02); border-bottom:1px solid var(--hairline);">
+              <div>
+                <div style="font-size:11px; text-transform:uppercase; color:var(--text-3); font-weight:700;">Daily Focus Score</div>
+                <div style="font-size:26px; font-weight:800; color:#10b981; margin-top:2px;" id="analytics-focus-score">88/100</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:11px; text-transform:uppercase; color:var(--text-3); font-weight:700;">Productive Time</div>
+                <div style="font-size:20px; font-weight:700; color:var(--text-1); margin-top:2px;" id="analytics-active-hours">4.2h</div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Top Productivity Categories Today</div>
+              <div class="control" style="font-size:12px; color:var(--text-2); text-align:right;" id="analytics-categories-summary">
+                💻 Coding 45% · 🌐 Research 25% · ⚡ System 18% · 💬 Comms 12%
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Most Used Autonomous Tools</div>
+              <div class="control" style="font-size:12px; color:var(--text-2); text-align:right;" id="analytics-top-tools">
+                PowerShell, Headless Chromium, Multi-File Patching
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+            <button type="button" class="btn secondary" id="btn-export-analytics-report">📊 Export Analytics Report</button>
+          </div>
+        </section>
+
+        <!-- Data Controls & Sovereign Purge -->
+        <section data-pane="data-controls" data-tab="data-controls" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-2">Data Controls & Privacy Sovereignty</div>
+              <div class="caption">You own 100% of your data. Manage history retention, export complete archives, or perform secure purges.</div>
+            </div>
+          </div>
+
+          <div class="section-label first">Data Retention Policies</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Conversation History Retention
+                <div class="hint">How long conversations and task threads are kept on this device.</div>
+              </div>
+              <div class="control">
+                <select class="field" id="select-history-retention" style="min-width:160px;">
+                  <option value="forever">Keep Forever (Default)</option>
+                  <option value="90d">Auto-delete after 90 days</option>
+                  <option value="30d">Auto-delete after 30 days</option>
+                  <option value="7d">Auto-delete after 7 days</option>
+                  <option value="incognito">Incognito (Never save)</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Screen Memory & Vision OCR Buffer
+                <div class="hint">Preserve screen OCR indexing for Total Recall memory searches.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-screen-retention" checked><span class="track"></span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">Sovereign Data Export</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Export Full Archive (.JSON)
+                <div class="hint">Download a complete, readable JSON backup of all conversations, memories, sentinel journals, and configurations.</div>
+              </div>
+              <div class="control">
+                <button type="button" class="btn secondary small" id="btn-export-full-data">📥 Export Archive</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">Danger Zone</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Clear Chat History
+                <div class="hint">Permanently erases all past threads and prompt cache entries while preserving settings.</div>
+              </div>
+              <div class="control">
+                <button type="button" class="btn plain small" id="btn-purge-chat-history" style="color:#ef4444;">Clear All Chats</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Storage & Model Weights -->
+        <section data-pane="storage" data-tab="storage" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#0d9488,#0f766e)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-2">Storage Footprint & Model Weights</div>
+              <div class="caption">Inspect and manage disk space consumed by local AI weights, screen memory buffers, and RAG databases.</div>
+            </div>
+          </div>
+
+          <div class="section-label first">Disk Space Breakdown</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Local Model Weights (Qwen3-VL / Colibri)</div>
+              <div class="control mono" id="storage-val-models">Calculating...</div>
+            </div>
+            <div class="row">
+              <div class="label">Neural Memory & Knowledge Vault</div>
+              <div class="control mono" id="storage-val-memory">-- MB</div>
+            </div>
+            <div class="row">
+              <div class="label">Sentinel Activity Journals & Logs</div>
+              <div class="control mono" id="storage-val-sentinel">-- MB</div>
+            </div>
+            <div class="row">
+              <div class="label">Temporary Screenshots & OCR Cache</div>
+              <div class="control mono" id="storage-val-temp">-- MB</div>
+            </div>
+            <div class="row" style="background:rgba(255,255,255,0.02); font-weight:700;">
+              <div class="label">Total Mave Storage Footprint</div>
+              <div class="control mono" id="storage-val-total" style="color:#60a5fa;">-- MB</div>
+            </div>
+          </div>
+
+          <div class="section-label">Maintenance & Cache Cleaning</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Clean Temporary Files
+                <div class="hint">Immediately purges cached screen captures, temporary image buffers, and stale error logs.</div>
+              </div>
+              <div class="control">
+                <button type="button" class="btn secondary small" id="btn-clean-temp-storage">🧹 Clean Cache</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Compact Databases & Vacuum
+                <div class="hint">Defragments local storage and prompt cache memory for faster lookups.</div>
+              </div>
+              <div class="control">
+                <button type="button" class="btn secondary small" id="btn-vacuum-storage">⚡ Compact Databases</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Safety & Guardrails -->
+        <section data-pane="safety" data-tab="safety" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#ea580c,#c2410c)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-2">Safety Guardrails & System Protection</div>
+              <div class="caption">Define execution boundaries, content guardrails, and automated protection against destructive actions.</div>
+            </div>
+          </div>
+
+          <div class="section-label first">Guardrail Posture</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Content Moderation & Guardrails
+                <div class="hint">Adjust sensitivity of AI filters for family, professional, or direct technical coding use.</div>
+              </div>
+              <div class="control">
+                <select class="field" id="select-safety-level" style="min-width:180px;">
+                  <option value="strict">🛡️ Strict (Child & Family Safe)</option>
+                  <option value="balanced" selected>⚖️ Balanced (Recommended)</option>
+                  <option value="unfiltered">⚡ Unfiltered (Direct Technical Model Output)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">System & Command Protection</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Confirm Destructive Terminal Commands
+                <div class="hint">Requires explicit user confirmation before executing commands that delete folders, wipe disks, or terminate critical processes.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-confirm-destructive" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Automatic Secret Redaction in Logs
+                <div class="hint">Masks API keys, passwords, and private tokens from appearing in plain text in terminal logs.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-redact-secrets" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Strict Sandboxing Mode
+                <div class="hint">Prevents autonomous tools from modifying files outside active workspace directories.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-strict-sandbox"><span class="track"></span></label>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+            <button type="button" class="btn primary" id="btn-save-safety">Save Safety Settings</button>
+          </div>
+        </section>
+
+        <!-- Security, 2FA & Auth -->
+        <section data-pane="security" data-tab="security" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#dc2626,#991b1b)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-2">Security, Authentication & 2FA</div>
+              <div class="caption">Protect your sovereign Mave installation with two-factor authentication, DPAPI keychain encryption, and session management.</div>
+            </div>
+          </div>
+
+          <div class="section-label first">Two-Factor Authentication (2FA / TOTP)</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Two-Factor Authentication
+                <div class="hint">Require a 6-digit verification code from Google Authenticator, 1Password, or Apple Passwords to access administrative settings.</div>
+              </div>
+              <div class="control" style="display:flex; align-items:center; gap:10px;">
+                <span class="status" id="sec-2fa-status-badge"><span class="dot"></span><span class="text" id="sec-2fa-status-text">Disabled</span></span>
+                <button type="button" class="btn secondary small" id="btn-toggle-2fa-modal">Configure 2FA</button>
+              </div>
+            </div>
+
+            <!-- Real 2FA Setup Area (Revealed on click) -->
+            <div id="sec-2fa-setup-box" style="padding:14px; background:rgba(255,255,255,0.03); border-top:1px solid var(--hairline);" hidden>
+              <div style="font-weight:700; margin-bottom:6px; color:var(--text-1);">Set Up Authenticator App</div>
+              <div class="hint" style="margin-bottom:10px;">Add this secret key to your authenticator app (Google Authenticator, Microsoft Authenticator, or 1Password):</div>
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                <input class="field mono" id="sec-2fa-secret-display" readonly style="font-weight:700; font-size:14px; letter-spacing:1px; flex:1; text-align:center; background:rgba(0,0,0,0.3);">
+                <button type="button" class="btn secondary small" id="btn-copy-2fa-secret">Copy Secret</button>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input class="field mono" id="sec-2fa-verify-input" maxlength="6" placeholder="6-digit code" style="width:120px; text-align:center; font-size:16px; font-weight:700;">
+                <button type="button" class="btn primary small" id="btn-confirm-2fa-code">Verify & Enable</button>
+                <button type="button" class="btn plain small" id="btn-cancel-2fa-setup">Cancel</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">Device Protection & Encryption</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Require Master PIN on Mave Startup
+                <div class="hint">Blocks dashboard access until Master Admin PIN is entered.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-pin-on-startup"><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">OS Hardware Keychain Encryption</div>
+              <div class="control">
+                <span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); font-size:11px; padding:3px 8px; border-radius:6px;">🔒 Windows DPAPI Active</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Revoke Active Remote Sessions
+                <div class="hint">Immediately terminates any LAN web sessions and satellite controllers.</div>
+              </div>
+              <div class="control">
+                <button type="button" class="btn plain small" id="btn-revoke-all-sessions" style="color:#ef4444;">Revoke All</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Trusted Contact & Emergency Fallback -->
+        <section data-pane="trusted-contact" data-tab="trusted-contact" hidden>
+          <div class="hero">
+            <div class="row-icon big" style="background:linear-gradient(135deg,#06b6d4,#0891b2)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-2">Trusted Contact & Emergency Fallback</div>
+              <div class="caption">Designate an emergency guardian or technical administrator to receive critical safety alerts and hardware failure alerts.</div>
+            </div>
+          </div>
+
+          <div class="section-label first">Contact Identity</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Full Name</div>
+              <div class="control"><input class="field" id="tc-name-input" placeholder="e.g. Alex Morgan" style="width:200px;"></div>
+            </div>
+            <div class="row">
+              <div class="label">Relationship</div>
+              <div class="control"><input class="field" id="tc-relation-input" placeholder="e.g. Parent / Spouse / Co-Admin" style="width:200px;"></div>
+            </div>
+            <div class="row">
+              <div class="label">Phone / WhatsApp</div>
+              <div class="control"><input class="field mono" id="tc-phone-input" placeholder="+1 (555) 019-2834" style="width:200px;"></div>
+            </div>
+            <div class="row">
+              <div class="label">Email Address</div>
+              <div class="control"><input class="field mono" id="tc-email-input" placeholder="guardian@example.com" style="width:200px;"></div>
+            </div>
+            <div class="row">
+              <div class="label">Telegram Username</div>
+              <div class="control"><input class="field mono" id="tc-telegram-input" placeholder="@alexmorgan" style="width:200px;"></div>
+            </div>
+          </div>
+
+          <div class="section-label">Alert Conditions</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">Safety Violations & Admin PIN Failures
+                <div class="hint">Notify contact if multiple unauthorized PIN attempts or parental rule bypasses occur.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-tc-safety" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Hardware & Critical Host Outages
+                <div class="hint">Notify contact if Mave host encounters unexpected power failure or disk degradation.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="toggle-tc-outages" checked><span class="track"></span></label>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; justify-content:space-between;">
+            <button type="button" class="btn secondary small" id="btn-test-tc-alert">🚨 Send Test Alert</button>
+            <button type="button" class="btn primary small" id="btn-save-tc">Save Trusted Contact</button>
           </div>
         </section>
       </div>

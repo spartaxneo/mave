@@ -834,6 +834,13 @@ class Controller {
       family.adaptFromInteraction(activeUser, text);
     } catch {}
 
+    // Continuous Autonomous Sentinel activity & conversation learning
+    try {
+      const { getAutonomousSentinel } = require('./sentinel/autonomous_sentinel');
+      const sentinel = getAutonomousSentinel();
+      if (sentinel) sentinel.recordConversation({ prompt: text, source });
+    } catch {}
+
     // Track conversation in active ChatGPT-grade thread docker
     let currentThread = null;
     try {

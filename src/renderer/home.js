@@ -1079,13 +1079,13 @@
   if ($('upm-try-plus')) {
     $('upm-try-plus').addEventListener('click', () => {
       if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
-      alert("✨ You're already experiencing all Mave Plus features completely unlocked!");
+      api.invoke('app:open-settings', 'billing');
     });
   }
   if ($('upm-help')) {
     $('upm-help').addEventListener('click', () => {
       if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
-      alert("💬 Need help? Type your question directly in the chat or press the blue Voice button to speak with Mave in real time!");
+      api.invoke('app:open-settings', 'assistant');
     });
   }
   if ($('upm-logout')) {
@@ -1459,7 +1459,7 @@
   }
   if ($('btn-enable-2fa')) {
     $('btn-enable-2fa').addEventListener('click', () => {
-      alert('🔒 Two-Factor Authentication (2FA) is enabled for your account.');
+      api.invoke('app:open-settings', 'security');
     });
   }
 

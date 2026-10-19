@@ -10,6 +10,7 @@ const SECRET_KEYS = [
   'anthropicKey', 'openaiKey', 'geminiKey', 'perplexityKey', 'telegramBotToken',
   'notionApiKey', 'googleApiKey', 'slackBotToken', 'discordBotToken', 'githubToken',
   'linearApiKey', 'stripeApiKey', 'instagramPassword', 'instagramSessionId',
+  'twoFactorSecret', 'licenseKey',
 ];
 const CHOICES = {
   theme: ['dark', 'light', 'system'],
@@ -24,6 +25,11 @@ const CHOICES = {
   desktopPetTheme: ['sunset', 'cyber', 'nebula', 'sakura', 'ocean', 'golden'],
   desktopPetSize: ['compact', 'normal', 'large'],
   routingStrategy: ['local_first', 'cloud_assisted', 'auto'],
+  contrast: ['default', 'high'],
+  accentColor: ['emerald', 'blue', 'indigo', 'violet', 'amber'],
+  generalLanguage: ['auto', 'en', 'es', 'fr', 'de', 'hi', 'ja'],
+  historyRetention: ['forever', '90d', '30d', '7d', 'incognito'],
+  safetyLevel: ['strict', 'balanced', 'unfiltered'],
 };
 
 const MODELS = [
@@ -84,11 +90,64 @@ const DEFAULTS = {
   proactiveRoutinesEnabled: true,
   circadianBriefing: true,
   screenMemoryEnabled: true,
+
+  // Autonomous Sensory Sentinel & Human Learning
+  autonomousSentinelEnabled: true,    // Mave proactively knows about changes (internet, notifications, tasks)
+  proactiveNotificationsEnabled: true,// notify user when internet connects, new messages arrive, or activities change
+  activityTrackingEnabled: true,      // continuous tracking of active apps & human work sessions (office vs personal)
+  conversationTrackingEnabled: true,  // track and learn conversation context & user habits
+  officeAppsList: 'code, devenv, visualstudio, cursor, pycharm, webstorm, sublime_text, terminal, powershell, cmd, windowsterminal, git, bash, githubdesktop, outlook, teams, slack, word, excel, powerpnt, onenote, notion, linear, jira, trello, figma, postman, docker, zoom, blender, antigravity',
+  dailySummaryNotification: true,     // provide evening executive summary of what was accomplished today
+
   // Remote Security Access Passwords
   readPassword: '8080',           // Read-only access (Viewer: 8080)
   operatePassword: '0509',        // Chatting and operating from another device (Operator: 0509)
   adminPassword: '1508',          // Full administrative access and settings changes (Admin: 1508)
   securityEnabled: true,
+
+  // Appearance & General
+  contrast: 'default',
+  accentColor: 'emerald',
+  generalLanguage: 'auto',
+  enableDictation: true,
+
+  // Notifications
+  notificationsEnabled: true,
+  notificationSound: true,
+  notificationVolume: 80,
+  dndEnabled: false,
+  dndStart: '22:00',
+  dndEnd: '08:00',
+
+  // Plugins & Extensions
+  enabledPlugins: 'price-drop-hunter, video-editor, web-research, git-companion, smart-home',
+
+  // Billing & Licensing
+  licenseKey: '',
+  licenseTier: 'Lifetime Sovereign Pro',
+
+  // Data Controls & Retention
+  historyRetention: 'forever',
+  screenMemoryRetention: true,
+
+  // Safety & Guardrails
+  safetyLevel: 'balanced',
+  confirmDestructiveCommands: true,
+  redactSensitiveLogs: true,
+  strictSandbox: false,
+
+  // Security & 2FA
+  twoFactorEnabled: false,
+  requirePinOnStartup: false,
+
+  // Trusted Contact & Emergency Fallback
+  trustedContactName: '',
+  trustedContactRelation: '',
+  trustedContactPhone: '',
+  trustedContactEmail: '',
+  trustedContactTelegram: '',
+  trustedContactSafetyAlerts: true,
+  trustedContactOutageAlerts: true,
 
   speakResponses: true,
   ttsProvider: 'auto',          // auto: ChatGPT voice if available, Kokoro on device; or kokoro, openai, system
@@ -147,6 +206,8 @@ class Settings {
       // A cloud provider without its key (the old default) falls back to the local model.
       const keyFor = { anthropic: 'anthropicKey', openai: 'openaiKey' }[this.values.provider];
       if (keyFor && !this.secrets[keyFor]) this.values.provider = 'local';
+      // Sovereign identity is permanently and immutably Mave
+      this.values.assistantName = 'Mave';
       // Setup used to save whichever Windows voice came first (usually a male one); the default is
       // now a female voice. Done once, so a voice picked later in Settings is kept.
       if (!raw.femaleVoiceDefault) {
@@ -197,9 +258,10 @@ class Settings {
         changed[key] = true;
       } else if (key in DEFAULTS && typeof value === typeof DEFAULTS[key] && valid(key, value)) {
         if (key === 'assistantName') {
-          const name = cleanName(value);
-          if (!name) continue;
-          value = name;
+          // Sovereign identity is permanently and immutably "Mave"
+          this.values.assistantName = 'Mave';
+          changed.assistantName = 'Mave';
+          continue;
         }
         this.values[key] = value;
         changed[key] = value;

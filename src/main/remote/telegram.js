@@ -164,6 +164,18 @@ class TelegramBridge {
       await this.sendMessage(chatId, `🎉 Paired successfully! Your Telegram account (ID: ${chatId}) is now authorized to command Mave.`);
     }
 
+    try {
+      const { getAutonomousSentinel } = require('../sentinel/autonomous_sentinel');
+      const sentinel = getAutonomousSentinel();
+      if (sentinel) {
+        sentinel.notifyIncomingMessage({
+          source: 'Telegram',
+          sender: (msg.from && msg.from.first_name) || 'User',
+          preview: text,
+        });
+      }
+    } catch {}
+
     if (text === '/start') {
       await this.sendMessage(chatId, `🤖 Mave is connected to your PC!\n\nCommands:\n• /screen - View live desktop screenshot\n• /status - Hardware & telemetry report\n• /lock - Lock Windows workstation\n\nOr send any question or task for Mave to execute on your PC!`);
       return;
