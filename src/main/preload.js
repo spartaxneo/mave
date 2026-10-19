@@ -44,6 +44,10 @@ const INVOKE = new Set([
   'ghost:mcp-install', 'ghost:mcp-uninstall', 'ghost:mcp-call', 'ghost:render-a2ui',
   'ghost:file-watcher-stats', 'ghost:file-watcher-crawl', 'ghost:hardware-profile',
   'ghost:open-file', 'ghost:reveal-file',
+  'code-interpreter:run',
+  'personas:list', 'personas:get', 'personas:get-active', 'personas:set-active', 'personas:create', 'personas:delete',
+  'personalization:get', 'personalization:update', 'personalization:memories', 'personalization:add-memory', 'personalization:delete-memory', 'personalization:clear-memories',
+  'jarvis:telemetry', 'jarvis:briefing',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',
@@ -55,6 +59,7 @@ const RECEIVE = new Set([
   'engine:cmd', 'approval:show', 'buddy:visible', 'annotate', 'select', 'region', 'terminal:line',
   'local:progress', 'local:runtime', 'toolbar:show', 'ink', 'voice-mode', 'loader', 'tools-blocked', 'term:data', 'term:exit', 'term:list', 'term:focus',
   'sentinel:network-change', 'sentinel:incoming-activity', 'ghost:a2ui', 'ghost:thought',
+  'jarvis:intervention',
 ]);
 
 contextBridge.exposeInMainWorld('buddy', {

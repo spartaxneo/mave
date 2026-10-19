@@ -237,6 +237,12 @@
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="2"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>
             <span>Archive</span>
           </button>
+          <button class="btn plain small" id="canvas-trigger-btn" title="Toggle ChatGPT Canvas Split-Screen Editor">
+            <span>◫ Canvas</span>
+          </button>
+          <button class="btn plain small" id="jarvis-hud-trigger-btn" title="Toggle J.A.R.V.I.S. Holographic Telemetry HUD (Ctrl+Shift+H)">
+            <span>🦾 J.A.R.V.I.S. HUD</span>
+          </button>
           <button class="btn plain small" id="talk-btn" title="ChatGPT-Style Hands-Free Voice Mode (Talk)">
             <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6.5v3M5.5 4.5v7M8 2.5v11M10.5 5v6M13 7v2"/></svg>
             <span id="talk-btn-text">Voice Mode</span>
@@ -498,6 +504,36 @@
       <div class="cap-body">
         <iframe class="cap-preview-frame" id="cap-preview-frame" sandbox="allow-scripts allow-modals"></iframe>
         <pre class="cap-code-view" id="cap-code-view" hidden><code id="cap-code-content"></code></pre>
+      </div>
+    </aside>
+
+    <!-- ChatGPT Canvas Split-Screen Side Panel -->
+    <aside class="chatgpt-canvas-pane" id="chatgpt-canvas-pane" hidden>
+      <div class="canvas-header">
+        <div class="canvas-title-wrap">
+          <span class="canvas-icon">◫</span>
+          <span class="canvas-file-title" id="canvas-file-title">analysis.py</span>
+          <span class="canvas-lang-badge" id="canvas-lang-badge">PYTHON</span>
+        </div>
+        <div class="canvas-header-actions">
+          <button type="button" class="btn primary small" id="canvas-btn-run" title="Execute in Sandbox (ChatGPT Code Interpreter)">▶ Run Code</button>
+          <button type="button" class="btn plain small" id="canvas-btn-copy" title="Copy code">📋 Copy</button>
+          <button type="button" class="icon-btn canvas-close-btn" id="canvas-close-btn" title="Close Canvas">✕</button>
+        </div>
+      </div>
+      <div class="canvas-quick-chips">
+        <button type="button" class="canvas-chip" id="canvas-chip-review">🪄 Review & Fix</button>
+        <button type="button" class="canvas-chip" id="canvas-chip-optimize">⚡ Optimize</button>
+      </div>
+      <div class="canvas-editor-wrap">
+        <textarea class="canvas-code-editor" id="canvas-code-editor" spellcheck="false" placeholder="# Type or paste code here..."></textarea>
+      </div>
+      <div class="canvas-output-box" id="canvas-output-box" hidden>
+        <div class="canvas-output-head">
+          <span>Terminal Output</span>
+        </div>
+        <pre class="canvas-stdout" id="canvas-stdout"></pre>
+        <div class="canvas-plots" id="canvas-plots"></div>
       </div>
     </aside>
 
@@ -2918,11 +2954,87 @@
     </div>
   </div>
 
+  <!-- J.A.R.V.I.S. Holographic Telemetry HUD Modal (Ctrl+Shift+H) -->
+  <div class="jarvis-hud-modal" id="jarvis-hud-modal" hidden>
+    <div class="jarvis-hud-backdrop" id="jarvis-hud-backdrop"></div>
+    <div class="jarvis-hud-window">
+      <div class="jarvis-hud-header">
+        <div class="jhud-brand">
+          <div class="jhud-reactor-ring"></div>
+          <div>
+            <div class="jhud-title">J.A.R.V.I.S. PROTOCOL</div>
+            <div class="jhud-sub">STARK INDUSTRIES TACTICAL TELEMETRY & DIAGNOSTICS</div>
+          </div>
+        </div>
+        <div class="jhud-header-right">
+          <span class="jhud-status-badge">SOVEREIGN CORE ACTIVE</span>
+          <button type="button" class="jhud-close" id="jarvis-hud-close">✕</button>
+        </div>
+      </div>
+
+      <div class="jhud-body">
+        <div class="jhud-telemetry-grid">
+          <!-- CPU -->
+          <div class="jhud-gauge-card">
+            <div class="jhud-card-head">
+              <span>PROCESSOR TELEMETRY</span>
+              <span class="jhud-val" id="jhud-cpu-val">--%</span>
+            </div>
+            <div class="jhud-bar-track"><div class="jhud-bar-fill" id="jhud-cpu-bar"></div></div>
+            <div class="jhud-card-meta" id="jhud-cpu-model">AMD Ryzen 5 3600 (12 threads)</div>
+          </div>
+
+          <!-- GPU / RTX 5060 -->
+          <div class="jhud-gauge-card">
+            <div class="jhud-card-head">
+              <span>NEURAL ACCELERATOR (GPU)</span>
+              <span class="jhud-val" id="jhud-gpu-val">--%</span>
+            </div>
+            <div class="jhud-bar-track"><div class="jhud-bar-fill green" id="jhud-gpu-bar"></div></div>
+            <div class="jhud-card-meta" id="jhud-gpu-meta">NVIDIA GeForce RTX 5060 • 8.0 GB VRAM</div>
+          </div>
+
+          <!-- RAM -->
+          <div class="jhud-gauge-card">
+            <div class="jhud-card-head">
+              <span>PHYSICAL MEMORY</span>
+              <span class="jhud-val" id="jhud-ram-val">--%</span>
+            </div>
+            <div class="jhud-bar-track"><div class="jhud-bar-fill blue" id="jhud-ram-bar"></div></div>
+            <div class="jhud-card-meta" id="jhud-ram-meta">-- GB / -- GB System RAM</div>
+          </div>
+
+          <!-- Network -->
+          <div class="jhud-gauge-card">
+            <div class="jhud-card-head">
+              <span>TACTICAL PERIMETER & MESH</span>
+              <span class="jhud-val" id="jhud-net-ping">-- ms</span>
+            </div>
+            <div class="jhud-card-meta">UDP Mesh Discovery: Port 4045 • Zero Leaks</div>
+          </div>
+        </div>
+
+        <div class="jhud-briefing-box">
+          <div class="jhud-briefing-title">🎙️ TACTICAL STATUS REPORT</div>
+          <div class="jhud-briefing-text" id="jhud-status-text">Sir, all tactical systems are nominal. RTX 5060 GPU standing by. Zero perimeter intrusions.</div>
+        </div>
+
+        <div class="jhud-actions-row">
+          <button type="button" class="jhud-action-btn" id="jhud-btn-opt-mem">⚡ Clean Memory</button>
+          <button type="button" class="jhud-action-btn" id="jhud-btn-diag">🔍 System Diagnostics</button>
+          <button type="button" class="jhud-action-btn" id="jhud-btn-brief">📋 Morning Briefing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="ui.js"></script>
   <script src="local-ai.js"></script>
   <script src="app.js"></script>
   <script src="home.js"></script>
   <script src="ghost-omnibox.js"></script>
+  <script src="canvas.js"></script>
+  <script src="jarvis-hud.js"></script>
   <script src="terminal-pane.js"></script>
   <script src="../../node_modules/@xterm/xterm/lib/xterm.js"></script>
   <script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>

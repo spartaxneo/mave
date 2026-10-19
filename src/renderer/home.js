@@ -129,17 +129,29 @@
       const id = `__CODE_BLOCK_${idx}__`;
       const escapedCode = escapeHtml(code.trimEnd());
       const rawAttr = escapeHtml(code);
+      const isExecutable = /^(?:python|py|javascript|js|node)$/i.test(lang);
 
       const blockHtml = `
-      <div class="code-block-wrap">
+      <div class="code-block-wrap" data-lang="${escapeHtml(lang)}" data-code="${rawAttr}">
         <div class="code-block-head">
           <span class="code-lang-label">${escapeHtml(lang)}</span>
-          <button type="button" class="copy-code-btn" data-code="${rawAttr}" title="Copy code">
-            <svg class="copy-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            <span class="copy-text">Copy code</span>
-          </button>
+          <div class="code-block-actions" style="display:flex; align-items:center; gap:8px;">
+            ${isExecutable ? `
+              <button type="button" class="run-code-btn" data-lang="${escapeHtml(lang)}" data-code="${rawAttr}" title="Execute in Sandbox (ChatGPT Code Interpreter)">
+                ▶ Run Code
+              </button>
+            ` : ''}
+            <button type="button" class="open-in-canvas-btn" data-lang="${escapeHtml(lang)}" data-code="${rawAttr}" title="Open in ChatGPT Canvas">
+              ◫ Canvas
+            </button>
+            <button type="button" class="copy-code-btn" data-code="${rawAttr}" title="Copy code">
+              <svg class="copy-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span class="copy-text">Copy</span>
+            </button>
+          </div>
         </div>
         <pre class="code-pre"><code class="code-content">${escapedCode}</code></pre>
+        <div class="code-exec-output" hidden></div>
       </div>`;
       text = text.replace(id, blockHtml);
     });
@@ -678,9 +690,62 @@
         if (textSpan) textSpan.textContent = 'Copied!';
         copyCodeBtn.classList.add('copied');
         setTimeout(() => {
-          if (textSpan) textSpan.textContent = 'Copy code';
+          if (textSpan) textSpan.textContent = 'Copy';
           copyCodeBtn.classList.remove('copied');
         }, 2000);
+      }
+
+      // ChatGPT Code Interpreter: Live Execution
+      const runCodeBtn = e.target.closest('.run-code-btn');
+      if (runCodeBtn) {
+        const wrap = runCodeBtn.closest('.code-block-wrap');
+        const code = runCodeBtn.dataset.code || (wrap ? wrap.dataset.code : '');
+        const lang = (runCodeBtn.dataset.lang || (wrap ? wrap.dataset.lang : 'python')).toLowerCase();
+        const outputBox = wrap ? wrap.querySelector('.code-exec-output') : null;
+
+        if (outputBox) {
+          outputBox.hidden = false;
+          outputBox.innerHTML = '<div style="padding:8px 12px; color:var(--text-3); font-size:12px; font-family:monospace;">⏳ Executing in Mave sandbox...</div>';
+          runCodeBtn.disabled = true;
+          runCodeBtn.textContent = 'Running…';
+
+          api.invoke('code-interpreter:run', { language: lang, code, timeoutMs: 20000 }).then((res) => {
+            runCodeBtn.disabled = false;
+            runCodeBtn.textContent = '▶ Run Code';
+            let out = '';
+            if (res.stdout) out += escapeHtml(res.stdout);
+            if (res.stderr) out += (out ? '\n[STDERR]:\n' : '') + `<span style="color:#f87171;">${escapeHtml(res.stderr)}</span>`;
+            if (!out && res.ok) out = `<span style="color:#34d399;">Process finished with exit code ${res.exitCode} (${res.durationMs}ms)</span>`;
+
+            let html = `<div style="padding:10px 14px; background:#090d16; border-top:1px solid rgba(255,255,255,0.08); font-family:monospace; font-size:12px; white-space:pre-wrap; color:#e2e8f0;">${out || '(No output)'}</div>`;
+
+            if (res.plots && res.plots.length > 0) {
+              res.plots.forEach((p) => {
+                html += `<div style="padding:10px; background:#090d16;"><img src="${p.dataUrl}" alt="Generated Plot" style="max-width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.1);"></div>`;
+              });
+            }
+            outputBox.innerHTML = html;
+          }).catch((err) => {
+            runCodeBtn.disabled = false;
+            runCodeBtn.textContent = '▶ Run Code';
+            outputBox.innerHTML = `<div style="padding:10px 14px; background:#090d16; color:#f87171; font-family:monospace; font-size:12px;">Execution error: ${escapeHtml(err.message)}</div>`;
+          });
+        }
+      }
+
+      // ChatGPT Canvas: Open in Canvas split-screen
+      const openCanvasBtn = e.target.closest('.open-in-canvas-btn');
+      if (openCanvasBtn) {
+        const wrap = openCanvasBtn.closest('.code-block-wrap');
+        const code = openCanvasBtn.dataset.code || (wrap ? wrap.dataset.code : '');
+        const lang = openCanvasBtn.dataset.lang || (wrap ? wrap.dataset.lang : 'python');
+        if (window.__openChatGPTCanvas) {
+          window.__openChatGPTCanvas({
+            title: `script.${lang === 'python' ? 'py' : lang === 'javascript' ? 'js' : lang}`,
+            language: lang,
+            content: code,
+          });
+        }
       }
     });
   }

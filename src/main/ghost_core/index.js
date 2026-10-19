@@ -126,6 +126,39 @@ class GhostAICore {
         return this.hardwareProfiler.getProfile();
       },
     });
+
+    // Tool 6: ChatGPT Code Interpreter Sandbox
+    this.mcpServer.registerTool({
+      name: 'code_interpreter',
+      description: 'Executes live sandboxed Python or JavaScript scripts on-device, capturing stdout, stderr, and generated charts.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          language: { type: 'string', enum: ['python', 'javascript'], description: 'Programming language' },
+          code: { type: 'string', description: 'Source code script to execute' },
+        },
+        required: ['code'],
+      },
+      handler: async (args) => {
+        const { getCodeInterpreter } = require('../chatgpt/code_interpreter');
+        const interp = getCodeInterpreter();
+        if (args.language === 'javascript') {
+          return interp.runJavaScript(args.code);
+        }
+        return interp.runPython(args.code);
+      },
+    });
+
+    // Tool 7: J.A.R.V.I.S. Real-Time Telemetry Snapshot
+    this.mcpServer.registerTool({
+      name: 'jarvis_telemetry',
+      description: 'Queries live real-time hardware telemetry: CPU load, GPU/VRAM allocation, RAM usage, and temperatures.',
+      inputSchema: { type: 'object', properties: {} },
+      handler: async () => {
+        const { getJarvisTelemetry } = require('../jarvis/telemetry');
+        return getJarvisTelemetry().getSnapshot();
+      },
+    });
   }
 
   /**

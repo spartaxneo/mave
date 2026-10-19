@@ -1083,6 +1083,50 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return false;
   });
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ChatGPT & J.A.R.V.I.S. Core IPC Services
+  // ═══════════════════════════════════════════════════════════════════════════
+  const { getCodeInterpreter } = require('./chatgpt/code_interpreter');
+  const { getPersonaStore } = require('./chatgpt/persona_store');
+  const { getChatGPTPersonalization } = require('./chatgpt/personalization');
+  const { getJarvisTelemetry } = require('./jarvis/telemetry');
+  const { getJarvisButler } = require('./jarvis/proactive_butler');
+
+  const codeInterpreter = getCodeInterpreter({ logger: controller.logger });
+  const personaStore = getPersonaStore();
+  const personalization = getChatGPTPersonalization();
+  const jarvisTelemetry = getJarvisTelemetry({ logger: controller.logger });
+  const jarvisButler = getJarvisButler({ windows: controller.windows, logger: controller.logger });
+  jarvisButler.start();
+
+  // 1. Code Interpreter
+  handle('code-interpreter:run', async ({ language = 'python', code, timeoutMs = 20000 }) => {
+    if (language === 'python') {
+      return codeInterpreter.runPython(code, { timeoutMs });
+    }
+    return codeInterpreter.runJavaScript(code, { timeoutMs });
+  });
+
+  // 2. Custom GPTs & Personas
+  handle('personas:list', () => personaStore.listPersonas());
+  handle('personas:get', (id) => personaStore.getPersona(id));
+  handle('personas:get-active', () => personaStore.getActivePersona());
+  handle('personas:set-active', (id) => personaStore.setActivePersona(id));
+  handle('personas:create', (data) => personaStore.createPersona(data));
+  handle('personas:delete', (id) => personaStore.deletePersona(id));
+
+  // 3. ChatGPT Personalization & Memory
+  handle('personalization:get', () => personalization.getInstructions());
+  handle('personalization:update', (data) => personalization.updateInstructions(data));
+  handle('personalization:memories', () => personalization.listMemories());
+  handle('personalization:add-memory', ({ text, category }) => personalization.addMemory(text, category));
+  handle('personalization:delete-memory', (id) => personalization.deleteMemory(id));
+  handle('personalization:clear-memories', () => personalization.clearMemories());
+
+  // 4. J.A.R.V.I.S. Telemetry & Proactive Butler
+  handle('jarvis:telemetry', async () => jarvisTelemetry.getSnapshot());
+  handle('jarvis:briefing', async () => jarvisButler.generateStatusBriefing());
+
   handle('app:info', () => ({
     version: app.getVersion(), state: controller.state, running: agent.running,
     usage: { task: costs.task, session: costs.session }, plugins: plugins.list(),

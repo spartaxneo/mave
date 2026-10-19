@@ -396,11 +396,29 @@ class Agent {
             memoryNote += `\n\n(User and system context: ${getUserProfileSummary()})`;
           }
         } catch { /* no memories */ }
+        let personaNote = '';
+        try {
+          const { getPersonaStore } = require('./chatgpt/persona_store');
+          const activePersona = getPersonaStore().getActivePersona();
+          if (activePersona && activePersona.systemPrompt) {
+            personaNote = `\n\n[Active Persona Directives: ${activePersona.name} (${activePersona.tagline})]:\n${activePersona.systemPrompt}`;
+          }
+        } catch {}
+
+        let personalizationNote = '';
+        try {
+          const { getChatGPTPersonalization } = require('./chatgpt/personalization');
+          const pContext = getChatGPTPersonalization().formatPromptContext();
+          if (pContext) {
+            personalizationNote = `\n\n[ChatGPT Custom Instructions & Personalization]:\n${pContext}`;
+          }
+        } catch {}
+
         const govNote = governanceDirectives ? `\n${governanceDirectives}` : '';
         const now = new Date();
         const timeNote = `\n\n(Current system time: ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}, ${now.toLocaleTimeString('en-US')})`;
         const anchorNote = `\n\n[Mave Task Anchor: "${task}"] Stick strictly to this user request. Do NOT divert to unrelated apps, websites, suggestions, or placeholders found on screen.`;
-        request = (p) => p.addUserMessage(task + activeWindowNote + groundingNote + screenNote + memoryNote + govNote + timeNote + anchorNote);
+        request = (p) => p.addUserMessage(task + activeWindowNote + groundingNote + screenNote + memoryNote + personaNote + personalizationNote + govNote + timeNote + anchorNote);
       }
       if (provider.startTask) provider.startTask(); // keep earlier turns lean (local model)
       request(provider);

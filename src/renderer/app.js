@@ -107,6 +107,60 @@
     b.addEventListener('click', () => openSettingsModal(b.dataset.tab));
   });
 
+  // ChatGPT User Profile Menu
+  if ($('user-profile-btn')) {
+    $('user-profile-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const menu = $('user-profile-menu');
+      if (menu) menu.hidden = !menu.hidden;
+    });
+  }
+  document.addEventListener('click', (e) => {
+    const menu = $('user-profile-menu');
+    if (menu && !menu.hidden && !e.target.closest('#user-profile-btn') && !e.target.closest('#user-profile-menu')) {
+      menu.hidden = true;
+    }
+  });
+
+  if ($('upm-try-plus')) {
+    $('upm-try-plus').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      openSettingsModal('billing');
+    });
+  }
+  if ($('upm-personalization')) {
+    $('upm-personalization').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      openSettingsModal('customization');
+    });
+  }
+  if ($('upm-profile')) {
+    $('upm-profile').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      openSettingsModal('customization');
+    });
+  }
+  if ($('upm-settings')) {
+    $('upm-settings').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      openSettingsModal('general');
+    });
+  }
+  if ($('upm-help')) {
+    $('upm-help').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      show('home');
+      api.invoke('task:run', 'Sir, what all can you do? Show me your full capabilities.');
+    });
+  }
+  if ($('upm-logout')) {
+    $('upm-logout').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      api.invoke('conversation:reset');
+      show('home');
+    });
+  }
+
   if ($('sidebar-toggle')) {
     $('sidebar-toggle').addEventListener('click', () => {
       document.querySelector('.window').classList.toggle('sidebar-collapsed');
