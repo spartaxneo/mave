@@ -48,6 +48,11 @@ const INVOKE = new Set([
   'personas:list', 'personas:get', 'personas:get-active', 'personas:set-active', 'personas:create', 'personas:delete',
   'personalization:get', 'personalization:update', 'personalization:memories', 'personalization:add-memory', 'personalization:delete-memory', 'personalization:clear-memories',
   'jarvis:telemetry', 'jarvis:briefing',
+  'local:check-updates', 'local:auto-update-status', 'pet:pet', 'pet:play',
+  'instagram:get-profile', 'instagram:update-profile', 'instagram:analyze-reel', 'instagram:get-rules', 'instagram:teach-rule',
+  'routines:tidy', 'knowledge:list', 'knowledge:add', 'knowledge:delete', 'knowledge:search',
+  'voice-mode:toggle', 'voice-mode:status', 'media:list-images', 'media:reveal-folder',
+  'region:start', 'dictation:set-mode', 'dictation:toggle', 'dictation:status',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',

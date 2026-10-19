@@ -163,6 +163,68 @@
         }
       });
     }
+
+    // --- Claude Interactive Artifacts Slide-Out Panel Wiring ---
+    if ($('cap-tab-preview')) $('cap-tab-preview').addEventListener('click', () => setArtifactTab('preview'));
+    if ($('cap-tab-code')) $('cap-tab-code').addEventListener('click', () => setArtifactTab('code'));
+    if ($('cap-close-btn')) $('cap-close-btn').addEventListener('click', closeClaudeArtifact);
+    if ($('cap-copy-btn')) {
+      $('cap-copy-btn').addEventListener('click', () => {
+        const text = currentArtifact.code || currentArtifact.html || '';
+        navigator.clipboard.writeText(text);
+        const originalTitle = $('cap-copy-btn').getAttribute('title');
+        $('cap-copy-btn').setAttribute('title', 'Copied!');
+        setTimeout(() => $('cap-copy-btn').setAttribute('title', originalTitle), 2000);
+      });
+    }
+  }
+
+  let currentArtifact = {
+    title: 'Interactive Artifact',
+    code: '<!DOCTYPE html><html><body style="font-family:sans-serif;padding:20px;"><h2>Mave Live Artifact</h2><p>Interactive preview rendered locally.</p></body></html>',
+    html: '<!DOCTYPE html><html><body style="font-family:sans-serif;padding:20px;"><h2>Mave Live Artifact</h2><p>Interactive preview rendered locally.</p></body></html>',
+  };
+
+  function openClaudeArtifact(data = null) {
+    const pane = $('claude-artifacts-pane');
+    if (!pane) return;
+    if (data) currentArtifact = { ...currentArtifact, ...data };
+    pane.hidden = false;
+    document.body.classList.add('artifacts-open');
+
+    if ($('cap-title')) $('cap-title').textContent = currentArtifact.title || 'Artifact Preview';
+    if ($('cap-code-content')) $('cap-code-content').textContent = currentArtifact.code || currentArtifact.html || '';
+    if ($('cap-preview-frame')) {
+      const srcDoc = currentArtifact.html || currentArtifact.code || '<p>No preview</p>';
+      $('cap-preview-frame').srcdoc = srcDoc;
+    }
+    setArtifactTab('preview');
+  }
+
+  function closeClaudeArtifact() {
+    const pane = $('claude-artifacts-pane');
+    if (!pane) return;
+    pane.hidden = true;
+    document.body.classList.remove('artifacts-open');
+  }
+
+  function setArtifactTab(tab = 'preview') {
+    const previewTab = $('cap-tab-preview');
+    const codeTab = $('cap-tab-code');
+    const previewFrame = $('cap-preview-frame');
+    const codeView = $('cap-code-view');
+
+    if (tab === 'preview') {
+      if (previewTab) previewTab.classList.add('active');
+      if (codeTab) codeTab.classList.remove('active');
+      if (previewFrame) previewFrame.hidden = false;
+      if (codeView) codeView.hidden = true;
+    } else {
+      if (previewTab) previewTab.classList.remove('active');
+      if (codeTab) codeTab.classList.add('active');
+      if (previewFrame) previewFrame.hidden = true;
+      if (codeView) codeView.hidden = false;
+    }
   }
 
   if (document.readyState === 'loading') {
@@ -173,4 +235,6 @@
 
   window.__openChatGPTCanvas = openCanvas;
   window.__closeChatGPTCanvas = closeCanvas;
+  window.__openClaudeArtifact = openClaudeArtifact;
+  window.__closeClaudeArtifact = closeClaudeArtifact;
 })();

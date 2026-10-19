@@ -450,7 +450,20 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('task:stop', () => { controller.stopTask(); return true; });
   handle('conversation:reset', () => agent.reset());
   handle('select:start', () => controller.startPanelSelection());
+  handle('region:start', () => controller.startPanelSelection());
   handle('region:clear', () => { controller.clearRegion(); return true; });
+  handle('dictation:set-mode', (enabled) => {
+    const { getDictationManager } = require('./dictation');
+    return getDictationManager({ controller, logger: controller.logger, input: controller.input }).setMode(enabled);
+  });
+  handle('dictation:toggle', () => {
+    const { getDictationManager } = require('./dictation');
+    return getDictationManager({ controller, logger: controller.logger, input: controller.input }).toggleMode();
+  });
+  handle('dictation:status', () => {
+    const { getDictationManager } = require('./dictation');
+    return getDictationManager({ controller, logger: controller.logger, input: controller.input }).status();
+  });
 
   // ChatGPT-Style Threads & Multi-Session Conversations
   handle('threads:list', (opts = {}) => {

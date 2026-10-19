@@ -936,16 +936,25 @@
   if ($('btn-close-archived-modal')) $('btn-close-archived-modal').addEventListener('click', () => { $('modal-archived').hidden = true; });
   if ($('btn-close-archived')) $('btn-close-archived').addEventListener('click', () => { $('modal-archived').hidden = true; });
 
+  let cachedArchived = [];
   async function renderArchivedList() {
     const listEl = $('archived-chats-list');
     if (!listEl) return;
-    const archived = await api.invoke('threads:archived');
+    cachedArchived = (await api.invoke('threads:archived')) || [];
+    filterAndDrawArchived();
+  }
+
+  function filterAndDrawArchived() {
+    const listEl = $('archived-chats-list');
+    if (!listEl) return;
+    const filter = ($('archived-search-input')?.value || '').toLowerCase().trim();
+    const items = filter ? cachedArchived.filter((t) => (t.title || '').toLowerCase().includes(filter)) : cachedArchived;
     listEl.innerHTML = '';
-    if (!Array.isArray(archived) || archived.length === 0) {
-      listEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-3);font-size:13px;">No archived conversations</div>`;
+    if (!Array.isArray(items) || items.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-3);font-size:13px;">${filter ? 'No matching archived conversations' : 'No archived conversations'}</div>`;
       return;
     }
-    archived.forEach((t) => {
+    items.forEach((t) => {
       const row = el('div', 'archived-chat-item');
       row.innerHTML = `
         <span class="archived-chat-title">${escapeHtml(t.title)}</span>
@@ -967,6 +976,10 @@
       });
       listEl.append(row);
     });
+  }
+
+  if ($('archived-search-input')) {
+    $('archived-search-input').addEventListener('input', () => filterAndDrawArchived());
   }
 
   // Global Keybindings (Ctrl+N for New Chat)
@@ -1018,6 +1031,7 @@
         $('prompt').value = p;
         autosize();
         $('prompt').focus();
+        submit();
       }
     });
   });
@@ -2082,6 +2096,7 @@
     }
 
     init() {
+      window.__maveNodeController = this;
       this.applyPlatformUI();
       this.updateNodeDisplay();
       this.initFirebase();
@@ -2775,15 +2790,13 @@
     }
   });
 
-  // Settings tab click switcher for new tabs
+  // Settings tab click switcher delegates to window.openSettingsModal
   document.querySelectorAll('.settings-tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const tab = btn.dataset.tab;
-      document.querySelectorAll('.settings-tab-btn').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      document.querySelectorAll('.settings-content > section').forEach((sec) => {
-        sec.hidden = sec.dataset.tab !== tab;
-      });
+      if (typeof window.openSettingsModal === 'function') {
+        window.openSettingsModal(tab);
+      }
     });
   });
 

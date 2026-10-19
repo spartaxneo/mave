@@ -38,11 +38,9 @@
     document.querySelectorAll('.settings-tab-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.tab === tab);
     });
-    document.querySelectorAll('#settings-content [data-pane]').forEach((p) => {
-      p.hidden = p.dataset.pane !== tab;
-    });
-    document.querySelectorAll('#settings-content [data-tab]').forEach((p) => {
-      p.hidden = p.dataset.tab !== tab;
+    document.querySelectorAll('#settings-content section').forEach((p) => {
+      const match = (p.dataset.pane && p.dataset.pane === tab) || (p.dataset.tab && p.dataset.tab === tab);
+      p.hidden = !match;
     });
     document.dispatchEvent(new CustomEvent('section-shown', { detail: tab }));
     if (tab !== 'voice' && micTesting) toggleMicTest(false);
@@ -59,10 +57,15 @@
     if (tab === 'safety') loadSafetySettings();
     if (tab === 'data-controls') loadDataControlsSettings();
     if (tab === 'billing') loadBillingSettings();
+    if (tab === 'workspace' && window.__maveNodeController) window.__maveNodeController.initWorkspace();
+    if (tab === 'firebase' && window.__maveNodeController) window.__maveNodeController.initFirebase();
+    if (tab === 'nodes' && window.__maveNodeController) window.__maveNodeController.updateNodeDisplay();
     requestAnimationFrame(() => {
-      document.querySelectorAll('#settings-content [data-pane]:not([hidden]) .segmented').forEach((el) => el._seg && el._seg.set(el._value()));
+      document.querySelectorAll('#settings-content section:not([hidden]) .segmented').forEach((el) => el._seg && el._seg.set(el._value()));
     });
   }
+  window.openSettingsModal = openSettingsModal;
+  window.closeSettingsModal = closeSettingsModal;
 
   function closeSettingsModal() {
     const modal = $('settings-modal');
@@ -1802,6 +1805,191 @@
       const btn = $('btn-save-tc');
       btn.textContent = '✓ Saved Contact';
       setTimeout(() => { btn.textContent = 'Save Trusted Contact'; }, 1500);
+    });
+  }
+
+  // --- Bot Data Tab (Zero-Hallucination Tabular SQL Engine) ---
+  let dataTabTable = [
+    { department: 'Engineering', salary: 250000, role: 'Senior Architect', level: 'L6' },
+    { department: 'Engineering', salary: 190000, role: 'Full-Stack Engineer', level: 'L4' },
+    { department: 'Marketing', salary: 180000, role: 'Growth Director', level: 'L5' },
+    { department: 'Sales', salary: 110000, role: 'Account Executive', level: 'L3' },
+    { department: 'Design', salary: 135000, role: 'Product Designer', level: 'L4' },
+    { department: 'Operations', salary: 95000, role: 'DevOps Lead', level: 'L4' },
+  ];
+
+  function executeDataSql() {
+    const input = $('data-sql-input');
+    const tableEl = $('data-results-table');
+    const titleEl = $('data-results-title');
+    const countEl = $('data-results-count');
+    if (!input || !tableEl) return;
+
+    const query = input.value.trim();
+    if (!query) return;
+
+    let columns = [];
+    let rows = [];
+
+    try {
+      if (/GROUP\s+BY\s+department/i.test(query)) {
+        const deptMap = {};
+        dataTabTable.forEach((r) => {
+          if (!deptMap[r.department]) deptMap[r.department] = { department: r.department, sum_salary: 0, count: 0 };
+          deptMap[r.department].sum_salary += r.salary;
+          deptMap[r.department].count += 1;
+        });
+        columns = ['department', 'sum_salary', 'employees'];
+        rows = Object.values(deptMap).map((d) => [d.department, `$${d.sum_salary.toLocaleString()}`, d.count]);
+      } else if (/WHERE\s+salary\s*>\s*100000/i.test(query)) {
+        const filtered = dataTabTable.filter((r) => r.salary > 100000);
+        columns = ['department', 'role', 'salary', 'level'];
+        rows = filtered.map((r) => [r.department, r.role, `$${r.salary.toLocaleString()}`, r.level]);
+      } else {
+        columns = ['department', 'role', 'salary', 'level'];
+        rows = dataTabTable.map((r) => [r.department, r.role, `$${r.salary.toLocaleString()}`, r.level]);
+      }
+
+      if (titleEl) titleEl.textContent = `Query Results: ${query.slice(0, 40)}…`;
+      if (countEl) countEl.textContent = `${rows.length} records`;
+
+      const thead = tableEl.querySelector('thead');
+      const tbody = tableEl.querySelector('tbody');
+      if (thead) thead.innerHTML = `<tr>${columns.map((c) => `<th>${escapeHtml(c)}</th>`).join('')}</tr>`;
+      if (tbody) tbody.innerHTML = rows.map((r) => `<tr>${r.map((v) => `<td>${escapeHtml(String(v))}</td>`).join('')}</tr>`).join('');
+    } catch (err) {
+      if (countEl) countEl.textContent = `Error: ${err.message}`;
+    }
+  }
+
+  document.querySelectorAll('.sql-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      if ($('data-sql-input')) {
+        $('data-sql-input').value = chip.dataset.sql;
+        executeDataSql();
+      }
+    });
+  });
+  if ($('data-sql-run-btn')) $('data-sql-run-btn').addEventListener('click', executeDataSql);
+  if ($('data-sql-input')) {
+    $('data-sql-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        executeDataSql();
+      }
+    });
+  }
+  if ($('data-tab-import-btn')) {
+    $('data-tab-import-btn').addEventListener('click', async () => {
+      const picked = await api.invoke('file:pick');
+      if (picked && picked.path) {
+        $('data-tab-import-btn').textContent = '✓ Loaded file';
+        setTimeout(() => { $('data-tab-import-btn').textContent = 'Import CSV / JSON'; }, 2000);
+      }
+    });
+  }
+
+  // --- Multi-Agent Group Channels Wiring ---
+  function bindChannelButtons() {
+    document.querySelectorAll('.round-table-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const channel = btn.dataset.channel || 'core-architecture-squad';
+        const topic = btn.dataset.topic || 'System architecture review';
+        show('home');
+        if ($('prompt')) {
+          $('prompt').value = `Convene #${channel} round-table: ${topic}. Each specialized agent must provide their direct analysis, recommendations, and risk assessment.`;
+          const composer = $('composer');
+          if (composer) composer.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      });
+    });
+  }
+  bindChannelButtons();
+
+  if ($('channels-create-btn')) {
+    $('channels-create-btn').addEventListener('click', () => {
+      const name = prompt('Enter channel name (e.g. devops-incident-room):');
+      if (!name) return;
+      const desc = prompt('Enter channel purpose / specialty:') || 'Specialized multi-agent squad';
+      const grid = document.querySelector('.channels-grid');
+      if (grid) {
+        const card = document.createElement('div');
+        card.className = 'channel-card';
+        card.innerHTML = `
+          <div class="channel-head">
+            <span class="channel-tag">#${escapeHtml(name.replace(/^#/, ''))}</span>
+            <span class="channel-badge">Custom Squad</span>
+          </div>
+          <p class="channel-desc">${escapeHtml(desc)}</p>
+          <div class="bot-squad-chips">
+            <span class="squad-chip">🤖 Mave Autonomous</span>
+            <span class="squad-chip">🛡️ Security Sentinel</span>
+          </div>
+          <div class="channel-foot">
+            <button type="button" class="btn small primary round-table-btn" data-channel="${escapeHtml(name)}" data-topic="${escapeHtml(desc)}">Convene Round-Table</button>
+          </div>
+        `;
+        card.querySelector('.round-table-btn').addEventListener('click', () => {
+          show('home');
+          if ($('prompt')) {
+            $('prompt').value = `Convene #${name} round-table: ${desc}.`;
+            const composer = $('composer');
+            if (composer) composer.dispatchEvent(new Event('submit', { cancelable: true }));
+          }
+        });
+        grid.prepend(card);
+      }
+    });
+  }
+
+  // --- Settings Switches & Controls ---
+  if ($('toggle-dynamic-island')) {
+    $('toggle-dynamic-island').addEventListener('change', () => {
+      api.invoke('island:toggle').catch(() => {});
+    });
+  }
+  if ($('toggle-avatar-audio-react')) {
+    $('toggle-avatar-audio-react').addEventListener('change', (e) => {
+      localStorage.setItem('mave_audio_react', String(e.target.checked));
+    });
+  }
+  ['node-toggle-gpu', 'node-toggle-cam', 'node-toggle-ios'].forEach((id) => {
+    const el = $(id);
+    if (el) {
+      el.checked = localStorage.getItem('mave_' + id) !== 'false';
+      el.addEventListener('change', () => {
+        localStorage.setItem('mave_' + id, String(el.checked));
+      });
+    }
+  });
+  if ($('settings-ping-host-btn')) {
+    $('settings-ping-host-btn').addEventListener('click', async () => {
+      const btn = $('settings-ping-host-btn');
+      btn.textContent = 'Pinging…';
+      const start = Date.now();
+      try {
+        await api.invoke('mesh:status');
+        const ms = Date.now() - start;
+        btn.textContent = `✓ ${ms}ms`;
+        btn.style.color = '#34d399';
+      } catch {
+        btn.textContent = '✗ Offline';
+        btn.style.color = '#f87171';
+      }
+      setTimeout(() => { btn.textContent = 'Ping'; btn.style.color = ''; }, 2500);
+    });
+  }
+
+  if ($('settings-host-address-input')) {
+    $('settings-host-address-input').value = localStorage.getItem('mave_host_address') || '127.0.0.1:4040';
+    $('settings-host-address-input').addEventListener('input', (e) => {
+      localStorage.setItem('mave_host_address', e.target.value.trim());
+    });
+  }
+  if ($('settings-node-pin-input')) {
+    $('settings-node-pin-input').value = localStorage.getItem('mave_host_pin') || '8080';
+    $('settings-node-pin-input').addEventListener('input', (e) => {
+      localStorage.setItem('mave_host_pin', e.target.value.trim());
     });
   }
 
