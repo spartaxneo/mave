@@ -40,6 +40,7 @@ const BUILTIN_GROUPS = {
   'builtin/group_channels.js': 'Multi-agent group channels and swarm round-table collaboration',
   'builtin/permission_broker.js': 'Interactive in-chat permission broker and safety gate',
   'builtin/swarm_prediction_sandbox.js': 'MiroFish Swarm Prediction Sandbox: Multi-agent future outcome simulations and what-if branching',
+  'builtin/chatgpt_brain_bridge.js': 'ChatGPT Central Brain & Mave Nervous System Bridge (Hands, Eyes & Terminal Actions)',
 };
 
 

@@ -13,6 +13,7 @@ const { execFile, exec } = require('child_process');
 const catalog = require('../local/catalog');
 const { getMaveDropEngine } = require('./mavedrop');
 const { ensureSslCert } = require('./ssl');
+const { getChatGPTNervousSystemBridge } = require('../chatgpt_brain/chatgpt_bridge');
 
 function getLocalIp() {
   const nets = os.networkInterfaces();
@@ -4270,6 +4271,11 @@ class MobileWebServer {
     } catch (e) {
       if (this.logger) this.logger.warn('SSL initialization note:', e.message);
     }
+    this.chatgptBridge = getChatGPTNervousSystemBridge({
+      controller: this.controller,
+      logger: this.logger,
+      port: this.port
+    });
   }
 
   start() {
@@ -4369,6 +4375,85 @@ class MobileWebServer {
     if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/drop')) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(getDesktopWebHtml(this.getUrl(), this.getHttpsUrl()));
+    }
+
+    // --- ChatGPT Central Brain Actions & Nervous System Gateway ---
+    if (req.method === 'GET' && url.pathname === '/api/chatgpt/openapi.json') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      const baseUrl = isHttps ? this.getHttpsUrl() : this.getUrl();
+      return res.end(JSON.stringify(this.chatgptBridge.getOpenApiSpec(baseUrl), null, 2));
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/chatgpt/custom-gpt-instructions') {
+      res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' });
+      const baseUrl = isHttps ? this.getHttpsUrl() : this.getUrl();
+      return res.end(this.chatgptBridge.getCustomGptInstructions(baseUrl));
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/chatgpt/status') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      const status = await this.chatgptBridge.getSystemStatus();
+      return res.end(JSON.stringify(status));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/eyes/screen') {
+      try {
+        const body = await parseBody(req).catch(() => ({}));
+        const result = await this.chatgptBridge.captureScreen(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/eyes/camera') {
+      try {
+        const body = await parseBody(req).catch(() => ({}));
+        const result = await this.chatgptBridge.captureCamera(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/hands/action') {
+      try {
+        const body = await parseBody(req);
+        const result = await this.chatgptBridge.executeHandsAction(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/hands/terminal') {
+      try {
+        const body = await parseBody(req);
+        const result = await this.chatgptBridge.executeTerminalCommand(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/chatgpt/voice/speak') {
+      try {
+        const body = await parseBody(req);
+        const result = await this.chatgptBridge.speakAloud(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
     }
 
     const isLocal = isLocalhostReq(req);
