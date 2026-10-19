@@ -39,6 +39,7 @@ const BUILTIN_GROUPS = {
   'builtin/bot_database.js': 'Bot analytical database and tabular Data Tab (OpenMausBot parity)',
   'builtin/group_channels.js': 'Multi-agent group channels and swarm round-table collaboration',
   'builtin/permission_broker.js': 'Interactive in-chat permission broker and safety gate',
+  'builtin/swarm_prediction_sandbox.js': 'MiroFish Swarm Prediction Sandbox: Multi-agent future outcome simulations and what-if branching',
 };
 
 

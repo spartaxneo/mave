@@ -370,6 +370,23 @@ What part of this stood out to you most?`;
 
     return trendEntry;
   }
+
+  /**
+   * Simulates audience and viral reaction for an Instagram reel using SwarmPredictionSandbox.
+   */
+  async predictReelAudienceReaction(reelData = {}) {
+    const { getSwarmPredictionSandbox } = require('../swarm/swarm_prediction_sandbox');
+    const sandbox = getSwarmPredictionSandbox();
+    const topic = reelData.caption || reelData.title || 'Instagram Reel Announcement';
+    const description = reelData.audioConcept || reelData.summary || '';
+    return await sandbox.runSimulation({
+      topic,
+      description,
+      domain: 'social_media',
+      populationSize: 10,
+      rounds: 3
+    });
+  }
 }
 
 // Global singleton

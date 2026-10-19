@@ -176,7 +176,8 @@ class PluginRegistry {
         'tapkit': ['tapkit', 'iphone', 'ios', 'touch', 'swipe', 'gesture'],
         'database': ['sql', 'query', 'dataset', 'table', 'csv', 'data tab', 'analytics'],
         'channel': ['channel', 'roundtable', 'round table', 'debate', 'squad'],
-        'permission': ['permission', 'broker', 'approval', 'approve', 'risk']
+        'permission': ['permission', 'broker', 'approval', 'approve', 'risk'],
+        'prediction': ['predict', 'simulation', 'swarm', 'what if', 'forecast', 'outcome', 'rehearse', 'mirofish']
       };
 
       for (const def of defs) {
