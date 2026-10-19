@@ -568,11 +568,12 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
       flex-shrink: 0;
     }
     .send-icon-btn:hover { background: var(--accent-hover); }
-    .composer-orb-btn {
-      width: 32px;
-      height: 32px;
+    .composer-orb-btn,
+    .voice-mode-circle-btn {
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #2563eb, #8b5cf6);
+      background: #2563eb;
       border: 0;
       color: #fff;
       display: flex;
@@ -580,15 +581,202 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
       justify-content: center;
       cursor: pointer;
       flex-shrink: 0;
-      transition: transform 0.15s ease, box-shadow 0.2s ease;
-      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
+      transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.2s ease;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
     }
-    .composer-orb-btn:hover {
-      transform: scale(1.08);
-      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.6);
+    .composer-orb-btn:hover,
+    .voice-mode-circle-btn:hover {
+      background: #1d4ed8;
+      transform: scale(1.06);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5);
     }
-    .composer-orb-btn:active {
-      transform: scale(0.92);
+    .composer-orb-btn:active,
+    .voice-mode-circle-btn:active {
+      transform: scale(0.94);
+    }
+    /* Meet Voice Onboarding Modal */
+    .meet-voice-modal-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 440px;
+      padding: 36px 32px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      animation: modal-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .meet-voice-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 0;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-2);
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .meet-voice-orb-preview {
+      margin: 8px 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .fluid-orb-sm {
+      position: relative;
+      width: 130px;
+      height: 130px;
+      border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+      background: radial-gradient(circle at 35% 35%, #38bdf8 0%, #3b82f6 30%, #6366f1 60%, #1e1b4b 100%);
+      animation: fluid-orb-morph 6s ease-in-out infinite alternate;
+      box-shadow: 0 0 35px rgba(56, 189, 248, 0.4), 0 0 65px rgba(99, 102, 241, 0.25);
+    }
+    .meet-voice-title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 20px;
+      color: var(--text-1);
+    }
+    .meet-voice-features {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      text-align: left;
+      margin-bottom: 28px;
+    }
+    .mv-feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .mv-feature-icon {
+      flex: none;
+      width: 24px;
+      height: 24px;
+      color: #3b82f6;
+      margin-top: 1px;
+    }
+    .mv-feature-text {
+      font-size: 13.5px;
+      line-height: 1.45;
+      color: var(--text-2);
+    }
+    .meet-voice-continue-btn {
+      width: 100%;
+      height: 48px;
+      border-radius: 24px;
+      background: #ffffff;
+      color: #000000;
+      font-size: 15px;
+      font-weight: 600;
+      border: 0;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    [data-theme="light"] .meet-voice-continue-btn,
+    body.theme-light .meet-voice-continue-btn {
+      background: #000000;
+      color: #ffffff;
+    }
+    .meet-voice-continue-btn:hover {
+      opacity: 0.92;
+      transform: scale(1.01);
+    }
+    .meet-voice-continue-btn:active {
+      transform: scale(0.98);
+    }
+    /* ChatGPT Fluid Voice Orb */
+    .chatgpt-fluid-voice-orb {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .orb-fluid-glow {
+      position: absolute;
+      inset: -40px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.45) 0%, rgba(59, 130, 246, 0.3) 40%, rgba(99, 102, 241, 0.15) 65%, transparent 75%);
+      filter: blur(32px);
+      animation: orb-fluid-glow-breathe 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes orb-fluid-glow-breathe {
+      0%, 100% { transform: scale(0.92); opacity: 0.7; }
+      50% { transform: scale(1.2); opacity: 1; }
+    }
+    .orb-fluid-core {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+      background: radial-gradient(circle at 35% 35%, #38bdf8 0%, #2563eb 32%, #4f46e5 65%, #0f172a 100%);
+      animation: fluid-orb-morph 7s ease-in-out infinite alternate;
+      box-shadow: inset 0 0 35px rgba(56, 189, 248, 0.6), 0 0 45px rgba(37, 99, 235, 0.45);
+      overflow: hidden;
+    }
+    .orb-fluid-layer {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      mix-blend-mode: screen;
+    }
+    .orb-fluid-layer.layer-1 {
+      background: radial-gradient(circle at 70% 25%, rgba(147, 197, 253, 0.8) 0%, transparent 60%);
+      animation: layer-float-1 5s ease-in-out infinite alternate;
+    }
+    .orb-fluid-layer.layer-2 {
+      background: radial-gradient(circle at 25% 75%, rgba(168, 85, 247, 0.7) 0%, transparent 60%);
+      animation: layer-float-2 6s ease-in-out infinite alternate;
+    }
+    .orb-fluid-layer.layer-3 {
+      background: radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.6) 0%, transparent 50%);
+      animation: layer-float-3 4s ease-in-out infinite alternate;
+    }
+    @keyframes fluid-orb-morph {
+      0% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: rotate(0deg); }
+      33% { border-radius: 35% 65% 55% 45% / 45% 55% 45% 55%; transform: rotate(120deg); }
+      66% { border-radius: 50% 50% 30% 70% / 55% 35% 65% 45%; transform: rotate(240deg); }
+      100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: rotate(360deg); }
+    }
+    @keyframes layer-float-1 { 0% { transform: translate(-8px, -8px) scale(0.9); } 100% { transform: translate(12px, 12px) scale(1.1); } }
+    @keyframes layer-float-2 { 0% { transform: translate(10px, -6px) scale(1.1); } 100% { transform: translate(-10px, 8px) scale(0.9); } }
+    @keyframes layer-float-3 { 0% { opacity: 0.5; } 100% { opacity: 0.95; } }
+    .orb-ripple-ring {
+      position: absolute;
+      inset: -10px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(56, 189, 248, 0.4);
+      pointer-events: none;
+      opacity: 0;
+    }
+    .chatgpt-fluid-voice-orb.speaking .orb-ripple-ring,
+    .chatgpt-fluid-voice-orb.orb-speaking .orb-ripple-ring {
+      animation: ripple-out 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+    }
+    .chatgpt-fluid-voice-orb.speaking #orb-ripple-2,
+    .chatgpt-fluid-voice-orb.orb-speaking #orb-ripple-2 {
+      animation-delay: 1s;
+    }
+    @keyframes ripple-out {
+      0% { transform: scale(0.85); opacity: 0.8; }
+      100% { transform: scale(1.6); opacity: 0; }
     }
     .voice-speaking-badge {
       display: inline-flex;
@@ -1013,8 +1201,8 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
             </button>
             <textarea id="prompt-input" rows="1" placeholder="Message Mave…" spellcheck="true"></textarea>
-            <button type="button" class="composer-orb-btn" id="composer-voice-mode-btn" title="ChatGPT-Style Hands-Free Voice Mode (Talk)">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6.5v3M5.5 4.5v7M8 2.5v11M10.5 5v6M13 7v2"/></svg>
+            <button type="button" class="voice-mode-circle-btn" id="composer-voice-mode-btn" title="ChatGPT-Style Hands-Free Voice Mode (Talk)">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 9v6M10 6v12M14 4v16M17 7v10M20 10v4"/></svg>
             </button>
             <button type="submit" class="send-icon-btn" id="send-btn" title="Send (Enter)">
               <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 12.5V3.8M4.2 7.4L8 3.6l3.8 3.8"/></svg>
@@ -1601,6 +1789,32 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
   <!-- Dedicated HTML5 Voice Audio Player -->
   <audio id="mave-voice-player" preload="auto" playsinline style="display:none;"></audio>
 
+  <!-- Meet Voice Onboarding Modal (ChatGPT Screenshot 5) -->
+  <div id="meet-voice-modal" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.7); backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:20px;">
+    <div class="meet-voice-modal-card">
+      <button type="button" class="meet-voice-close" id="meet-voice-close-btn" title="Close">✕</button>
+      <div class="meet-voice-orb-preview">
+        <div class="fluid-orb-sm"></div>
+      </div>
+      <h2 class="meet-voice-title">Meet Voice</h2>
+      <div class="meet-voice-features">
+        <div class="mv-feature-item">
+          <div class="mv-feature-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M17 5v14M7 9v6M22 10v4M2 10v4"/></svg>
+          </div>
+          <div class="mv-feature-text">Talk in real-time, get answers, brainstorm, and practice conversations hands-free.</div>
+        </div>
+        <div class="mv-feature-item">
+          <div class="mv-feature-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="mv-feature-text">Audio flows directly between your device and local neural models with zero latency.</div>
+        </div>
+      </div>
+      <button type="button" class="meet-voice-continue-btn" id="meet-voice-continue-btn">Continue</button>
+    </div>
+  </div>
+
   <!-- ChatGPT App-Style Interactive Voice Mode Overlay -->
   <div id="voice-mode-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:radial-gradient(circle at center, #171c26 0%, #0d0f14 100%); flex-direction:column; align-items:center; justify-content:space-between; padding:24px 20px; user-select:none; animation:fadeIn 0.25s ease;">
     <div style="width:100%; max-width:600px; display:flex; align-items:center; justify-content:space-between;">
@@ -1627,11 +1841,17 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
       
       <!-- Stage 1: ChatGPT Fluid Animated Voice Orb -->
       <div id="voice-orb-container" style="position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%;">
-        <div id="voice-orb-halo" style="position:absolute; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle, rgba(59,130,246,0.35) 0%, rgba(139,92,246,0.15) 50%, transparent 70%); filter:blur(20px); transition:all 0.3s ease;"></div>
-        <div id="voice-orb" class="orb-listening" style="position:relative; width:140px; height:140px; border-radius:50%; background:linear-gradient(135deg, #2563eb, #8b5cf6 60%, #ec4899); box-shadow:0 0 40px rgba(59,130,246,0.6), inset 0 0 20px rgba(255,255,255,0.4); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform 0.15s ease, box-shadow 0.3s ease;">
-          <div id="voice-orb-inner" style="width:70px; height:70px; border-radius:50%; background:radial-gradient(circle, #ffffff 10%, rgba(255,255,255,0.4) 60%, transparent); opacity:0.8; filter:blur(2px);"></div>
+        <div class="chatgpt-fluid-voice-orb" id="voice-orb" title="Tap orb to speak or interrupt">
+          <div class="orb-fluid-glow"></div>
+          <div class="orb-fluid-core" id="orb-fluid-core">
+            <div class="orb-fluid-layer layer-1"></div>
+            <div class="orb-fluid-layer layer-2"></div>
+            <div class="orb-fluid-layer layer-3"></div>
+          </div>
+          <div class="orb-ripple-ring" id="orb-ripple-1"></div>
+          <div class="orb-ripple-ring" id="orb-ripple-2"></div>
         </div>
-        <div id="voice-orb-caption" style="margin-top:24px; font-size:13px; font-weight:500; color:#94a3b8; letter-spacing:0.02em;">Tap orb to speak or interrupt</div>
+        <div id="voice-orb-caption" style="margin-top:24px; font-size:13px; font-weight:500; color:#94a3b8; letter-spacing:0.02em;">Tap orb or press Space to interrupt</div>
       </div>
 
       <!-- Stage 2: Mave Chain-of-Thought Stream -->
@@ -3682,10 +3902,12 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
       const orb = $('voice-orb');
       const cap = $('voice-orb-caption');
       if (orb) {
-        orb.classList.remove('orb-listening', 'orb-thinking', 'orb-speaking');
+        orb.classList.remove('orb-listening', 'orb-thinking', 'orb-speaking', 'speaking');
         if (state === 'listening') orb.classList.add('orb-listening');
         else if (state === 'thinking') orb.classList.add('orb-thinking');
-        else if (state === 'speaking') orb.classList.add('orb-speaking');
+        else if (state === 'speaking') {
+          orb.classList.add('orb-speaking', 'speaking');
+        }
       }
       if (pill) {
         if (state === 'listening') {
@@ -3753,6 +3975,10 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
     });
 
     async function openVoiceMode() {
+      if (!localStorage.getItem('mave_meet_voice_seen') && $('meet-voice-modal')) {
+        $('meet-voice-modal').style.display = 'flex';
+        return;
+      }
       if (!checkMediaPermissions('Microphone')) return;
       isVoiceModeActive = true;
       $('voice-mode-modal').style.display = 'flex';
@@ -4087,6 +4313,24 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
         $('voice-mute-btn').style.background = voiceModeMuted ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.08)';
       });
     }
+    if ($('meet-voice-continue-btn')) {
+      $('meet-voice-continue-btn').addEventListener('click', () => {
+        try { localStorage.setItem('mave_meet_voice_seen', '1'); } catch {}
+        if ($('meet-voice-modal')) $('meet-voice-modal').style.display = 'none';
+        openVoiceMode();
+      });
+    }
+    if ($('meet-voice-close-btn')) {
+      $('meet-voice-close-btn').addEventListener('click', () => {
+        if ($('meet-voice-modal')) $('meet-voice-modal').style.display = 'none';
+      });
+    }
+    document.addEventListener('keydown', (e) => {
+      if (isVoiceModeActive && e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        interruptVoiceMode();
+      }
+    });
 
     // ==========================================
     // 3-Tier Security PIN System

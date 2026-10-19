@@ -47,6 +47,25 @@ class Controller {
     this.replyTimer = null;
     this.currentThought = '';
     this.thoughts = [];
+
+    if (this.audio) {
+      this.audio.on('level', (level) => {
+        if (this.windows && this.windows.broadcast) {
+          this.windows.broadcast('level', level);
+          if (this.windows.panel) this.windows.send(this.windows.panel, 'level', level);
+        }
+      });
+      this.audio.on('speaking-start', () => {
+        if (this.windows && this.windows.broadcast) {
+          this.windows.broadcast('voice:speaking', true);
+        }
+      });
+      this.audio.on('speaking-stop', () => {
+        if (this.windows && this.windows.broadcast) {
+          this.windows.broadcast('voice:speaking', false);
+        }
+      });
+    }
   }
 
   get name() { return this.settings.get('assistantName'); }
@@ -106,6 +125,7 @@ class Controller {
     this.voiceMode = on;
     this.windows.voiceMode = on;
     this.windows.broadcast('voice-mode', on);
+    if (this.windows.panel) this.windows.send(this.windows.panel, 'voice-mode', on);
     this.windows.send(this.windows.toolTray, 'voice-mode', on);
     if (on) {
       this.activity.add('info', 'Talk is on: listening until you turn it off.');
@@ -782,10 +802,17 @@ class Controller {
 
   // tasks
   stopTask() {
-    if (!this.agent.running) return;
-    this.agent.stop();
-    if (this.windows.cancelApproval) this.windows.cancelApproval();
-    this.activity.add('info', 'Stopped by the user.');
+    if (this.state === 'responding') {
+      this.finishReply();
+    }
+    if (this.agent.running) {
+      this.agent.stop();
+      if (this.windows.cancelApproval) this.windows.cancelApproval();
+      this.activity.add('info', 'Stopped by the user.');
+    }
+    if (this.voiceMode) {
+      this.continueVoice();
+    }
   }
 
   async runTask(text, source = 'typed', options = {}) {
@@ -794,6 +821,9 @@ class Controller {
     if (this.agent.running) {
       this.showInfo('Still working', 'Press Esc to stop the current task first.');
       return { ok: false, error: 'Still working on previous task. Press Esc to stop it.' };
+    }
+    if (source === 'voice' || this.voiceMode) {
+      this.audio.beginStream();
     }
 
     // Continuous family member adaptation (non-blocking)
@@ -1654,7 +1684,7 @@ I have initiated a full autonomous scan of everything an ultimate AI companion, 
     this.streamed = '';
 
     const spokenReply = speakable(reply) || reply;
-    const used = await this.audio.finishStream(spokenReply); // whatever wasn't already spoken while streaming
+    const used = await this.audio.finishStream(spokenReply, { force: Boolean(this.voiceMode) }); // whatever wasn't already spoken while streaming
     if (this.state !== 'responding') return;
     const readingMs = used === 'none' ? Math.min(16000, Math.max(4500, 2000 + reply.length * 45)) : 1400;
     clearTimeout(this.replyTimer);

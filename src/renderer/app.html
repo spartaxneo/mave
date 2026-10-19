@@ -24,28 +24,56 @@
       </div>
 
       <button class="new-chat-btn" id="sidebar-new-chat" title="New chat (Ctrl+N)">
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         <span>New chat</span>
         <kbd class="shortcut">Ctrl+N</kbd>
       </button>
 
       <nav id="nav">
-        <button data-section="home" class="nav-item active">
+        <button data-section="home" class="nav-item active" title="Chat">
           <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <span>Chat</span>
         </button>
-        <button data-section="terminal" class="nav-item">
-          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-          <span>Terminal</span>
+        <button data-action="images" class="nav-item" id="nav-item-images" title="Images">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>Images</span>
         </button>
-        <button data-section="data" class="nav-item">
-          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-          <span>Data Tab</span>
+        <button data-action="library" class="nav-item" id="nav-item-library" title="Library">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span>Library</span>
         </button>
-        <button data-section="channels" class="nav-item">
-          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span>Channels</span>
+        <button data-action="scheduled" class="nav-item" id="nav-item-scheduled" title="Scheduled">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Scheduled</span>
         </button>
+        <button data-action="plugins" class="nav-item" id="nav-item-plugins" title="Plugins">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <span>Plugins</span>
+        </button>
+        <button data-action="projects" class="nav-item" id="nav-item-projects" title="Projects">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span>Projects</span>
+        </button>
+        <div class="nav-more-dropdown-wrap">
+          <button type="button" class="nav-item" id="nav-item-more" title="More">
+            <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            <span>More</span>
+          </button>
+          <div class="nav-more-dropdown" id="nav-more-dropdown" hidden>
+            <button type="button" data-section="terminal" class="nmd-item">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+              <span>Terminal</span>
+            </button>
+            <button type="button" data-section="data" class="nmd-item">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              <span>Data Tab</span>
+            </button>
+            <button type="button" data-section="channels" class="nmd-item">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              <span>Channels</span>
+            </button>
+          </div>
+        </div>
       </nav>
 
       <!-- Search Chats -->
@@ -67,7 +95,8 @@
         </div>
       </div>
 
-      <!-- ChatGPT-Style Timeline Chats -->
+      <!-- ChatGPT-Style Recents Timeline Chats -->
+      <div class="sidebar-recents-header">RECENTS</div>
       <div class="sidebar-chats scroll" id="sidebar-chats">
         <!-- Rendered dynamically: Pinned, Today, Yesterday, Previous 7 Days, Previous 30 Days -->
       </div>
@@ -77,10 +106,48 @@
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="2"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>
           <span>Archived chats</span>
         </button>
-        <button class="user-profile-btn" id="open-settings-btn" title="Settings (Ctrl+,)">
-          <div class="user-avatar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-          <div class="user-meta"><span class="user-name">You</span><span class="user-sub">Settings</span></div>
-          <svg class="gear-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+
+        <!-- User Profile Popup Menu (Screenshot 2) -->
+        <div class="user-profile-menu" id="user-profile-menu" hidden>
+          <div class="upm-header" id="upm-header">
+            <span class="upm-name" id="upm-user-name">From Near</span>
+            <span class="upm-plan">Free ›</span>
+          </div>
+          <button type="button" class="upm-item" id="upm-try-plus">
+            <span class="upm-icon">✨</span>
+            <span>Try Plus free</span>
+          </button>
+          <button type="button" class="upm-item" id="upm-personalization">
+            <span class="upm-icon">🎨</span>
+            <span>Personalization</span>
+          </button>
+          <button type="button" class="upm-item" id="upm-profile">
+            <span class="upm-icon">👤</span>
+            <span>Profile</span>
+          </button>
+          <button type="button" class="upm-item" id="upm-settings">
+            <span class="upm-icon">⚙️</span>
+            <span>Settings</span>
+          </button>
+          <button type="button" class="upm-item" id="upm-help">
+            <span class="upm-icon">❓</span>
+            <span>Help</span>
+          </button>
+          <div class="upm-divider"></div>
+          <button type="button" class="upm-item upm-logout" id="upm-logout">
+            <span class="upm-icon">🚪</span>
+            <span>Log out</span>
+          </button>
+        </div>
+
+        <!-- User Profile Pill (Screenshot 1 & 2) -->
+        <button type="button" class="user-profile-btn" id="user-profile-btn" title="User profile & settings">
+          <div class="user-avatar-initials" id="user-avatar-initials">FN</div>
+          <div class="user-meta">
+            <span class="user-name" id="user-profile-name">From Near</span>
+            <span class="user-plan-badge">Free</span>
+          </div>
+          <svg class="user-more-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 4l4 4-4 4"/></svg>
         </button>
       </div>
     </aside>
@@ -188,44 +255,23 @@
 
           <div class="log scroll" id="log" aria-live="polite">
             <div class="empty" id="empty">
-              <div class="empty-mark-wrap">
-                <img src="assets/tray@2x.png" width="48" height="48" alt="" class="empty-mark">
+              <div class="empty-greeting-wrap">
+                <h1 class="empty-greeting" id="empty-greeting">Hey, From. Ready to dive in?</h1>
               </div>
-              <div class="empty-title">What can I help with today?</div>
-              <div class="empty-chips">
-                <button type="button" class="empty-chip" data-prompt="Write a Python script to automate file organization in my Downloads folder">
-                  <div class="chip-icon">💻</div>
-                  <div class="chip-text">
-                    <strong>Code & Automate</strong>
-                    <span>Write a script or debug errors</span>
+              <div class="empty-discovery-card" id="empty-discovery-card">
+                <div class="edc-left">
+                  <div class="edc-sparkle">✨</div>
+                  <div class="edc-text">
+                    <div class="edc-title">GPT-6 with Intelligent UI</div>
+                    <div class="edc-sub">Get visual and interactive answers to help you take the next step</div>
                   </div>
-                </button>
-                <button type="button" class="empty-chip" data-prompt="Analyze the architecture for an autonomous multi-tier AI agent and plan out the steps">
-                  <div class="chip-icon">🧠</div>
-                  <div class="chip-text">
-                    <strong>Deep Reasoning</strong>
-                    <span>Plan projects & solve problems</span>
-                  </div>
-                </button>
-                <button type="button" class="empty-chip" data-prompt="Search my personal knowledge vault and recent screen memory for key facts">
-                  <div class="chip-icon">🔍</div>
-                  <div class="chip-text">
-                    <strong>Knowledge Vault</strong>
-                    <span>Search notes & visual memory</span>
-                  </div>
-                </button>
-                <button type="button" class="empty-chip" data-prompt="Open my browser and search for the latest updates on autonomous AI systems">
-                  <div class="chip-icon">⚡</div>
-                  <div class="chip-text">
-                    <strong>Control PC</strong>
-                    <span>Open apps, browse & automate tasks</span>
-                  </div>
-                </button>
+                </div>
+                <button type="button" class="edc-btn" id="edc-btn">Try GPT-6</button>
               </div>
             </div>
           </div>
 
-          <div class="composer-wrap">
+          <div class="composer-wrap" id="composer-wrap">
             <div class="attachments-preview-bar" id="attachments-preview-bar" hidden></div>
             <div class="region-chip" id="region-chip" hidden>
               <span class="rc-icon"></span><span id="region-text">Area selected</span>
@@ -235,8 +281,8 @@
             </div>
             <form class="composer" id="composer">
               <div class="composer-attach-wrap">
-                <button type="button" class="composer-tool-btn" id="composer-attach-btn" title="Add attachments, create images or videos">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                <button type="button" class="composer-plus-btn" id="composer-attach-btn" title="Add attachments, create images or videos">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                 </button>
                 <div class="composer-actions-dropdown" id="composer-actions-dropdown" hidden>
                   <button type="button" class="cad-item" id="cad-upload-file">
@@ -257,14 +303,23 @@
                   </button>
                 </div>
               </div>
-              <textarea id="prompt" rows="1" placeholder="Message Mave... (attach files, ask to create images or videos)" spellcheck="true" aria-label="Message"></textarea>
-              <button type="button" class="voice-mode-btn" id="voice-btn" title="ChatGPT-Style Hands-Free Voice Mode (Talk)">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-              </button>
-              <button type="submit" class="send" id="send" aria-label="Send" title="Send (Enter)">
-                <svg class="i-send" viewBox="0 0 16 16"><path d="M8 12.5V3.8M4.2 7.4L8 3.6l3.8 3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <svg class="i-stop" viewBox="0 0 16 16"><rect x="4.5" y="4.5" width="7" height="7" rx="1.5" fill="currentColor"/></svg>
-              </button>
+              <textarea id="prompt" rows="1" placeholder="Ask anything" spellcheck="true" aria-label="Ask anything"></textarea>
+              <div class="composer-right-actions">
+                <button type="button" class="think-pill-btn" id="think-btn" title="Think with deep reasoning">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/></svg>
+                  <span>Think</span>
+                </button>
+                <button type="button" class="dictation-icon-btn" id="dictation-btn" title="Dictation (Voice typing)">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+                <button type="button" class="voice-mode-circle-btn" id="voice-btn" title="ChatGPT-Style Hands-Free Voice Mode">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 9v6M10 6v12M14 4v16M17 7v10M20 10v4"/></svg>
+                </button>
+                <button type="submit" class="send" id="send" aria-label="Send" title="Send (Enter)">
+                  <svg class="i-send" viewBox="0 0 16 16"><path d="M8 12.5V3.8M4.2 7.4L8 3.6l3.8 3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg class="i-stop" viewBox="0 0 16 16"><rect x="4.5" y="4.5" width="7" height="7" rx="1.5" fill="currentColor"/></svg>
+                </button>
+              </div>
             </form>
             <div class="composer-footnote">Mave can make mistakes. Verify important info.</div>
           </div>
@@ -449,29 +504,70 @@
               <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               <span>General</span>
             </button>
+            <button class="settings-tab-btn" data-tab="notifications">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span>Notifications</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="customization">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <span>Personalization</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="plugins">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              <span>Plugins</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="voice">
+              <svg class="tab-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6.5v3M5.5 4.5v7M8 2.5v11M10.5 5v6M13 7v2"/></svg>
+              <span>Voice</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="billing">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              <span>Billing</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="usage">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <span>Usage</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="analytics">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+              <span>Analytics</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="data-controls">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              <span>Data controls</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="storage">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+              <span>Storage</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="safety">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Safety</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="security">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Security and login</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="governance">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>Parental controls</span>
+            </button>
+            <button class="settings-tab-btn" data-tab="trusted-contact">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <span>Trusted contact</span>
+            </button>
+            <div class="settings-tabs-divider"></div>
             <button class="settings-tab-btn" data-tab="account">
               <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/></svg>
               <span>Models & AI</span>
             </button>
-            <button class="settings-tab-btn" data-tab="voice">
-              <svg class="tab-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6.5v3M5.5 4.5v7M8 2.5v11M10.5 5v6M13 7v2"/></svg>
-              <span>Voice & Audio</span>
-            </button>
             <button class="settings-tab-btn" data-tab="superpowers">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
               <span>Superpowers</span>
             </button>
             <button class="settings-tab-btn" data-tab="assistant">
-              <svg class="tab-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="5.6" r="2.6"/><path d="M3 13.5c.7-2.4 2.7-3.7 5-3.7s4.3 1.3 5 3.7"/></svg>
+              <svg class="tab-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5.6" r="2.6"/><path d="M3 13.5c.7-2.4 2.7-3.7 5-3.7s4.3 1.3 5 3.7"/></svg>
               <span>Assistant</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="customization">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              <span>User Freedom</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="governance">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span>Parent Admin & Powers</span>
             </button>
           </aside>
           <div class="settings-content scroll" id="settings-content">
@@ -703,14 +799,69 @@
           </div>
         </section>
 
-        <!-- General -->
+        <!-- General (Screenshot 3) -->
         <section data-pane="general" hidden>
-          <div class="section-label">Appearance</div>
+          <!-- 2FA Secure Account Banner (Screenshot 3) -->
+          <div class="secure-account-banner" id="secure-account-banner">
+            <div class="sab-left">
+              <div class="sab-title">Secure your account</div>
+              <div class="sab-sub">Set up 2FA to keep your account safe.</div>
+            </div>
+            <button type="button" class="btn small plain sab-btn" id="btn-enable-2fa">Enable 2FA</button>
+          </div>
+
+          <div class="section-label first">Appearance</div>
           <div class="group">
             <div class="row">
-              <div class="label">Theme<div class="hint">Switch between Dark, Light, or follow System appearance</div></div>
+              <div class="label">Appearance<div class="hint">Switch between Dark, Light, or follow System appearance</div></div>
               <div class="control">
-                <div class="segmented" id="theme-mode" data-options='[["dark","🌙 Dark"],["light","☀️ Light"],["system","💻 System"]]'></div>
+                <select class="field" id="appearance-select" style="min-width:140px;">
+                  <option value="system">System</option>
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                </select>
+                <div class="segmented" id="theme-mode" data-options='[["dark","🌙 Dark"],["light","☀️ Light"],["system","💻 System"]]' hidden></div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Contrast<div class="hint">Increase interface boundary clarity</div></div>
+              <div class="control">
+                <select class="field" id="contrast-select" style="min-width:140px;">
+                  <option value="default">Default</option>
+                  <option value="high">High contrast</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Accent color<div class="hint">Theme highlights and focus outlines</div></div>
+              <div class="control">
+                <select class="field" id="accent-select" style="min-width:140px;">
+                  <option value="emerald">Emerald (ChatGPT Default)</option>
+                  <option value="blue">Electric Blue</option>
+                  <option value="indigo">Deep Indigo</option>
+                  <option value="violet">Violet</option>
+                  <option value="amber">Warm Amber</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Language<div class="hint">Preferred language for display and responses</div></div>
+              <div class="control">
+                <select class="field" id="general-language-select" style="min-width:140px;">
+                  <option value="auto">Auto-detect</option>
+                  <option value="en">English (US)</option>
+                  <option value="es">Español</option>
+                  <option value="fr">Français</option>
+                  <option value="de">Deutsch</option>
+                  <option value="hi">हिंदी (Hindi)</option>
+                  <option value="ja">日本語</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Enable Dictation<div class="hint">Allows voice typing into the composer</div></div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="enable-dictation-toggle" checked><span class="track"></span></label>
               </div>
             </div>
           </div>
@@ -721,6 +872,7 @@
             <div class="row"><div class="label">Open at login</div><div class="control"><label class="switch"><input type="checkbox" id="login"><span class="track"></span></label></div></div>
             <div class="row"><div class="label">Tool tray<div class="hint">Double-click an empty spot on the desktop to pick a tool</div></div><div class="control"><label class="switch"><input type="checkbox" id="tool-tray"><span class="track"></span></label></div></div>
           </div>
+
           <div class="section-label">Plugins</div>
           <div class="group" id="plugin-list"></div>
           <div class="plugin-actions">
@@ -962,7 +1114,36 @@
         </section>
       </div>
     </div>
-    <!-- ChatGPT Dots & JARVIS Arc-Reactor Voice Overlay -->
+    <!-- "Meet Voice" Modal (Screenshot 5) -->
+    <div class="chatgpt-modal-backdrop" id="meet-voice-modal" hidden>
+      <div class="meet-voice-card">
+        <button type="button" class="modal-close-btn meet-voice-close" id="meet-voice-close-btn" title="Close">✕</button>
+        <div class="meet-voice-orb-preview">
+          <div class="fluid-orb-sm">
+            <div class="fluid-orb-core"></div>
+            <div class="fluid-orb-glow"></div>
+          </div>
+        </div>
+        <h2 class="meet-voice-title">Meet Voice</h2>
+        <div class="meet-voice-features">
+          <div class="mv-feature-item">
+            <div class="mv-feature-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M17 5v14M7 9v6M22 10v4M2 10v4"/></svg>
+            </div>
+            <div class="mv-feature-text">Talk in real-time, get answers, brainstorm, and practice conversations.</div>
+          </div>
+          <div class="mv-feature-item">
+            <div class="mv-feature-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div class="mv-feature-text">Audio may be recorded and stored to improve our models.</div>
+          </div>
+        </div>
+        <button type="button" class="meet-voice-continue-btn" id="meet-voice-continue-btn">Continue</button>
+      </div>
+    </div>
+
+    <!-- ChatGPT Advanced Voice Mode (Fluid Blue-Indigo Gradient Orb) -->
     <div class="voice-session-overlay" id="voice-session-overlay" hidden>
       <div class="vso-backdrop"></div>
       <div class="vso-content">
@@ -972,54 +1153,25 @@
             <span id="vso-status-text">Listening...</span>
           </div>
           <div class="vso-actions">
-            <button type="button" class="vso-btn" id="vso-toggle-hud" title="Switch to Iron Man JARVIS Arc-Reactor HUD Mode">
-              <span id="vso-hud-icon">🦾 JARVIS HUD</span>
-            </button>
             <button type="button" class="vso-btn close" id="vso-close-btn" title="End Voice Session (Esc)">
               <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
             </button>
           </div>
         </div>
 
-        <!-- Mode 1: ChatGPT Pulsating Fluid Aura & 4 Dots -->
+        <!-- Mode 1: Authentic ChatGPT Advanced Voice Fluid Orb -->
         <div class="vso-visualizer" id="vso-chatgpt-mode">
-          <div class="chatgpt-voice-orb" id="chatgpt-voice-orb">
-            <div class="orb-glow"></div>
-            <div class="orb-dots">
-              <div class="chatgpt-dot dot-1"></div>
-              <div class="chatgpt-dot dot-2"></div>
-              <div class="chatgpt-dot dot-3"></div>
-              <div class="chatgpt-dot dot-4"></div>
+          <div class="chatgpt-fluid-voice-orb" id="chatgpt-fluid-voice-orb">
+            <div class="orb-fluid-glow"></div>
+            <div class="orb-fluid-core" id="orb-fluid-core">
+              <div class="orb-fluid-layer layer-1"></div>
+              <div class="orb-fluid-layer layer-2"></div>
+              <div class="orb-fluid-layer layer-3"></div>
             </div>
+            <div class="orb-ripple-ring" id="orb-ripple-1"></div>
+            <div class="orb-ripple-ring" id="orb-ripple-2"></div>
           </div>
           <div class="vso-hint">Tap anywhere or press Space to interrupt</div>
-        </div>
-
-        <!-- Mode 2: JARVIS Iron Man Arc-Reactor Holographic HUD -->
-        <div class="vso-visualizer jarvis-hud-wrap" id="vso-jarvis-mode" hidden>
-          <div class="jarvis-arc-reactor">
-            <div class="reactor-outer-ring"></div>
-            <div class="reactor-middle-ring"></div>
-            <div class="reactor-inner-core">
-              <div class="core-symbol">⚡</div>
-            </div>
-            <div class="reactor-pulse-waves"></div>
-          </div>
-          <div class="jarvis-telemetry-grid">
-            <div class="telemetry-card">
-              <span class="t-label">ARC REACTOR</span>
-              <span class="t-val" id="hud-reactor-val">OPTIMAL 100%</span>
-            </div>
-            <div class="telemetry-card">
-              <span class="t-label">CENTRAL BRAIN</span>
-              <span class="t-val" id="hud-cpu-val">ONLINE</span>
-            </div>
-            <div class="telemetry-card">
-              <span class="t-label">STARK PROTOCOL</span>
-              <span class="t-val" id="hud-protocol-val">MARK L OVERDRIVE</span>
-            </div>
-          </div>
-          <div class="vso-hint jarvis-hint">"At your service, Sir. Listening to your command."</div>
         </div>
 
         <!-- Bottom Controls -->

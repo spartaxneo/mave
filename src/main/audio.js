@@ -75,8 +75,8 @@ class AudioService extends EventEmitter {
   monitor(on) { return this.call(on ? 'monitor-start' : 'monitor-stop', {}, 8000); }
 
   /** Start making a sentence's audio now (Bigfoot's voice), so it's ready by the time it's its turn. */
-  prepare(text, voice = null) {
-    if (!this.settings.get('speakResponses')) return null;
+  prepare(text, voice = null, { force = false } = {}) {
+    if (!force && !this.settings.get('speakResponses')) return null;
     const provider = this.settings.get('ttsProvider');
     if (provider !== 'kokoro' && provider !== 'auto' && provider !== 'openai') return null;
 
@@ -170,7 +170,12 @@ class AudioService extends EventEmitter {
             const audio = Buffer.isBuffer(res) ? res : (res.buffer || res);
             const type = res.type || (Buffer.isBuffer(res) ? 'audio/wav' : 'audio/mpeg');
             if (!audio || !audio.length) continue;
-            await this.call('play', { audio, type }, 120000);
+            this.emit('speaking-start', { text });
+            try {
+              await this.call('play', { audio, type }, 120000);
+            } finally {
+              this.emit('speaking-stop');
+            }
             any = true;
           }
           return any ? 'bigfoot' : 'none';
@@ -181,7 +186,12 @@ class AudioService extends EventEmitter {
         }
       }
       try {
-        await this.call('speak-system', { text, voice: this.settings.get('systemVoice'), rate });
+        this.emit('speaking-start', { text });
+        try {
+          await this.call('speak-system', { text, voice: this.settings.get('systemVoice'), rate });
+        } finally {
+          this.emit('speaking-stop');
+        }
         return 'system';
       } catch (err) {
         this.logger.error('Windows voice failed, reply is shown as text only:', err.message);
@@ -218,10 +228,10 @@ class AudioService extends EventEmitter {
   }
 
   /** The whole reply: speak what's left. Resolves when everything has been said, to the voice used. */
-  finishStream(text) {
+  finishStream(text, { force = false } = {}) {
     const s = this.stream;
-    if (!s) return this.speak(text);
-    if (this.settings.get('speakResponses')) this.say(sentences(String(text), true), true);
+    if (!s) return this.speak(text, { force });
+    if (force || this.settings.get('speakResponses')) this.say(sentences(String(text), true), true, { force });
     return s.queue.then(() => (this.stream === s ? s.used : 'none'));
   }
 
@@ -229,7 +239,7 @@ class AudioService extends EventEmitter {
    * Each phrase is spoken once, even if the text around it changes between the streamed version
    * and the final reply (a removed [POINT] tag, different spacing, a message that starts over).
    */
-  say(list, startsReply = false) {
+  say(list, startsReply = false, { force = false } = {}) {
     const s = this.stream;
     list.forEach((sentence, i) => {
       // The reply's opening ("Sure,", "Okay,") is said on its own: it's ready in a moment.
@@ -237,19 +247,19 @@ class AudioService extends EventEmitter {
         const key = part.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
         if (!key || s.heard.has(key)) continue;
         s.heard.add(key);
-        this.enqueue(s, part);
+        this.enqueue(s, part, { force });
       }
     });
   }
 
-  enqueue(s, sentence) {
+  enqueue(s, sentence, { force = false } = {}) {
     s.pending = (s.pending || 0) + 1;
     // Made right away and in order, so the next part is ready while this one plays.
-    const prepared = this.prepare(sentence.trim());
+    const prepared = this.prepare(sentence.trim(), null, { force });
     s.queue = s.queue.then(async () => {
       try {
         if (this.stream !== s) return 'none';
-        const used = await this.speak(sentence.trim(), { prepared });
+        const used = await this.speak(sentence.trim(), { prepared, force });
         if (used !== 'none') s.used = used;
         return used;
       } finally {

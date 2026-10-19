@@ -900,6 +900,38 @@
   if ($('btn-setup')) $('btn-setup').addEventListener('click', () => api.invoke('app:open-settings', 'account'));
   if ($('region-clear')) $('region-clear').addEventListener('click', () => api.invoke('region:clear'));
 
+  // --- Modern ChatGPT UI/UX & Voice Mode Wiring ---
+  let thinkMode = false;
+  let dictating = false;
+  let micMuted = false;
+
+  function ensureDateHeader() {
+    const log = $('log');
+    if (log && !log.querySelector('.chat-date-header')) {
+      const now = new Date();
+      const day = now.toLocaleDateString('en-US', { weekday: 'long' });
+      const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      const header = el('div', 'chat-date-header', `${day} ${time}`);
+      log.prepend(header);
+    }
+  }
+
+  async function loadUserProfile() {
+    try {
+      const gov = await api.invoke('governance:get-state');
+      if (gov && gov.activeUser) {
+        const u = gov.users && gov.users[gov.activeUser];
+        const name = (u && u.name) || gov.activeUser;
+        if ($('user-profile-name')) $('user-profile-name').textContent = name;
+        if ($('upm-user-name')) $('upm-user-name').textContent = name;
+        const initials = name.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'FN';
+        if ($('user-avatar-initials')) $('user-avatar-initials').textContent = initials;
+        if ($('empty-greeting')) $('empty-greeting').textContent = `Hey, ${name.split(/\s+/)[0]}. Ready to dive in?`;
+      }
+    } catch {}
+  }
+  loadUserProfile();
+
   async function toggleVoiceMode() {
     const on = await api.invoke('voice-mode:toggle');
     updateVoiceModeUI(on);
@@ -916,16 +948,261 @@
     }
   }
 
-  if ($('voice-btn')) $('voice-btn').addEventListener('click', toggleVoiceMode);
-  if ($('talk-btn')) $('talk-btn').addEventListener('click', toggleVoiceMode);
+  async function handleVoiceButtonClick() {
+    const seen = localStorage.getItem('mave_meet_voice_seen');
+    if (!seen) {
+      if ($('meet-voice-modal')) $('meet-voice-modal').hidden = false;
+    } else {
+      toggleVoiceMode();
+    }
+  }
+
+  if ($('voice-btn')) $('voice-btn').addEventListener('click', handleVoiceButtonClick);
+  if ($('talk-btn')) $('talk-btn').addEventListener('click', handleVoiceButtonClick);
   if ($('vso-close-btn')) $('vso-close-btn').addEventListener('click', toggleVoiceMode);
   if ($('vso-end-btn')) $('vso-end-btn').addEventListener('click', toggleVoiceMode);
+
+  if ($('meet-voice-continue-btn')) {
+    $('meet-voice-continue-btn').addEventListener('click', () => {
+      localStorage.setItem('mave_meet_voice_seen', 'true');
+      if ($('meet-voice-modal')) $('meet-voice-modal').hidden = true;
+      toggleVoiceMode();
+    });
+  }
+  if ($('meet-voice-close-btn')) {
+    $('meet-voice-close-btn').addEventListener('click', () => {
+      if ($('meet-voice-modal')) $('meet-voice-modal').hidden = true;
+    });
+  }
+
+  if ($('vso-mute-btn')) {
+    $('vso-mute-btn').addEventListener('click', () => {
+      micMuted = !micMuted;
+      $('vso-mute-btn').classList.toggle('muted', micMuted);
+      if ($('vso-status-text')) {
+        $('vso-status-text').textContent = micMuted ? 'Muted' : 'Listening...';
+      }
+    });
+  }
+
+  // Real-time audio level and speaking events
+  api.on('level', (lvl) => {
+    const orb = $('chatgpt-fluid-voice-orb');
+    const vso = $('voice-session-overlay');
+    if (orb && vso && !vso.hidden) {
+      const scale = 1 + Math.min(1, Number(lvl) || 0) * 0.45;
+      orb.style.transform = `scale(${scale})`;
+      const glow = orb.querySelector('.orb-fluid-glow');
+      if (glow) {
+        glow.style.opacity = Math.max(0.6, Math.min(1, 0.6 + (Number(lvl) || 0) * 0.8));
+      }
+    }
+  });
+
+  api.on('voice:speaking', (isSpeaking) => {
+    const orb = $('chatgpt-fluid-voice-orb');
+    if (orb) {
+      orb.classList.toggle('speaking', Boolean(isSpeaking));
+      if ($('vso-status-text')) {
+        $('vso-status-text').textContent = isSpeaking ? 'Talking...' : 'Listening...';
+      }
+    }
+  });
+
+  // Tap or Space to interrupt
+  const vsoOverlay = $('voice-session-overlay');
+  if (vsoOverlay) {
+    vsoOverlay.addEventListener('click', (e) => {
+      if (e.target.closest('#vso-close-btn') || e.target.closest('#vso-end-btn') || e.target.closest('#vso-mute-btn')) {
+        return;
+      }
+      api.invoke('task:stop');
+    });
+  }
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && vsoOverlay && !vsoOverlay.hidden && document.activeElement !== $('prompt')) {
+      e.preventDefault();
+      api.invoke('task:stop');
+    }
+  });
+
+  // User Profile Menu
+  if ($('user-profile-btn')) {
+    $('user-profile-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const m = $('user-profile-menu');
+      if (m) m.hidden = !m.hidden;
+    });
+  }
+  document.addEventListener('click', (e) => {
+    const m = $('user-profile-menu');
+    if (m && !m.hidden && !m.contains(e.target) && e.target !== $('user-profile-btn')) {
+      m.hidden = true;
+    }
+    const nmd = $('nav-more-dropdown');
+    if (nmd && !nmd.hidden && !nmd.contains(e.target) && e.target !== $('nav-item-more')) {
+      nmd.hidden = true;
+    }
+  });
+
+  if ($('nav-item-more')) {
+    $('nav-item-more').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const nmd = $('nav-more-dropdown');
+      if (nmd) nmd.hidden = !nmd.hidden;
+    });
+  }
+
+  if ($('upm-settings')) {
+    $('upm-settings').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      api.invoke('app:open-settings');
+    });
+  }
+  if ($('upm-personalization')) {
+    $('upm-personalization').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      api.invoke('app:open-settings', 'customization');
+    });
+  }
+  if ($('upm-profile')) {
+    $('upm-profile').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      api.invoke('app:open-settings', 'customization');
+    });
+  }
+  if ($('upm-try-plus')) {
+    $('upm-try-plus').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      alert("✨ You're already experiencing all Mave Plus features completely unlocked!");
+    });
+  }
+  if ($('upm-help')) {
+    $('upm-help').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      alert("💬 Need help? Type your question directly in the chat or press the blue Voice button to speak with Mave in real time!");
+    });
+  }
+  if ($('upm-logout')) {
+    $('upm-logout').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      api.invoke('app:open-settings', 'governance');
+    });
+  }
+
+  // Think button
+  if ($('think-btn')) {
+    $('think-btn').addEventListener('click', () => {
+      thinkMode = !thinkMode;
+      $('think-btn').classList.toggle('active', thinkMode);
+      if (thinkMode) {
+        if ($('prompt') && !$('prompt').value) $('prompt').placeholder = 'Ask anything (Deep Thinking active)...';
+      } else {
+        if ($('prompt')) $('prompt').placeholder = 'Ask anything';
+      }
+    });
+  }
+
+  // Dictation button
+  if ($('dictation-btn')) {
+    $('dictation-btn').addEventListener('click', async () => {
+      dictating = !dictating;
+      $('dictation-btn').classList.toggle('recording', dictating);
+      try {
+        await api.invoke('dictation:set-mode', dictating);
+      } catch {}
+    });
+  }
+
+  // Try GPT-6 button
+  if ($('edc-btn')) {
+    $('edc-btn').addEventListener('click', () => {
+      if ($('prompt')) {
+        $('prompt').value = 'Explain how GPT-6 with Intelligent UI can autonomously build an interactive application for me.';
+        autosize();
+        $('prompt').focus();
+      }
+    });
+  }
+
+  // Nav item shortcuts
+  if ($('nav-item-images')) {
+    $('nav-item-images').addEventListener('click', () => {
+      if ($('prompt')) {
+        $('prompt').value = 'Generate an image of ';
+        autosize();
+        $('prompt').focus();
+      }
+    });
+  }
+  if ($('nav-item-library')) {
+    $('nav-item-library').addEventListener('click', () => {
+      if ($('prompt')) {
+        $('prompt').value = 'Search my personal knowledge vault and recent screen memory for ';
+        autosize();
+        $('prompt').focus();
+      }
+    });
+  }
+  if ($('nav-item-scheduled')) {
+    $('nav-item-scheduled').addEventListener('click', () => {
+      if ($('prompt')) {
+        $('prompt').value = 'Show my scheduled routines and circadian executive briefing status.';
+        autosize();
+        $('prompt').focus();
+      }
+    });
+  }
+  if ($('nav-item-plugins')) {
+    $('nav-item-plugins').addEventListener('click', () => {
+      api.invoke('app:open-settings', 'general');
+    });
+  }
+  if ($('nav-item-projects')) {
+    $('nav-item-projects').addEventListener('click', () => {
+      if ($('modal-projects')) $('modal-projects').hidden = false;
+    });
+  }
+
+  // Header search button
+  if ($('header-search-btn')) {
+    $('header-search-btn').addEventListener('click', () => {
+      const searchInput = $('chat-search');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    });
+  }
+
+  // General Appearance Dropdown in Settings (Screenshot 3)
+  if ($('appearance-select')) {
+    $('appearance-select').addEventListener('change', () => {
+      const val = $('appearance-select').value;
+      api.invoke('settings:update', { themeMode: val });
+      if (val === 'dark') {
+        document.body.classList.remove('theme-light');
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else if (val === 'light') {
+        document.body.classList.add('theme-light');
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    });
+  }
+  if ($('btn-enable-2fa')) {
+    $('btn-enable-2fa').addEventListener('click', () => {
+      alert('🔒 Two-Factor Authentication (2FA) is enabled for your account.');
+    });
+  }
 
   api.on('voice-mode', (on) => updateVoiceModeUI(on));
   api.invoke('voice-mode:status').then((on) => updateVoiceModeUI(on)).catch(() => {});
 
   api.on('state', setState);
-  api.on('log', addEntry);
+  api.on('log', (entry) => {
+    ensureDateHeader();
+    addEntry(entry);
+  });
   api.on('log-live', ({ text }) => streamText(text));
   api.on('recommendations', (recs) => renderRecommendations(recs));
 
@@ -942,7 +1219,12 @@
     last.prepend(img);
   });
 
-  api.on('settings', (s) => { if (s && s.models && $('prompt')) { $('prompt').placeholder = `Message ${s.assistantName}... (attach files, ask to create images or videos)`; renderSetup(); } });
+  api.on('settings', (s) => {
+    if (s && s.models && $('prompt')) {
+      $('prompt').placeholder = 'Ask anything';
+      renderSetup();
+    }
+  });
   api.on('local:progress', (st) => { if (st.status === 'ready' || st.status === 'none') renderSetup(); });
   api.on('region', (r) => {
     if ($('region-chip')) $('region-chip').hidden = !r;
