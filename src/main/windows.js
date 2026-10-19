@@ -253,6 +253,15 @@ class WindowManager {
     return win;
   }
 
+  toggleMain(route = 'home') {
+    if (this.main && !this.main.isDestroyed() && this.main.isVisible() && !this.main.isMinimized()) {
+      this.main.hide();
+      return false;
+    }
+    this.openMain(route);
+    return true;
+  }
+
   showPanel() { this.openMain('home'); }
   openSettings(section) { this.openMain(section || 'assistant'); }
   openOnboarding() { this.openMain('onboarding'); }

@@ -1645,6 +1645,43 @@
   api.on('log-live', ({ text }) => streamText(text));
   api.on('recommendations', (recs) => renderRecommendations(recs));
 
+  // OS Device Extension Global Shortcut & Sentinel Notifications
+  api.on('voice:toggle-talk', () => {
+    toggleVoiceMode();
+  });
+
+  function showChatToast(message) {
+    let toast = document.getElementById('chatgpt-toast-notice');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'chatgpt-toast-notice';
+      toast.style.cssText = 'position:fixed; top:48px; left:50%; transform:translateX(-50%) translateY(0); background:rgba(26,29,36,0.95); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:12px; font-weight:600; padding:7px 16px; border-radius:20px; z-index:99999; box-shadow:0 8px 24px rgba(0,0,0,0.5); backdrop-filter:blur(12px); pointer-events:none; transition:all 0.3s cubic-bezier(0.16,1,0.3,1); opacity:0;';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0px)';
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(-10px)';
+    }, 4000);
+  }
+
+  api.on('sentinel:network-change', (data) => {
+    if (!data) return;
+    if (data.online) {
+      showChatToast('🌐 Internet connected: Mave is online and synchronizing tasks.');
+    } else {
+      showChatToast('📶 Sovereign Offline Mode: Running 100% locally on-device.');
+    }
+  });
+
+  api.on('sentinel:incoming-activity', (data) => {
+    if (!data) return;
+    showChatToast(`💬 New from ${data.source || 'Activity'}: ${data.preview || 'New message'}`);
+  });
+
   // Ghost AI Core: Interactive A2UI Generative Component Rendering & Action Handling
   api.on('ghost:a2ui', (payload) => {
     if (!payload || !payload.html) return;

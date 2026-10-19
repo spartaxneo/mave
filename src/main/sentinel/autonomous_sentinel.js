@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execFile } = require('child_process');
-const { app } = require('electron');
+const { app, Notification } = require('electron');
 const { getMemoryStore } = require('../memory');
 
 function getSentinelDir() {
@@ -96,6 +96,17 @@ class AutonomousSentinel extends EventEmitter {
           message: '🌐 Internet connection detected. Mave is online and synchronizing.',
         });
       }
+
+      // Native OS Desktop Notification
+      try {
+        if (this.settings && this.settings.get('proactiveNotifications') !== false && Notification && Notification.isSupported()) {
+          new Notification({
+            title: 'Mave · Internet Online 🌐',
+            body: 'Internet connected. Mave is actively synchronizing background tasks and checking updates.',
+            silent: false,
+          }).show();
+        }
+      } catch {}
     } else if (previous && !online) {
       // Transition: ONLINE -> OFFLINE
       this.logger.info('[AutonomousSentinel] 🟡 Internet connection dropped. Sovereign local mode active.');
@@ -109,6 +120,17 @@ class AutonomousSentinel extends EventEmitter {
           message: '🟡 Offline mode engaged. Mave is running 100% locally with zero cloud dependencies.',
         });
       }
+
+      // Native OS Desktop Notification
+      try {
+        if (this.settings && this.settings.get('proactiveNotifications') !== false && Notification && Notification.isSupported()) {
+          new Notification({
+            title: 'Mave · Sovereign Offline Mode 🛡️',
+            body: 'Internet connection lost. Switched to 100% on-device intelligence with zero cloud dependencies.',
+            silent: false,
+          }).show();
+        }
+      } catch {}
     }
   }
 
@@ -343,6 +365,17 @@ $p = Get-Process -Id $pid -ErrorAction SilentlyContinue
         mood: 'speaking',
       });
     }
+
+    // Native OS Desktop Notification
+    try {
+      if (this.settings && this.settings.get('proactiveNotifications') !== false && Notification && Notification.isSupported()) {
+        new Notification({
+          title: `Mave · Message from ${sender} (${source})`,
+          body: preview || 'New activity notification received.',
+          silent: false,
+        }).show();
+      }
+    } catch {}
 
     return payload;
   }

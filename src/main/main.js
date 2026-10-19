@@ -1,7 +1,7 @@
 'use strict';
 // App entry point: builds the services and wires them together.
 
-const { app, session, screen, dialog, ipcMain, net } = require('electron');
+const { app, session, screen, dialog, ipcMain, net, globalShortcut } = require('electron');
 const path = require('path');
 
 const { Settings } = require('./settings');
@@ -368,6 +368,31 @@ async function start() {
     try { windows.showIsland(); } catch (err) { logger.warn('Dynamic island launch:', err.message); }
   }
 
+  // OS Device Extension Global Shortcuts (Vorssaint-style system integration)
+  try {
+    globalShortcut.register('Alt+Space', () => {
+      windows.toggleMain();
+    });
+    globalShortcut.register('CommandOrControl+Shift+Space', () => {
+      windows.toggleMain();
+    });
+    globalShortcut.register('Alt+I', () => {
+      windows.toggleIsland();
+    });
+    globalShortcut.register('Alt+Shift+V', () => {
+      windows.openMain('home');
+      if (windows.main && !windows.main.isDestroyed()) {
+        windows.main.webContents.send('voice:toggle-talk');
+      }
+    });
+    globalShortcut.register('Alt+Shift+S', () => {
+      controller.ask('Look at my active screen and explain what you see in detail.', { source: 'hotkey' });
+    });
+    logger.info('Registered OS device extension global hotkeys (Alt+Space, Alt+I, Alt+Shift+V, Alt+Shift+S).');
+  } catch (err) {
+    logger.warn('Global shortcuts registration:', err.message);
+  }
+
   // Visual QA hooks; never set in normal use.
   if (process.env.BIGFOOT_DEMO === 'qa') global.bigfoot = { controller, windows, agent, audio, plugins, pluginManager, require };
   if (process.env.BIGFOOT_DEMO === '1') require('./demo').runDemo({ windows, controller });
@@ -385,6 +410,7 @@ async function start() {
   app.on('window-all-closed', (e) => e.preventDefault()); // lives in the tray
   app.on('before-quit', () => {
     windows.quitting = true;
+    try { globalShortcut.unregisterAll(); } catch {}
     clearInterval(cursorTimer);
     agent.stop();
     input.stop();
