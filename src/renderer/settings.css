@@ -106,7 +106,7 @@ nav .nav-item.active .nav-icon, nav .nav-item[aria-current='true'] .nav-icon {
 .content .titlebar .title { color: var(--text-1); font-size: 14px; }
 .content.scrolled .titlebar { border-bottom-color: var(--hairline); }
 .pane { flex: 1; padding: 6px 28px 28px; }
-.pane section { max-width: 560px; margin: 0 auto; animation: pane-in 240ms var(--ease); }
+.pane section:not(.home) { max-width: 560px; margin: 0 auto; animation: pane-in 240ms var(--ease); }
 @keyframes pane-in { from { opacity: 0; transform: translateY(3px); } }
 
 .hero { display: flex; gap: 14px; align-items: center; margin: 6px 2px 18px; }

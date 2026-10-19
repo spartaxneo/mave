@@ -151,6 +151,7 @@
         </button>
       </div>
     </aside>
+    <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
 
     <main class="content">
       <div class="titlebar">
@@ -210,6 +211,12 @@
           </div>
         </div>
 
+        <!-- ChatGPT Temporary Chat Mode Toggle -->
+        <button type="button" class="temporary-chat-pill-btn" id="temporary-chat-pill-btn" title="Toggle Temporary Chat (Won't appear in history or use memories)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
+          <span class="temp-chat-label">Temporary</span>
+        </button>
+
         <div class="chat-header-meta">
           <div class="title" id="section-title" hidden>Home</div>
           <span class="chat-header-title" id="chat-header-title">Main Chat</span>
@@ -230,26 +237,29 @@
 
         <div class="titlebar-actions">
           <span class="status" id="status"><span class="dot"></span><span id="status-text">Ready</span></span>
-          <button class="btn plain small" id="island-toggle-btn" title="Toggle System Dynamic Island (Device Extension)">
-            <span>🏝️ Dynamic Island</span>
+          <button class="btn plain small titlebar-action-btn" id="island-toggle-btn" title="Toggle System Dynamic Island (Device Extension)">
+            <span class="btn-icon">🏝️</span>
+            <span class="btn-text">Island</span>
           </button>
-          <button class="btn plain small" id="chat-archive-btn" title="Archive this conversation">
+          <button class="btn plain small titlebar-action-btn" id="chat-archive-btn" title="Archive this conversation">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="2"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>
-            <span>Archive</span>
+            <span class="btn-text">Archive</span>
           </button>
-          <button class="btn plain small" id="canvas-trigger-btn" title="Toggle ChatGPT Canvas Split-Screen Editor">
-            <span>◫ Canvas</span>
+          <button class="btn plain small titlebar-action-btn" id="canvas-trigger-btn" title="Toggle ChatGPT Canvas Split-Screen Editor">
+            <span class="btn-icon">◫</span>
+            <span class="btn-text">Canvas</span>
           </button>
-          <button class="btn plain small" id="jarvis-hud-trigger-btn" title="Toggle J.A.R.V.I.S. Holographic Telemetry HUD (Ctrl+Shift+H)">
-            <span>🦾 J.A.R.V.I.S. HUD</span>
+          <button class="btn plain small titlebar-action-btn" id="jarvis-hud-trigger-btn" title="Toggle J.A.R.V.I.S. Holographic Telemetry HUD (Ctrl+Shift+H)">
+            <span class="btn-icon">🦾</span>
+            <span class="btn-text">J.A.R.V.I.S. HUD</span>
           </button>
-          <button class="btn plain small" id="talk-btn" title="ChatGPT-Style Hands-Free Voice Mode (Talk)">
+          <button class="btn plain small titlebar-action-btn" id="talk-btn" title="ChatGPT-Style Hands-Free Voice Mode (Talk)">
             <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6.5v3M5.5 4.5v7M8 2.5v11M10.5 5v6M13 7v2"/></svg>
-            <span id="talk-btn-text">Voice Mode</span>
+            <span id="talk-btn-text" class="btn-text">Voice Mode</span>
           </button>
-          <button class="btn plain small" id="new-chat" title="Start a new conversation">
+          <button class="btn plain small titlebar-action-btn primary-action" id="new-chat" title="Start a new conversation (Ctrl+N)">
             <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
-            <span>New chat</span>
+            <span class="btn-text">New chat</span>
           </button>
         </div>
       </div>
@@ -271,20 +281,46 @@
             <div class="ail-note" id="ai-loading-note"></div>
           </div>
 
+          <div class="temporary-chat-banner" id="temporary-chat-banner" hidden>
+            <span>🕵️ Temporary Chat is on. Messages will not be saved in your chat history or used for memory personalization.</span>
+            <button type="button" class="btn-clear-temp" id="btn-clear-temp">Turn Off</button>
+          </div>
+
           <div class="log scroll" id="log" aria-live="polite">
             <div class="empty" id="empty">
-              <div class="empty-greeting-wrap">
-                <h1 class="empty-greeting" id="empty-greeting">Hey, From. Ready to dive in?</h1>
+              <div class="empty-mark-wrap">
+                <img src="assets/tray@2x.png" width="36" height="36" alt="Mave">
               </div>
-              <div class="empty-discovery-card" id="empty-discovery-card">
-                <div class="edc-left">
-                  <div class="edc-sparkle">✨</div>
-                  <div class="edc-text">
-                    <div class="edc-title">GPT-6 with Intelligent UI</div>
-                    <div class="edc-sub">Get visual and interactive answers to help you take the next step</div>
+              <h1 class="empty-title" id="empty-greeting">What can I help with today?</h1>
+              <div class="empty-chips">
+                <button type="button" class="empty-chip" id="empty-chip-code" data-prompt="Write a Python script to analyze sample data, compute metrics, and plot a chart.">
+                  <span class="chip-icon">🐍</span>
+                  <div class="chip-text">
+                    <strong>Code Interpreter</strong>
+                    <span>Write Python scripts, run on-device &amp; plot charts</span>
                   </div>
-                </div>
-                <button type="button" class="edc-btn" id="edc-btn">Try GPT-6</button>
+                </button>
+                <button type="button" class="empty-chip" id="empty-chip-canvas" data-prompt="Open Canvas editor to draft and edit code or documentation side-by-side.">
+                  <span class="chip-icon">◫</span>
+                  <div class="chip-text">
+                    <strong>Canvas Workspace</strong>
+                    <span>Split-screen code &amp; document side-by-side editor</span>
+                  </div>
+                </button>
+                <button type="button" class="empty-chip" id="empty-chip-jarvis" data-prompt="J.A.R.V.I.S., run a full hardware diagnostics check and show my CPU, GPU, and VRAM telemetry.">
+                  <span class="chip-icon">🦾</span>
+                  <div class="chip-text">
+                    <strong>J.A.R.V.I.S. Protocol</strong>
+                    <span>Real-time holographic telemetry &amp; system vitals</span>
+                  </div>
+                </button>
+                <button type="button" class="empty-chip" id="empty-chip-search" data-prompt="Search workspace files and MCP tools for sovereign agent configurations.">
+                  <span class="chip-icon">🔍</span>
+                  <div class="chip-text">
+                    <strong>Ghost Hybrid Search</strong>
+                    <span>Sub-50ms RRF semantic &amp; lexical knowledge retrieval</span>
+                  </div>
+                </button>
               </div>
             </div>
           </div>
@@ -306,6 +342,14 @@
                   <button type="button" class="cad-item" id="cad-upload-file">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     <span>Upload Image, Video, Audio or PDF</span>
+                  </button>
+                  <button type="button" class="cad-item" id="cad-python-sandbox">
+                    <span style="font-size:14px;">🐍</span>
+                    <span>Run Python Sandbox (Code Interpreter)</span>
+                  </button>
+                  <button type="button" class="cad-item" id="cad-open-canvas">
+                    <span style="font-size:14px;">◫</span>
+                    <span>Open Canvas Split-Screen Editor</span>
                   </button>
                   <button type="button" class="cad-item" id="cad-create-image">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -516,6 +560,7 @@
           <span class="canvas-lang-badge" id="canvas-lang-badge">PYTHON</span>
         </div>
         <div class="canvas-header-actions">
+          <button type="button" class="btn plain small canvas-back-btn" id="canvas-back-btn" title="Back to Chat">← Back to Chat</button>
           <button type="button" class="btn primary small" id="canvas-btn-run" title="Execute in Sandbox (ChatGPT Code Interpreter)">▶ Run Code</button>
           <button type="button" class="btn plain small" id="canvas-btn-copy" title="Copy code">📋 Copy</button>
           <button type="button" class="icon-btn canvas-close-btn" id="canvas-close-btn" title="Close Canvas">✕</button>

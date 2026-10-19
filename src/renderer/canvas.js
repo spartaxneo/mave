@@ -120,9 +120,11 @@
       });
     }
 
-    // Close Button
+    // Close & Back Buttons
     const closeBtn = $('canvas-close-btn');
     if (closeBtn) closeBtn.addEventListener('click', closeCanvas);
+    const backBtn = $('canvas-back-btn');
+    if (backBtn) backBtn.addEventListener('click', closeCanvas);
 
     // Run Code Button
     const runBtn = $('canvas-btn-run');

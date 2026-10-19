@@ -19,6 +19,8 @@
   let activeThreadId = null;
   let activeProjectId = null;
   let pendingAttachments = [];
+  let lastSubmittedPrompt = '';
+  let temporaryMode = false;
 
   const el = (tag, cls, text) => {
     const n = document.createElement(tag);
@@ -195,7 +197,48 @@
       setTimeout(() => speakBtn.classList.remove('active'), 2500);
     });
 
-    // 3. Good response
+    // 3. Regenerate button (ChatGPT style)
+    const regenBtn = el('button', 'msg-action-btn regen-msg-btn');
+    regenBtn.title = 'Regenerate response';
+    regenBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+    regenBtn.addEventListener('click', () => {
+      let prevUserTurn = row.previousElementSibling;
+      while (prevUserTurn && !prevUserTurn.classList.contains('user')) {
+        prevUserTurn = prevUserTurn.previousElementSibling;
+      }
+      const promptToReplay = (prevUserTurn && prevUserTurn.querySelector('.msg.user')?.textContent?.trim()) || lastSubmittedPrompt;
+      if (promptToReplay) {
+        api.invoke('task:run', promptToReplay, {
+          threadId: temporaryMode ? null : activeThreadId,
+          temporary: temporaryMode,
+        });
+      }
+    });
+
+    // 4. Open in Canvas button (ChatGPT style)
+    const canvasBtn = el('button', 'msg-action-btn canvas-msg-btn');
+    canvasBtn.title = 'Open in Canvas';
+    canvasBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M14 3v18"/></svg>`;
+    canvasBtn.addEventListener('click', () => {
+      const codeMatch = text.match(/```([a-zA-Z0-9_+#.-]*)\r?\n([\s\S]*?)```/);
+      if (codeMatch && window.__openChatGPTCanvas) {
+        const lang = (codeMatch[1] || 'python').toLowerCase();
+        const ext = lang === 'javascript' || lang === 'js' ? 'js' : lang === 'python' || lang === 'py' ? 'py' : 'txt';
+        window.__openChatGPTCanvas({
+          title: `analysis.${ext}`,
+          language: lang,
+          content: codeMatch[2],
+        });
+      } else if (window.__openChatGPTCanvas) {
+        window.__openChatGPTCanvas({
+          title: 'document.md',
+          language: 'markdown',
+          content: text,
+        });
+      }
+    });
+
+    // 5. Good response
     const thumbUp = el('button', 'msg-action-btn thumb-up-btn');
     thumbUp.title = 'Good response';
     thumbUp.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>`;
@@ -204,7 +247,7 @@
       thumbDown.classList.remove('active');
     });
 
-    // 4. Bad response
+    // 6. Bad response
     const thumbDown = el('button', 'msg-action-btn thumb-down-btn');
     thumbDown.title = 'Bad response';
     thumbDown.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/></svg>`;
@@ -213,7 +256,7 @@
       thumbUp.classList.remove('active');
     });
 
-    actions.append(copyBtn, speakBtn, thumbUp, thumbDown);
+    actions.append(copyBtn, speakBtn, regenBtn, canvasBtn, thumbUp, thumbDown);
     const body = row.querySelector('.msg.assistant');
     if (body) body.append(actions);
   }
@@ -643,7 +686,7 @@
       live = assistantBubble();
       add(live.row);
     }
-    live.body.innerHTML = renderMarkdown(text);
+    live.body.innerHTML = renderMarkdown(text) + '<span class="streaming-cursor"></span>';
     scrollDown();
   }
 
@@ -666,6 +709,7 @@
     const text = $('prompt').value.trim();
     if (!text && pendingAttachments.length === 0) return;
 
+    lastSubmittedPrompt = text;
     const attachmentsToSend = [...pendingAttachments];
     pendingAttachments = [];
     renderAttachmentsPreview();
@@ -675,7 +719,8 @@
 
     await api.invoke('task:run', text, {
       attachments: attachmentsToSend,
-      threadId: activeThreadId,
+      threadId: temporaryMode ? null : activeThreadId,
+      temporary: temporaryMode,
     });
   }
 
@@ -953,6 +998,21 @@
   // Empty state chips
   document.querySelectorAll('.empty-chip').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (btn.id === 'empty-chip-canvas') {
+        if (window.__openChatGPTCanvas) {
+          window.__openChatGPTCanvas({
+            title: 'model.py',
+            language: 'python',
+            content: '# Python Data & Architecture Model\nimport math\n\ndef analyze():\n    return {"status": "ok", "pi": math.pi}\n\nif __name__ == "__main__":\n    print(analyze())\n',
+          });
+        }
+        return;
+      }
+      if (btn.id === 'empty-chip-jarvis') {
+        const hudBtn = $('jarvis-hud-trigger-btn');
+        if (hudBtn) hudBtn.click();
+        return;
+      }
       const p = btn.dataset.prompt;
       if (p && $('prompt')) {
         $('prompt').value = p;
@@ -961,6 +1021,52 @@
       }
     });
   });
+
+  // Composer Attach Dropdown: Python Sandbox & Canvas
+  if ($('cad-python-sandbox')) {
+    $('cad-python-sandbox').addEventListener('click', () => {
+      if ($('composer-actions-dropdown')) $('composer-actions-dropdown').hidden = true;
+      if (window.__openChatGPTCanvas) {
+        window.__openChatGPTCanvas({
+          title: 'sandbox.py',
+          language: 'python',
+          content: '# On-Device Python 3.14 Sandbox (Code Interpreter)\nimport os, sys\n\nprint("Sandbox environment initialized.")\nprint("Python version:", sys.version)\n',
+        });
+      }
+    });
+  }
+  if ($('cad-open-canvas')) {
+    $('cad-open-canvas').addEventListener('click', () => {
+      if ($('composer-actions-dropdown')) $('composer-actions-dropdown').hidden = true;
+      if (window.__openChatGPTCanvas) {
+        window.__openChatGPTCanvas({
+          title: 'document.md',
+          language: 'markdown',
+          content: '# New Workspace Document\n\nStart typing your document or architecture draft here.\n',
+        });
+      }
+    });
+  }
+
+  // Temporary Chat Pill & Banner wiring
+  const tempPillBtn = $('temporary-chat-pill-btn');
+  const tempBannerEl = $('temporary-chat-banner');
+  const clearTempBtn = $('btn-clear-temp');
+
+  if (tempPillBtn) {
+    tempPillBtn.addEventListener('click', () => {
+      temporaryMode = !temporaryMode;
+      tempPillBtn.classList.toggle('active', temporaryMode);
+      if (tempBannerEl) tempBannerEl.hidden = !temporaryMode;
+    });
+  }
+  if (clearTempBtn) {
+    clearTempBtn.addEventListener('click', () => {
+      temporaryMode = false;
+      if (tempPillBtn) tempPillBtn.classList.remove('active');
+      if (tempBannerEl) tempBannerEl.hidden = true;
+    });
+  }
 
   if ($('btn-setup')) $('btn-setup').addEventListener('click', () => api.invoke('app:open-settings', 'account'));
   if ($('region-clear')) $('region-clear').addEventListener('click', () => api.invoke('region:clear'));
