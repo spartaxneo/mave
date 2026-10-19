@@ -25,6 +25,9 @@ const INVOKE = new Set([
   'threads:archive', 'threads:unarchive', 'threads:delete', 'threads:archived', 'threads:groups',
   'projects:list', 'projects:create', 'projects:update', 'projects:delete',
   'media:generate-image', 'media:generate-video', 'media:analyze-file', 'file:pick',
+  'firebase:get-config', 'firebase:sign-up', 'firebase:sign-in', 'firebase:sign-in-anon',
+  'firebase:sign-out', 'firebase:get-user', 'firebase:update-profile', 'firebase:sync-device',
+  'firebase:get-devices', 'firebase:save-preferences', 'firebase:get-preferences', 'firebase:password-reset',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',

@@ -8,6 +8,7 @@ const { VOICES } = require('./kokoro');
 const hardware = require('./local/hardware');
 const catalog = require('./local/catalog');
 const { getGovernanceManager, POWER_TIERS } = require('./security/governance');
+const { firebaseService } = require('./firebase');
 
 const LINKS = {
   anthropic: 'https://platform.claude.com/settings/keys',
@@ -578,6 +579,21 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     const gov = getGovernanceManager();
     return gov.setAdminPin(oldPin, newPin);
   });
+
+  // Firebase Auth & Cloud Firestore Database
+  handle('firebase:get-config', () => firebaseService.getConfig());
+  handle('firebase:sign-up', (data) => firebaseService.signUp(data || {}));
+  handle('firebase:sign-in', (data) => firebaseService.signIn(data || {}));
+  handle('firebase:sign-in-anon', () => firebaseService.signInAnonymously());
+  handle('firebase:sign-out', () => firebaseService.signOut());
+  handle('firebase:get-user', () => firebaseService.getCurrentUser());
+  handle('firebase:update-profile', (patch) => firebaseService.updateUserProfile(null, patch));
+  handle('firebase:sync-device', (info) => firebaseService.syncDevice(null, info));
+  handle('firebase:get-devices', () => firebaseService.getDevices(null));
+  handle('firebase:save-preferences', (prefs) => firebaseService.savePreferences(null, prefs));
+  handle('firebase:get-preferences', () => firebaseService.getPreferences(null));
+  handle('firebase:password-reset', (email) => firebaseService.sendPasswordReset(email));
+
   handle('app:info', () => ({
     version: app.getVersion(), state: controller.state, running: agent.running,
     usage: { task: costs.task, session: costs.session }, plugins: plugins.list(),

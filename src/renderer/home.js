@@ -1555,6 +1555,7 @@
     init() {
       this.applyPlatformUI();
       this.updateNodeDisplay();
+      this.initFirebase();
       this.bindOnboardingModal();
       this.bindSettingsPanel();
 
@@ -1562,6 +1563,35 @@
         setTimeout(() => {
           if ($('node-onboarding-modal')) $('node-onboarding-modal').hidden = false;
         }, 600);
+      }
+    }
+
+    async initFirebase() {
+      try {
+        const user = await api.invoke('firebase:get-user');
+        if (user && user.uid) {
+          this.accountName = user.displayName || user.email || 'From Near';
+          if ($('fb-profile-name')) $('fb-profile-name').textContent = this.accountName;
+          if ($('fb-profile-email')) $('fb-profile-email').textContent = user.email || 'Anonymous Guest Session';
+          if ($('fb-profile-cloud-status')) $('fb-profile-cloud-status').textContent = `☁️ Cloud Firestore Connected (UID: ${user.uid.slice(0, 8)}…)`;
+          if ($('fb-account-name')) $('fb-account-name').value = this.accountName;
+          if ($('fb-btn-signout')) $('fb-btn-signout').style.display = 'inline-block';
+          if ($('nom-fb-name')) $('nom-fb-name').value = this.accountName;
+          if (user.email && $('nom-fb-email')) $('nom-fb-email').value = user.email;
+
+          // Fetch device list
+          const devRes = await api.invoke('firebase:get-devices');
+          if (devRes && devRes.devices && $('fb-mesh-devices-list')) {
+            $('fb-mesh-devices-list').textContent = `${devRes.devices.length} device(s) in cloud mesh`;
+          }
+        } else {
+          if ($('fb-profile-name')) $('fb-profile-name').textContent = 'Guest / Offline';
+          if ($('fb-profile-email')) $('fb-profile-email').textContent = 'Not signed in to Firebase';
+          if ($('fb-profile-cloud-status')) $('fb-profile-cloud-status').textContent = '⚠️ Local-only mode';
+          if ($('fb-btn-signout')) $('fb-btn-signout').style.display = 'none';
+        }
+      } catch (err) {
+        console.warn('Firebase init error:', err);
       }
     }
 
@@ -1592,7 +1622,6 @@
       const modal = $('node-onboarding-modal');
       const stepAuth = $('nom-step-auth');
       const stepRole = $('nom-step-role');
-      const authNext = $('nom-auth-next-btn');
       const authGuest = $('nom-auth-guest-btn');
       const hostCard = $('nom-role-host');
       const satCard = $('nom-role-satellite');
@@ -1600,14 +1629,122 @@
       const satFields = $('nom-satellite-fields');
 
       let selectedRole = 'host';
+      let authMode = 'signin'; // 'signin' | 'signup' | 'guest'
 
-      if (authNext) {
-        authNext.addEventListener('click', () => {
-          const name = $('nom-account-name') ? $('nom-account-name').value.trim() : 'From Near';
-          this.accountName = name || 'From Near';
-          localStorage.setItem('mave_account_name', this.accountName);
-          if (stepAuth) stepAuth.style.display = 'none';
-          if (stepRole) stepRole.style.display = 'block';
+      const tabSignIn = $('nom-auth-tab-signin');
+      const tabSignUp = $('nom-auth-tab-signup');
+      const tabGuest = $('nom-auth-tab-guest');
+      const groupName = $('nom-group-name');
+      const groupEmail = $('nom-group-email');
+      const groupPass = $('nom-group-pass');
+      const submitBtn = $('nom-auth-submit-btn');
+      const statusEl = $('nom-fb-status');
+
+      const setAuthTab = (mode) => {
+        authMode = mode;
+        if (tabSignIn) {
+          tabSignIn.style.background = mode === 'signin' ? 'rgba(59,130,246,0.3)' : 'transparent';
+          tabSignIn.style.color = mode === 'signin' ? '#fff' : 'var(--text-3)';
+        }
+        if (tabSignUp) {
+          tabSignUp.style.background = mode === 'signup' ? 'rgba(59,130,246,0.3)' : 'transparent';
+          tabSignUp.style.color = mode === 'signup' ? '#fff' : 'var(--text-3)';
+        }
+        if (tabGuest) {
+          tabGuest.style.background = mode === 'guest' ? 'rgba(59,130,246,0.3)' : 'transparent';
+          tabGuest.style.color = mode === 'guest' ? '#fff' : 'var(--text-3)';
+        }
+
+        if (groupName) groupName.style.display = mode === 'signup' ? 'block' : 'none';
+        if (groupEmail) groupEmail.style.display = mode === 'guest' ? 'none' : 'block';
+        if (groupPass) groupPass.style.display = mode === 'guest' ? 'none' : 'block';
+
+        if (submitBtn) {
+          submitBtn.textContent = mode === 'signin' ? 'Sign In & Connect Cloud DB →' :
+                                  mode === 'signup' ? 'Create Account & Initialize Cloud DB →' :
+                                  'Continue as Guest (Local Mode) →';
+        }
+        if (statusEl) {
+          statusEl.style.display = 'none';
+          statusEl.textContent = '';
+        }
+      };
+
+      if (tabSignIn) tabSignIn.addEventListener('click', () => setAuthTab('signin'));
+      if (tabSignUp) tabSignUp.addEventListener('click', () => setAuthTab('signup'));
+      if (tabGuest) tabGuest.addEventListener('click', () => setAuthTab('guest'));
+
+      if (submitBtn) {
+        submitBtn.addEventListener('click', async () => {
+          if (authMode === 'guest') {
+            try {
+              if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Starting guest session…'; }
+              await api.invoke('firebase:sign-in-anon');
+              this.accountName = 'Local Guest';
+              localStorage.setItem('mave_account_name', this.accountName);
+              if (stepAuth) stepAuth.style.display = 'none';
+              if (stepRole) stepRole.style.display = 'block';
+              this.initFirebase();
+            } catch {
+              if (stepAuth) stepAuth.style.display = 'none';
+              if (stepRole) stepRole.style.display = 'block';
+            }
+            return;
+          }
+
+          const email = $('nom-fb-email') ? $('nom-fb-email').value.trim() : '';
+          const pass = $('nom-fb-pass') ? $('nom-fb-pass').value : '';
+          const name = $('nom-fb-name') ? $('nom-fb-name').value.trim() : '';
+
+          if (!email || !pass) {
+            if (statusEl) {
+              statusEl.style.display = 'block';
+              statusEl.style.color = '#ef4444';
+              statusEl.textContent = 'Please enter both email and password.';
+            }
+            return;
+          }
+
+          if (submitBtn) submitBtn.disabled = true;
+          if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.color = '#38bdf8';
+            statusEl.textContent = authMode === 'signin' ? 'Authenticating with Firebase…' : 'Creating Firebase account…';
+          }
+
+          try {
+            const res = authMode === 'signin'
+              ? await api.invoke('firebase:sign-in', { email, password: pass })
+              : await api.invoke('firebase:sign-up', { email, password: pass, displayName: name });
+
+            if (res && res.ok) {
+              this.accountName = res.user?.displayName || name || email.split('@')[0];
+              localStorage.setItem('mave_account_name', this.accountName);
+              this.avatar.hop();
+              this.avatar.setMood('happy', 1500);
+
+              if (statusEl) {
+                statusEl.style.color = '#34d399';
+                statusEl.textContent = '✅ Authenticated! Initializing cloud user database…';
+              }
+
+              setTimeout(() => {
+                if (stepAuth) stepAuth.style.display = 'none';
+                if (stepRole) stepRole.style.display = 'block';
+                this.initFirebase();
+              }, 700);
+            } else {
+              throw new Error(res?.error || 'Authentication failed');
+            }
+          } catch (err) {
+            if (statusEl) {
+              statusEl.style.display = 'block';
+              statusEl.style.color = '#ef4444';
+              statusEl.textContent = err.message || 'Authentication error';
+            }
+          } finally {
+            if (submitBtn) submitBtn.disabled = false;
+          }
         });
       }
 
@@ -1719,6 +1856,55 @@
         $('mascot-style-select').addEventListener('change', () => {
           const val = $('mascot-style-select').value;
           this.avatar.applyStyle(val);
+        });
+      }
+
+      // Firebase Account & Cloud DB Settings Handlers
+      if ($('fb-btn-signout')) {
+        $('fb-btn-signout').addEventListener('click', async () => {
+          await api.invoke('firebase:sign-out');
+          this.initFirebase();
+          this.avatar.hop();
+        });
+      }
+
+      if ($('fb-btn-switch-account')) {
+        $('fb-btn-switch-account').addEventListener('click', () => {
+          if ($('node-onboarding-modal')) {
+            $('node-onboarding-modal').hidden = false;
+            if ($('nom-step-auth')) $('nom-step-auth').style.display = 'block';
+            if ($('nom-step-role')) $('nom-step-role').style.display = 'none';
+          }
+        });
+      }
+
+      if ($('fb-btn-sync-prefs')) {
+        $('fb-btn-sync-prefs').addEventListener('click', async () => {
+          $('fb-btn-sync-prefs').textContent = 'Syncing…';
+          await api.invoke('firebase:save-preferences', {
+            palette: this.avatar.palette,
+            style: this.avatar.style,
+            nodeRole: this.role,
+            platform: this.platform,
+            theme: localStorage.getItem('mave_theme') || 'dark',
+          });
+          $('fb-btn-sync-prefs').textContent = '✅ Synced to Firestore';
+          setTimeout(() => { $('fb-btn-sync-prefs').textContent = 'Sync Preferences'; }, 2000);
+        });
+      }
+
+      if ($('fb-btn-sync-device')) {
+        $('fb-btn-sync-device').addEventListener('click', async () => {
+          $('fb-btn-sync-device').textContent = 'Registering…';
+          await api.invoke('firebase:sync-device', {
+            platform: this.platform,
+            role: this.role,
+            hostname: 'Mave-Desktop',
+            capabilities: ['voice', 'screen', 'hands', 'models', 'mesh'],
+          });
+          $('fb-btn-sync-device').textContent = '✅ Registered in Mesh';
+          setTimeout(() => { $('fb-btn-sync-device').textContent = 'Sync Device'; }, 2000);
+          this.initFirebase();
         });
       }
     }

@@ -691,6 +691,10 @@
               <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/></svg>
               <span>Face & Dynamic Island</span>
             </button>
+            <button class="settings-tab-btn" data-tab="firebase" id="tab-btn-firebase">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>Firebase & Cloud DB</span>
+            </button>
           </aside>
           <div class="settings-content scroll" id="settings-content">
 
@@ -1444,6 +1448,84 @@
             </div>
           </div>
         </section>
+
+        <!-- Firebase Account & Cloud Database -->
+        <section data-tab="firebase" hidden>
+          <div class="settings-panel-head">
+            <h2 class="settings-panel-title">Firebase Account & Cloud Database</h2>
+            <span class="settings-panel-subtitle">Sovereign identity, Cloud Firestore synchronization, and multi-device mesh data.</span>
+          </div>
+          <div class="settings-panel-body">
+            <!-- Firebase User Profile Card -->
+            <div style="background:var(--surface-2); border:1px solid var(--border-subtle); border-radius:18px; padding:20px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:16px;">
+              <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, #f59e0b, #ef4444); display:flex; align-items:center; justify-content:center; font-size:24px; color:#fff;" id="fb-profile-avatar">🔥</div>
+                <div>
+                  <div style="font-size:15px; font-weight:700; color:var(--text-1);" id="fb-profile-name">Connecting…</div>
+                  <div style="font-size:12px; color:var(--text-3);" id="fb-profile-email">Checking Firebase session…</div>
+                  <div style="font-size:11px; color:#34d399; margin-top:2px;" id="fb-profile-cloud-status">☁️ Cloud Firestore Connected</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button type="button" class="btn secondary small" id="fb-btn-signout">Sign Out</button>
+                <button type="button" class="btn primary small" id="fb-btn-switch-account">Switch / Login</button>
+              </div>
+            </div>
+
+            <!-- Firebase Cloud Configuration -->
+            <div class="section-label">Cloud Project Details</div>
+            <div class="group">
+              <div class="row">
+                <div class="label"><span class="headline">Firebase Project ID</span></div>
+                <div class="control"><span class="caption" style="font-family:monospace;" id="fb-info-project-id">studio-6464285995-59fdf</span></div>
+              </div>
+              <div class="row">
+                <div class="label"><span class="headline">Dedicated AI Project</span></div>
+                <div class="control"><span class="caption" style="font-family:monospace;">mave-assistant-9026</span></div>
+              </div>
+              <div class="row">
+                <div class="label"><span class="headline">Registered Web App ID</span></div>
+                <div class="control"><span class="caption" style="font-family:monospace; font-size:11px;">1:283058635167:web:323f98745e7d1c06ca3daa</span></div>
+              </div>
+              <div class="row">
+                <div class="label"><span class="headline">Auth Domain</span></div>
+                <div class="control"><span class="caption" style="font-family:monospace;">studio-6464285995-59fdf.firebaseapp.com</span></div>
+              </div>
+            </div>
+
+            <!-- Cloud User Database (Firestore) -->
+            <div class="section-label">Firestore User Database (/users/{uid})</div>
+            <div class="group">
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Synchronize User Preferences</span>
+                  <span class="hint">Syncs theme, mascot palette, and AI model choices to your Firestore document</span>
+                </div>
+                <div class="control">
+                  <button type="button" class="btn secondary small" id="fb-btn-sync-prefs">Sync Preferences</button>
+                </div>
+              </div>
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Register This PC in Device Mesh</span>
+                  <span class="hint">Stores hardware specs and capabilities under /users/{uid}/devices/</span>
+                </div>
+                <div class="control">
+                  <button type="button" class="btn secondary small" id="fb-btn-sync-device">Sync Device</button>
+                </div>
+              </div>
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Active Mesh Devices</span>
+                  <span class="hint">Other Windows, Android, and iOS devices connected to your account</span>
+                </div>
+                <div class="control">
+                  <span class="caption" id="fb-mesh-devices-list">1 device registered</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
     <!-- "Meet Voice" Modal (Screenshot 5) -->
@@ -1581,14 +1663,34 @@
 
       <!-- Step 1: Account Login / Local Setup -->
       <div class="nom-step" id="nom-step-auth">
-        <div class="nom-badge-pill" id="nom-platform-badge">Detected: Windows PC</div>
-        <div class="nom-form-group">
-          <label>Account or Device Profile Name</label>
-          <input type="text" class="nom-input" id="nom-account-name" value="From Near" placeholder="Your Name or Account ID">
+        <div class="nom-badge-pill" id="nom-platform-badge">Detected: Windows PC • Firebase Cloud Ready</div>
+        
+        <div style="display:flex; background:rgba(255,255,255,0.06); border-radius:10px; padding:3px; margin:14px 0 16px;">
+          <button type="button" class="nom-tab-btn active" id="nom-auth-tab-signin" style="flex:1; border:none; background:rgba(59,130,246,0.3); color:#fff; border-radius:8px; padding:7px; font-size:12px; font-weight:600; cursor:pointer;">Sign In</button>
+          <button type="button" class="nom-tab-btn" id="nom-auth-tab-signup" style="flex:1; border:none; background:transparent; color:var(--text-3); border-radius:8px; padding:7px; font-size:12px; font-weight:600; cursor:pointer;">Create Account</button>
+          <button type="button" class="nom-tab-btn" id="nom-auth-tab-guest" style="flex:1; border:none; background:transparent; color:var(--text-3); border-radius:8px; padding:7px; font-size:12px; font-weight:600; cursor:pointer;">Guest / Offline</button>
         </div>
+
+        <div id="nom-fb-fields">
+          <div class="nom-form-group" id="nom-group-name" style="display:none;">
+            <label>Display Name</label>
+            <input type="text" class="nom-input" id="nom-fb-name" value="From Near" placeholder="Your Name or Account ID">
+          </div>
+          <div class="nom-form-group" id="nom-group-email">
+            <label>Firebase Email Address</label>
+            <input type="email" class="nom-input" id="nom-fb-email" value="fromnearinstagram@gmail.com" placeholder="name@domain.com">
+          </div>
+          <div class="nom-form-group" id="nom-group-pass">
+            <label>Password</label>
+            <input type="password" class="nom-input" id="nom-fb-pass" placeholder="Enter password (min 6 characters)">
+          </div>
+        </div>
+
+        <div id="nom-fb-status" style="font-size:12px; color:#94a3b8; margin:4px 0 12px; min-height:18px;"></div>
+
         <div class="nom-actions">
-          <button type="button" class="nom-btn primary" id="nom-auth-next-btn">Continue to Architecture Setup →</button>
-          <button type="button" class="nom-btn text" id="nom-auth-guest-btn">Use Offline (Air-Gapped Local Mode)</button>
+          <button type="button" class="nom-btn primary" id="nom-auth-submit-btn">Sign In & Connect Cloud DB →</button>
+          <button type="button" class="nom-btn text" id="nom-auth-guest-btn">Skip & Use Offline Local Mode</button>
         </div>
       </div>
 

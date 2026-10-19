@@ -7315,6 +7315,161 @@ class MobileWebServer {
       }
     }
 
+    // =========================================================================
+    // Firebase Cloud Authentication & User Database Endpoints
+    // =========================================================================
+    if (req.method === 'GET' && url.pathname === '/api/firebase/config') {
+      const { firebaseService } = require('../firebase');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, config: firebaseService.getConfig() }));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/firebase/auth/signup') {
+      try {
+        const body = await parseBody(req);
+        const { firebaseService } = require('../firebase');
+        const result = await firebaseService.signUp(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/firebase/auth/login') {
+      try {
+        const body = await parseBody(req);
+        const { firebaseService } = require('../firebase');
+        const result = await firebaseService.signIn(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/firebase/auth/anonymous') {
+      try {
+        const { firebaseService } = require('../firebase');
+        const result = await firebaseService.signInAnonymously();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/firebase/auth/logout') {
+      const { firebaseService } = require('../firebase');
+      const result = firebaseService.signOut();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(result));
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/firebase/auth/user') {
+      const { firebaseService } = require('../firebase');
+      const user = firebaseService.getCurrentUser();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, user }));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/firebase/auth/password-reset') {
+      try {
+        const body = await parseBody(req);
+        const { firebaseService } = require('../firebase');
+        const result = await firebaseService.sendPasswordReset(body.email);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/firebase/db/profile') {
+      try {
+        const { firebaseService } = require('../firebase');
+        const uid = url.searchParams.get('uid');
+        const result = await firebaseService.getUserProfile(uid);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/firebase/db/profile') {
+      try {
+        const body = await parseBody(req);
+        const { firebaseService } = require('../firebase');
+        const uid = body.uid || url.searchParams.get('uid');
+        const result = await firebaseService.updateUserProfile(uid, body.profile || body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/firebase/db/sync-device') {
+      try {
+        const body = await parseBody(req);
+        const { firebaseService } = require('../firebase');
+        const uid = body.uid;
+        const result = await firebaseService.syncDevice(uid, body.device || body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/firebase/db/devices') {
+      try {
+        const { firebaseService } = require('../firebase');
+        const uid = url.searchParams.get('uid');
+        const result = await firebaseService.getDevices(uid);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/firebase/db/preferences') {
+      try {
+        const body = await parseBody(req);
+        const { firebaseService } = require('../firebase');
+        const uid = body.uid;
+        const result = await firebaseService.savePreferences(uid, body.preferences || body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/firebase/db/preferences') {
+      try {
+        const { firebaseService } = require('../firebase');
+        const uid = url.searchParams.get('uid');
+        const result = await firebaseService.getPreferences(uid);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
     res.writeHead(404);
     res.end('Not Found');
   }
