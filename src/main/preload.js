@@ -59,7 +59,7 @@ const RECEIVE = new Set([
   'engine:cmd', 'approval:show', 'buddy:visible', 'annotate', 'select', 'region', 'terminal:line',
   'local:progress', 'local:runtime', 'toolbar:show', 'ink', 'voice-mode', 'loader', 'tools-blocked', 'term:data', 'term:exit', 'term:list', 'term:focus',
   'sentinel:network-change', 'sentinel:incoming-activity', 'ghost:a2ui', 'ghost:thought',
-  'jarvis:intervention',
+  'jarvis:intervention', 'voice:toggle-talk',
 ]);
 
 contextBridge.exposeInMainWorld('buddy', {
