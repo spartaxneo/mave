@@ -126,9 +126,11 @@ class SpeechService extends EventEmitter {
   }
 }
 
-/** Whisper marks silence and noises in brackets ("[BLANK_AUDIO]", "(music)"); those aren't words. */
-function cleanTranscript(text) {
-  return String(text || '').replace(/\[[^\]]*\]|\([^)]*\)|\*[^*]*\*/g, ' ').replace(/\s+/g, ' ').trim();
+const { cleanTranscription } = require('./text_cleaner');
+
+/** Whisper marks silence and noises in brackets; clean with anti-hallucination, stutter collapse & filler removal. */
+function cleanTranscript(text, options = {}) {
+  return cleanTranscription(text, options);
 }
 
 module.exports = { SpeechService, cleanTranscript, speechPaths };

@@ -41,6 +41,7 @@ const BUILTIN_GROUPS = {
   'builtin/permission_broker.js': 'Interactive in-chat permission broker and safety gate',
   'builtin/swarm_prediction_sandbox.js': 'MiroFish Swarm Prediction Sandbox: Multi-agent future outcome simulations and what-if branching',
   'builtin/chatgpt_brain_bridge.js': 'ChatGPT Central Brain & Mave Nervous System Bridge (Hands, Eyes & Terminal Actions)',
+  'builtin/universal_dictation.js': 'Universal Dictation & Voice Post-Processing (Handy Parity: Voice Typing into Any App)',
 };
 
 

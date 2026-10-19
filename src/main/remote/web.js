@@ -14,6 +14,8 @@ const catalog = require('../local/catalog');
 const { getMaveDropEngine } = require('./mavedrop');
 const { ensureSslCert } = require('./ssl');
 const { getChatGPTNervousSystemBridge } = require('../chatgpt_brain/chatgpt_bridge');
+const { getDictationManager } = require('../dictation');
+const { cleanTranscription } = require('../local/text_cleaner');
 
 function getLocalIp() {
   const nets = os.networkInterfaces();
@@ -4522,6 +4524,77 @@ class MobileWebServer {
         const result = await this.chatgptBridge.listFiles(body);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    // --- Universal Dictation & Speech Cleaning (Handy Parity) ---
+    if (req.method === 'POST' && url.pathname === '/api/dictate') {
+      try {
+        const body = await parseBody(req);
+        const mgr = getDictationManager({ controller: this.controller });
+        const result = await mgr.dictate(body.text, body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/dictate/status') {
+      const mgr = getDictationManager({ controller: this.controller });
+      const status = await mgr.getStatus();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(status));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/dictate/toggle') {
+      const mgr = getDictationManager({ controller: this.controller });
+      const body = await parseBody(req).catch(() => ({}));
+      const state = typeof body.enabled === 'boolean' ? mgr.setMode(body.enabled) : mgr.toggleMode();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, dictationMode: state }));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/voice/clean') {
+      try {
+        const body = await parseBody(req);
+        const mgr = getDictationManager({ controller: this.controller });
+        const cleaned = cleanTranscription(body.text, {
+          customWords: mgr.getCustomWords(),
+          additionalWords: body.additionalWords || [],
+          threshold: body.threshold || 0.35,
+          removeFillers: body.removeFillers !== false
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, raw: body.text, cleaned }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/voice/dictionary') {
+      const mgr = getDictationManager({ controller: this.controller });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, words: mgr.getCustomWords() }));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/voice/dictionary') {
+      try {
+        const body = await parseBody(req);
+        const mgr = getDictationManager({ controller: this.controller });
+        let words = mgr.getCustomWords();
+        if (body.action === 'remove' && body.word) {
+          words = mgr.removeCustomWord(body.word);
+        } else if (body.words) {
+          words = mgr.addCustomWords(body.words);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, words }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ ok: false, error: err.message }));
