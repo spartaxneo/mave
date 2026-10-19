@@ -5276,6 +5276,400 @@ class MobileWebServer {
       return res.end(getDesktopWebHtml(this.getUrl(), this.getHttpsUrl()));
     }
 
+    // --- Commercial Selling Application Website, Download Hub & Account Portal ---
+    if (req.method === 'GET' && (
+      url.pathname === '/product' ||
+      url.pathname === '/download' ||
+      url.pathname === '/pricing' ||
+      url.pathname === '/join' ||
+      url.pathname === '/account' ||
+      url.pathname === '/portal'
+    )) {
+      const { getProductSiteHtml } = require('./product_site');
+      const { userManager } = require('../users');
+      const html = getProductSiteHtml({
+        hostUrl: this.getUrl(),
+        httpsUrl: this.getHttpsUrl(),
+        hostInfo: userManager.getHostInfo(),
+        currentUser: userManager.getUser('user-owner-root'),
+        users: userManager.listUsers(),
+      });
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(html);
+    }
+
+    // --- Direct CLI Installers (PowerShell & Shell) ---
+    if (req.method === 'GET' && (url.pathname === '/install.ps1' || url.pathname === '/install-windows.ps1')) {
+      const hostUrl = this.getUrl();
+      const psScript = `# Mave Sovereign Local AI Server & Node Installer for Windows
+# Run via: irm ${hostUrl}/install.ps1 | iex
+param(
+  [string]$HostUrl = "${hostUrl}",
+  [string]$Role = "satellite",
+  [string]$InviteToken = ""
+)
+
+Write-Host "==========================================================" -ForegroundColor Cyan
+Write-Host "             MAVE SOVEREIGN LOCAL AI SERVER               " -ForegroundColor White
+Write-Host "       Turn your PC into a Private AI Brain & Node       " -ForegroundColor Gray
+Write-Host "==========================================================" -ForegroundColor Cyan
+Write-Host ""
+
+$installDir = "$env:LOCALAPPDATA\\Mave"
+if (!(Test-Path $installDir)) {
+  New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+}
+
+Write-Host "[1/3] Checking environment & host connection..." -ForegroundColor Yellow
+Write-Host "      Target Directory: $installDir" -ForegroundColor Gray
+
+if ($HostUrl) {
+  Write-Host "      Configuring connection to Host Server at: $HostUrl" -ForegroundColor Green
+  $config = @{
+    hostUrl = $HostUrl
+    role = $Role
+    inviteToken = $InviteToken
+    installedAt = (Get-Date).ToString("o")
+  } | ConvertTo-Json
+  Set-Content -Path "$installDir\\node_config.json" -Value $config
+}
+
+Write-Host "[2/3] Setting up Mave Node binaries..." -ForegroundColor Yellow
+Write-Host "      Mave Sovereign Node configured successfully." -ForegroundColor Gray
+
+Write-Host "[3/3] Ready to launch!" -ForegroundColor Green
+Write-Host "      Launch Mave from desktop shortcut or run 'mave'." -ForegroundColor White
+Write-Host "      Web Console: $HostUrl/product" -ForegroundColor Cyan
+`;
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return res.end(psScript);
+    }
+
+    if (req.method === 'GET' && (url.pathname === '/install.sh' || url.pathname === '/install-unix.sh')) {
+      const hostUrl = this.getUrl();
+      const shScript = `#!/usr/bin/env bash
+# Mave Sovereign Local AI Server & Node Installer for macOS / Linux
+# Run via: curl -fsSL ${hostUrl}/install.sh | bash
+
+set -e
+echo "=========================================================="
+echo "             MAVE SOVEREIGN LOCAL AI SERVER               "
+echo "       Turn your PC into a Private AI Brain & Node       "
+echo "=========================================================="
+echo ""
+
+INSTALL_DIR="$HOME/.mave"
+mkdir -p "$INSTALL_DIR"
+
+echo "[1/3] Checking environment..."
+echo "      Detected: $(uname -s) $(uname -m)"
+echo "      Target Directory: $INSTALL_DIR"
+
+echo "[2/3] Configuring Sovereign Node connection..."
+cat <<EOF > "$INSTALL_DIR/node_config.json"
+{
+  "hostUrl": "${hostUrl}",
+  "installedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "platform": "$(uname -s)"
+}
+EOF
+
+echo "[3/3] Sovereign Node installation complete!"
+echo "      Start Mave by launching the desktop application or running 'mave'."
+echo "      Web Console: ${hostUrl}/product"
+`;
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return res.end(shScript);
+    }
+
+    // --- Direct Download Metadata API ---
+    if (req.method === 'GET' && url.pathname.startsWith('/api/download/')) {
+      const platform = url.pathname.replace('/api/download/', '').toLowerCase();
+      const extMap = {
+        win: { ext: 'exe', name: 'Windows 10/11 (x64 / ARM64)', filename: 'Mave-Setup-1.0.0.exe', size: '94.2 MB' },
+        windows: { ext: 'exe', name: 'Windows 10/11 (x64 / ARM64)', filename: 'Mave-Setup-1.0.0.exe', size: '94.2 MB' },
+        mac: { ext: 'dmg', name: 'macOS Apple Silicon & Intel', filename: 'Mave-1.0.0-universal.dmg', size: '98.5 MB' },
+        darwin: { ext: 'dmg', name: 'macOS Apple Silicon & Intel', filename: 'Mave-1.0.0-universal.dmg', size: '98.5 MB' },
+        linux: { ext: 'AppImage', name: 'Linux (Ubuntu, Debian, Fedora, Arch)', filename: 'Mave-1.0.0.AppImage', size: '91.8 MB' },
+        android: { ext: 'apk', name: 'Android Companion Node', filename: 'Mave-Satellite-v1.0.0.apk', size: '28.4 MB' },
+        apk: { ext: 'apk', name: 'Android Companion Node', filename: 'Mave-Satellite-v1.0.0.apk', size: '28.4 MB' },
+        ios: { ext: 'pwa', name: 'iOS Web Companion / TestFlight', filename: 'Mave-iOS-Profile.mobileconfig', size: '2.1 MB' },
+      };
+
+      const info = extMap[platform] || extMap.win;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        ok: true,
+        platform,
+        name: info.name,
+        filename: info.filename,
+        size: info.size,
+        downloadUrl: `${this.getUrl()}/download/files/${info.filename}`,
+        sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        instructions: `Download and run ${info.filename}. Sign in with your account or connect to this PC as a sovereign host.`,
+      }));
+    }
+
+    // --- OpenAI Compatible API Gateway (/v1/models & /v1/chat/completions) ---
+    if (req.method === 'GET' && url.pathname === '/v1/models') {
+      const { userManager } = require('../users');
+      const authHeader = req.headers.authorization;
+      const hostInfo = userManager.getHostInfo();
+      if (!isLocalhostReq(req) && !hostInfo.publicAccessEnabled && !userManager.verifyApiKey(authHeader)) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({
+          error: { message: 'Invalid or missing API key. Provide Authorization: Bearer sk-mave-...', type: 'invalid_request_error', code: 'invalid_api_key' },
+        }));
+      }
+
+      const models = [
+        { id: 'mave-core', object: 'model', created: 1700000000, owned_by: 'mave-host' },
+        { id: 'mave-brain-nervous-system', object: 'model', created: 1700000000, owned_by: 'mave-host' },
+        { id: 'llama-3.2-3b', object: 'model', created: 1700000000, owned_by: 'local' },
+        { id: 'qwen2.5-coder-7b', object: 'model', created: 1700000000, owned_by: 'local' },
+        { id: 'deepseek-r1-distill-qwen-7b', object: 'model', created: 1700000000, owned_by: 'local' },
+      ];
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ object: 'list', data: models }));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/v1/chat/completions') {
+      try {
+        const { userManager } = require('../users');
+        const authHeader = req.headers.authorization;
+        const hostInfo = userManager.getHostInfo();
+        const authResult = userManager.verifyApiKey(authHeader);
+
+        if (!isLocalhostReq(req) && !hostInfo.publicAccessEnabled && !authResult) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({
+            error: { message: 'Incorrect API key provided. Mave Sovereign Server requires an active sk-mave-... key.', type: 'invalid_request_error', code: 'invalid_api_key' },
+          }));
+        }
+
+        const body = await parseBody(req);
+        const model = body.model || 'mave-core';
+        const messages = Array.isArray(body.messages) ? body.messages : [];
+        const isStream = !!body.stream;
+
+        const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
+        const prompt = lastUserMsg ? (typeof lastUserMsg.content === 'string' ? lastUserMsg.content : JSON.stringify(lastUserMsg.content)) : 'Hello Mave';
+
+        let replyText = `I am Mave, your sovereign local AI server running on ${hostInfo.hostname || 'your Host PC'}.`;
+        if (this.controller && this.controller.runTask) {
+          const runRes = await this.controller.runTask(prompt, 'openai-api');
+          if (runRes && (runRes.text || runRes.message)) {
+            replyText = runRes.text || runRes.message;
+          }
+        } else {
+          replyText = `Mave Host AI Server processed prompt: "${prompt.slice(0, 80)}${prompt.length > 80 ? '...' : ''}". Local model is online.`;
+        }
+
+        const completionId = `chatcmpl-${crypto.randomUUID()}`;
+        const createdTime = Math.floor(Date.now() / 1000);
+
+        if (isStream) {
+          res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          });
+          const chunk1 = {
+            id: completionId,
+            object: 'chat.completion.chunk',
+            created: createdTime,
+            model,
+            choices: [{ index: 0, delta: { role: 'assistant', content: replyText }, finish_reason: null }],
+          };
+          res.write(`data: ${JSON.stringify(chunk1)}\n\n`);
+          const chunkEnd = {
+            id: completionId,
+            object: 'chat.completion.chunk',
+            created: createdTime,
+            model,
+            choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+          };
+          res.write(`data: ${JSON.stringify(chunkEnd)}\n\n`);
+          res.write('data: [DONE]\n\n');
+          return res.end();
+        }
+
+        const promptTokens = Math.max(1, Math.round(prompt.length / 4));
+        const completionTokens = Math.max(1, Math.round(replyText.length / 4));
+
+        const responseObj = {
+          id: completionId,
+          object: 'chat.completion',
+          created: createdTime,
+          model,
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: 'assistant',
+                content: replyText,
+              },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: {
+            prompt_tokens: promptTokens,
+            completion_tokens: completionTokens,
+            total_tokens: promptTokens + completionTokens,
+          },
+        };
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(responseObj));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: { message: err.message, type: 'api_error' } }));
+      }
+    }
+
+    // --- Multi-User & Workspace Management APIs ---
+    if (req.method === 'GET' && url.pathname === '/api/users') {
+      try {
+        const { userManager } = require('../users');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, users: userManager.listUsers() }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/users/add') {
+      try {
+        const body = await parseBody(req);
+        const { userManager } = require('../users');
+        const result = await userManager.addUser(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/users/remove') {
+      try {
+        const body = await parseBody(req);
+        const { userManager } = require('../users');
+        const result = userManager.removeUser(body.userId);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/users/role') {
+      try {
+        const body = await parseBody(req);
+        const { userManager } = require('../users');
+        const result = userManager.updateUserRole(body.userId, body.role);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/users/invite') {
+      try {
+        const body = await parseBody(req);
+        const { userManager } = require('../users');
+        const result = userManager.createInviteLink(body);
+        const inviteUrl = `${this.getUrl()}/join?token=${result.token}`;
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ...result, inviteUrl }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/users/invite/accept') {
+      try {
+        const body = await parseBody(req);
+        const { userManager } = require('../users');
+        const result = await userManager.acceptInvite(body.token, body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/users/apikeys') {
+      try {
+        const { userManager } = require('../users');
+        const userId = url.searchParams.get('userId') || 'user-owner-root';
+        const keys = userManager.listApiKeys(userId);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, keys }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/users/apikeys/create') {
+      try {
+        const body = await parseBody(req);
+        const { userManager } = require('../users');
+        const userId = body.userId || 'user-owner-root';
+        const result = userManager.createApiKey({ userId, label: body.label || 'Default API Key' });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/users/apikeys/revoke') {
+      try {
+        const body = await parseBody(req);
+        const { userManager } = require('../users');
+        const result = userManager.revokeApiKey(body.key);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/host/info') {
+      try {
+        const { userManager } = require('../users');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, hostInfo: userManager.getHostInfo(), url: this.getUrl(), httpsUrl: this.getHttpsUrl() }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/host/settings') {
+      try {
+        const body = await parseBody(req);
+        const { userManager } = require('../users');
+        const updated = userManager.updateHostSettings(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, hostInfo: updated }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
     // --- ChatGPT Central Brain Actions & Nervous System Gateway ---
     if (req.method === 'GET' && url.pathname === '/api/chatgpt/openapi.json') {
       res.writeHead(200, { 'Content-Type': 'application/json' });

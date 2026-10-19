@@ -28,6 +28,8 @@ const INVOKE = new Set([
   'firebase:get-config', 'firebase:sign-up', 'firebase:sign-in', 'firebase:sign-in-anon',
   'firebase:sign-out', 'firebase:get-user', 'firebase:update-profile', 'firebase:sync-device',
   'firebase:get-devices', 'firebase:save-preferences', 'firebase:get-preferences', 'firebase:password-reset',
+  'users:list', 'users:add', 'users:remove', 'users:update-role', 'users:invite', 'users:accept-invite',
+  'users:apikeys', 'users:create-key', 'users:revoke-key', 'host:info', 'host:update-settings',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',

@@ -9,6 +9,7 @@ const hardware = require('./local/hardware');
 const catalog = require('./local/catalog');
 const { getGovernanceManager, POWER_TIERS } = require('./security/governance');
 const { firebaseService } = require('./firebase');
+const { userManager } = require('./users');
 
 const LINKS = {
   anthropic: 'https://platform.claude.com/settings/keys',
@@ -593,6 +594,18 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('firebase:save-preferences', (prefs) => firebaseService.savePreferences(null, prefs));
   handle('firebase:get-preferences', () => firebaseService.getPreferences(null));
   handle('firebase:password-reset', (email) => firebaseService.sendPasswordReset(email));
+  // Multi-User, Local AI Server & OpenAI API Key Management
+  handle('users:list', () => userManager.listUsers());
+  handle('users:add', (data) => userManager.addUser(data || {}));
+  handle('users:remove', (userId) => userManager.removeUser(userId));
+  handle('users:update-role', ({ userId, role }) => userManager.updateUserRole(userId, role));
+  handle('users:invite', (opts) => userManager.createInviteLink(opts || {}));
+  handle('users:accept-invite', ({ token, data }) => userManager.acceptInvite(token, data));
+  handle('users:apikeys', (userId) => userManager.listApiKeys(userId || 'user-owner-root'));
+  handle('users:create-key', (opts) => userManager.createApiKey(opts || {}));
+  handle('users:revoke-key', (key) => userManager.revokeApiKey(key));
+  handle('host:info', () => userManager.getHostInfo());
+  handle('host:update-settings', (patch) => userManager.updateHostSettings(patch || {}));
 
   handle('app:info', () => ({
     version: app.getVersion(), state: controller.state, running: agent.running,

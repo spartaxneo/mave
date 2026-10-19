@@ -1556,8 +1556,10 @@
       this.applyPlatformUI();
       this.updateNodeDisplay();
       this.initFirebase();
+      this.initWorkspace();
       this.bindOnboardingModal();
       this.bindSettingsPanel();
+      this.bindWorkspacePanel();
 
       if (!localStorage.getItem('mave_onboarding_completed')) {
         setTimeout(() => {
@@ -1905,6 +1907,201 @@
           $('fb-btn-sync-device').textContent = '✅ Registered in Mesh';
           setTimeout(() => { $('fb-btn-sync-device').textContent = 'Sync Device'; }, 2000);
           this.initFirebase();
+        });
+      }
+    }
+
+    async initWorkspace() {
+      try {
+        const host = await api.invoke('host:info');
+        if (host && $('ws-host-title')) {
+          $('ws-host-title').textContent = `Local AI Brain Server: ${host.serverEnabled ? 'Online (24/7)' : 'Idle'}`;
+          $('ws-host-sub').textContent = `Host: ${host.hostname || 'PC'} • ${host.totalUsers || 1} Member(s) Registered`;
+          $('ws-member-count').textContent = `${host.totalUsers || 1} member(s)`;
+        }
+
+        const users = await api.invoke('users:list');
+        const tbody = $('ws-members-tbody');
+        if (tbody && Array.isArray(users)) {
+          if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:14px 16px; color:var(--text-3);">No members added yet.</td></tr>';
+          } else {
+            tbody.innerHTML = users.map((u) => `
+              <tr style="border-bottom:1px solid var(--border-subtle);">
+                <td style="padding:12px 16px;">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff;">
+                      ${(u.displayName || u.email || 'U')[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <div style="font-weight:600; color:var(--text-1);">${escapeHtml(u.displayName || 'Member')}</div>
+                      <div style="font-size:11px; color:var(--text-3); font-family:monospace;">${escapeHtml(u.email || '')}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding:12px 16px;">
+                  <span style="display:inline-block; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; text-transform:capitalize; background:${u.role === 'owner' ? 'rgba(234,179,8,0.15)' : 'rgba(59,130,246,0.15)'}; color:${u.role === 'owner' ? '#eab308' : '#60a5fa'};">
+                    ${u.role === 'owner' ? '👑 Owner' : u.role}
+                  </span>
+                </td>
+                <td style="padding:12px 16px; color:var(--text-2); font-size:12px;">${u.deviceCount || 0} device(s)</td>
+                <td style="padding:12px 16px; color:var(--text-2); font-size:12px;">${u.quotaPerDay === -1 ? 'Unlimited' : `${u.quotaPerDay} req/day`}</td>
+                <td style="padding:12px 16px; text-align:right;">
+                  ${u.isLocalRoot ? '<span style="color:var(--text-3); font-size:11px;">Primary Host</span>' : `
+                    <button type="button" class="btn secondary small ws-btn-rm-user" data-uid="${u.id}" style="padding:4px 8px; font-size:11px; color:#ef4444;">Remove</button>
+                  `}
+                </td>
+              </tr>
+            `).join('');
+
+            tbody.querySelectorAll('.ws-btn-rm-user').forEach((btn) => {
+              btn.addEventListener('click', async () => {
+                const uid = btn.dataset.uid;
+                if (confirm('Are you sure you want to remove this user from your local server?')) {
+                  await api.invoke('users:remove', uid);
+                  this.initWorkspace();
+                }
+              });
+            });
+          }
+        }
+
+        const keys = await api.invoke('users:apikeys', 'user-owner-root');
+        const ktbody = $('ws-keys-tbody');
+        if (ktbody && Array.isArray(keys)) {
+          if (keys.length === 0) {
+            ktbody.innerHTML = '<tr><td colspan="5" style="padding:14px 16px; color:var(--text-3);">No active secret keys. Click "+ Create Secret Key" to generate one.</td></tr>';
+          } else {
+            ktbody.innerHTML = keys.map((k) => `
+              <tr style="border-bottom:1px solid var(--border-subtle);">
+                <td style="padding:12px 16px; font-weight:600; color:var(--text-1);">${escapeHtml(k.label || 'Default')}</td>
+                <td style="padding:12px 16px; font-family:monospace; font-size:12px; color:var(--accent-text);">${k.keyMasked || (k.key ? `${k.key.slice(0, 11)}…${k.key.slice(-4)}` : 'sk-mave-…')}</td>
+                <td style="padding:12px 16px; font-size:11px; color:var(--text-3);">${new Date(k.createdAt).toLocaleDateString()}</td>
+                <td style="padding:12px 16px; font-size:11px; color:var(--text-3);">${k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleDateString() : 'Never'}</td>
+                <td style="padding:12px 16px; text-align:right;">
+                  <button type="button" class="btn secondary small ws-btn-revoke-key" data-key="${k.key}" style="padding:4px 8px; font-size:11px; color:#ef4444;">Revoke</button>
+                </td>
+              </tr>
+            `).join('');
+
+            ktbody.querySelectorAll('.ws-btn-revoke-key').forEach((btn) => {
+              btn.addEventListener('click', async () => {
+                const key = btn.dataset.key;
+                if (confirm('Revoke this secret API key? Any connected client using it will immediately lose access.')) {
+                  await api.invoke('users:revoke-key', key);
+                  this.initWorkspace();
+                }
+              });
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Workspace init error:', err);
+      }
+    }
+
+    bindWorkspacePanel() {
+      if ($('ws-btn-open-portal')) {
+        $('ws-btn-open-portal').addEventListener('click', () => {
+          api.invoke('app:open-link', 'http://localhost:4040/product');
+        });
+      }
+
+      if ($('ws-btn-refresh-host')) {
+        $('ws-btn-refresh-host').addEventListener('click', () => {
+          this.initWorkspace();
+          this.avatar.hop();
+        });
+      }
+
+      if ($('ws-btn-add-member')) {
+        $('ws-btn-add-member').addEventListener('click', () => {
+          if ($('ws-add-user-card')) $('ws-add-user-card').style.display = 'block';
+        });
+      }
+
+      if ($('ws-btn-cancel-add')) {
+        $('ws-btn-cancel-add').addEventListener('click', () => {
+          if ($('ws-add-user-card')) $('ws-add-user-card').style.display = 'none';
+        });
+      }
+
+      if ($('ws-btn-confirm-add')) {
+        $('ws-btn-confirm-add').addEventListener('click', async () => {
+          const email = $('ws-input-email') ? $('ws-input-email').value.trim() : '';
+          const name = $('ws-input-name') ? $('ws-input-name').value.trim() : '';
+          const role = $('ws-select-role') ? $('ws-select-role').value : 'member';
+
+          if (!email) {
+            alert('Please enter an email address for the user.');
+            return;
+          }
+
+          try {
+            await api.invoke('users:add', { email, displayName: name, role });
+            if ($('ws-add-user-card')) $('ws-add-user-card').style.display = 'none';
+            if ($('ws-input-email')) $('ws-input-email').value = '';
+            if ($('ws-input-name')) $('ws-input-name').value = '';
+            this.initWorkspace();
+            this.avatar.hop();
+          } catch (err) {
+            alert(err.message || 'Failed to add user');
+          }
+        });
+      }
+
+      if ($('ws-btn-create-invite')) {
+        $('ws-btn-create-invite').addEventListener('click', async () => {
+          try {
+            const res = await api.invoke('users:invite', { role: 'member', expiresInDays: 7 });
+            if (res && res.token && $('ws-invite-banner') && $('ws-invite-input')) {
+              const url = `http://${window.location.hostname || 'localhost'}:4040/join?token=${res.token}`;
+              $('ws-invite-input').value = url;
+              $('ws-invite-banner').style.display = 'flex';
+            }
+          } catch (err) {
+            alert(err.message || 'Failed to create invite link');
+          }
+        });
+      }
+
+      if ($('ws-btn-copy-invite')) {
+        $('ws-btn-copy-invite').addEventListener('click', () => {
+          const input = $('ws-invite-input');
+          if (input) {
+            navigator.clipboard.writeText(input.value);
+            $('ws-btn-copy-invite').textContent = 'Copied!';
+            setTimeout(() => { $('ws-btn-copy-invite').textContent = 'Copy Link'; }, 2000);
+          }
+        });
+      }
+
+      if ($('ws-btn-create-key')) {
+        $('ws-btn-create-key').addEventListener('click', async () => {
+          const label = prompt('Secret Key Label (e.g., Cursor IDE, Python Client):', 'Cursor IDE');
+          if (!label) return;
+          try {
+            const res = await api.invoke('users:create-key', { userId: 'user-owner-root', label });
+            if (res && res.key && $('ws-new-key-banner') && $('ws-new-key-input')) {
+              $('ws-new-key-input').value = res.key;
+              $('ws-new-key-banner').style.display = 'block';
+            }
+            this.initWorkspace();
+            this.avatar.bounce();
+          } catch (err) {
+            alert(err.message || 'Failed to generate API key');
+          }
+        });
+      }
+
+      if ($('ws-btn-copy-key')) {
+        $('ws-btn-copy-key').addEventListener('click', () => {
+          const input = $('ws-new-key-input');
+          if (input) {
+            navigator.clipboard.writeText(input.value);
+            $('ws-btn-copy-key').textContent = 'Copied!';
+            setTimeout(() => { $('ws-btn-copy-key').textContent = 'Copy'; }, 2000);
+          }
         });
       }
     }
