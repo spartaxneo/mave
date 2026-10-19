@@ -33,6 +33,7 @@ const INVOKE = new Set([
   'mesh:status', 'mesh:auto-join', 'mesh:offload-page', 'mesh:merge-attn', 'mesh:disconnect',
   'promptcache:stats', 'promptcache:clear',
   'autonomous:plan', 'autonomous:execute', 'autonomous:status', 'autonomous:audit',
+  'island:expand', 'island:collapse', 'island:open-main', 'island:toggle', 'island:status',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',
@@ -40,7 +41,7 @@ const SEND = new Set([
 ]);
 const RECEIVE = new Set([
   'cursor', 'state', 'bubble', 'bubble-live', 'fly', 'banner', 'welcome', 'settings', 'log', 'log-live', 'log-image', 'usage', 'level',
-  'thought', 'recommendations', 'voice:speaking', 'autonomous:update',
+  'thought', 'recommendations', 'voice:speaking', 'autonomous:update', 'island:update',
   'engine:cmd', 'approval:show', 'buddy:visible', 'annotate', 'select', 'region', 'terminal:line',
   'local:progress', 'local:runtime', 'toolbar:show', 'ink', 'voice-mode', 'loader', 'tools-blocked', 'term:data', 'term:exit', 'term:list', 'term:focus',
 ]);

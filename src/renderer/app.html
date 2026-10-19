@@ -11,120 +11,6 @@
   <title>Mave</title>
 </head>
 <body>
-  <!-- Vorssaint-Style Dynamic Island with Official Cute Dot Avatar Face of Mave -->
-  <div class="dynamic-island-wrapper" id="dynamic-island-wrapper">
-    <div class="dynamic-island" id="dynamic-island" tabindex="0" role="region" aria-label="Dynamic Island">
-      <!-- Compact Capsule -->
-      <div class="island-compact" id="island-compact">
-        <div class="island-left">
-          <!-- The Cute Little Dot Avatar (Vorssaint Mascot - Official Face of Mave) -->
-          <div class="island-dot-avatar" id="island-dot-avatar" title="Meet Mave (Click to pet or open HUD)">
-            <div class="dot-body" id="dot-body">
-              <div class="dot-shine"></div>
-              <div class="dot-visor" id="dot-visor" style="display:none;"></div>
-              <div class="dot-face" id="dot-face">
-                <svg class="dot-eyes-svg" viewBox="0 0 100 60" id="dot-eyes-svg">
-                  <path class="dot-eye eye-left" id="dot-eye-left" d="M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z" fill="#111418" />
-                  <path class="dot-eye eye-right" id="dot-eye-right" d="M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z" fill="#111418" />
-                </svg>
-              </div>
-              <div class="dot-ears" id="dot-ears" style="display:none;"></div>
-              <div class="dot-antenna" id="dot-antenna" style="display:none;">
-                <div class="dot-bulb" id="dot-bulb"></div>
-              </div>
-            </div>
-          </div>
-          <div class="island-status-group">
-            <span class="island-status-dot" id="island-status-dot"></span>
-            <span class="island-title" id="island-title">Mave Core</span>
-          </div>
-        </div>
-
-        <div class="island-right" id="island-right">
-          <!-- Live Audio Activity Waveform Bars -->
-          <div class="island-audio-bars" id="island-audio-bars">
-            <span class="i-bar bar-1"></span>
-            <span class="i-bar bar-2"></span>
-            <span class="i-bar bar-3"></span>
-            <span class="i-bar bar-4"></span>
-          </div>
-          <span class="island-node-pill" id="island-node-pill">Host AI</span>
-        </div>
-      </div>
-
-      <!-- Expanded Vorssaint HUD Card -->
-      <div class="island-expanded" id="island-expanded" style="display:none;">
-        <div class="island-exp-header">
-          <div class="island-exp-profile">
-            <div class="island-exp-avatar-wrap" id="island-exp-avatar-wrap">
-              <div class="island-dot-avatar exp-size" id="island-dot-avatar-exp">
-                <div class="dot-body exp-body">
-                  <div class="dot-shine"></div>
-                  <div class="dot-face">
-                    <svg class="dot-eyes-svg" viewBox="0 0 100 60">
-                      <path class="dot-eye exp-eye-left" d="M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z" fill="#111418" />
-                      <path class="dot-eye exp-eye-right" d="M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z" fill="#111418" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div>
-              <div class="island-exp-name" id="island-exp-name">Mave Companion</div>
-              <div class="island-exp-sub" id="island-exp-sub">Ready • Core Brain Connected</div>
-            </div>
-          </div>
-          <div class="island-exp-top-actions">
-            <button type="button" class="island-exp-action-btn" id="island-pet-btn" title="Pet Mave">🐾 Pet</button>
-            <button type="button" class="island-collapse-btn" id="island-collapse-btn" title="Collapse Island (Esc)">
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Live Metrics Row -->
-        <div class="island-metrics-row">
-          <div class="island-metric">
-            <span class="im-label">NODE ROLE</span>
-            <span class="im-val" id="im-node-role">Host Brain (Core)</span>
-          </div>
-          <div class="island-metric">
-            <span class="im-label">PLATFORM</span>
-            <span class="im-val" id="im-platform-val">Windows Desktop</span>
-          </div>
-          <div class="island-metric">
-            <span class="im-label">SYSTEM / GPU</span>
-            <span class="im-val" id="im-system-load">12% CPU • 41°C</span>
-          </div>
-          <div class="island-metric">
-            <span class="im-label">MESH SATELLITES</span>
-            <span class="im-val" id="im-satellites-count">2 Active Nodes</span>
-          </div>
-        </div>
-
-        <!-- Vorssaint Quick Island Utilities -->
-        <div class="island-tools-grid">
-          <button type="button" class="island-tool-btn" id="island-tool-voice">
-            <span class="it-icon">🎙️</span>
-            <span class="it-text">Talk with Mave</span>
-          </button>
-          <button type="button" class="island-tool-btn" id="island-tool-cmd">
-            <span class="it-icon">⚡</span>
-            <span class="it-text">Command Bar</span>
-          </button>
-          <button type="button" class="island-tool-btn" id="island-tool-nodes">
-            <span class="it-icon">🌐</span>
-            <span class="it-text">Node Setup</span>
-          </button>
-          <button type="button" class="island-tool-btn" id="island-tool-snip">
-            <span class="it-icon">📸</span>
-            <span class="it-text">Screen & Tools</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="window">
     <aside class="sidebar">
       <div class="sidebar-head">
@@ -335,6 +221,9 @@
 
         <div class="titlebar-actions">
           <span class="status" id="status"><span class="dot"></span><span id="status-text">Ready</span></span>
+          <button class="btn plain small" id="island-toggle-btn" title="Toggle System Dynamic Island (Device Extension)">
+            <span>🏝️ Dynamic Island</span>
+          </button>
           <button class="btn plain small" id="chat-archive-btn" title="Archive this conversation">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="2"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>
             <span>Archive</span>

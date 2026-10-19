@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mave · Dynamic Island Extension</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: transparent;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "SF Pro Display", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 2px;
+    }
+
+    /* System Dynamic Island Capsule */
+    .island-shell {
+      position: relative;
+      background: rgba(14, 16, 22, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 22px;
+      backdrop-filter: blur(28px) saturate(190%);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.7);
+      color: #ffffff;
+      transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+    }
+
+    body.theme-light .island-shell {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.14);
+      color: #0f172a;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Compact Pill Layout */
+    .island-compact {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 3px 14px 3px 6px;
+      height: 38px;
+    }
+
+    .island-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Vorssaint Official Cute Dot Avatar */
+    .island-dot-avatar {
+      position: relative;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .island-dot-avatar:hover {
+      transform: scale(1.14);
+    }
+    .island-dot-avatar:active {
+      transform: scale(0.92);
+    }
+    .dot-body {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #60a5fa 0%, #2563eb 60%, #1d4ed8 100%);
+      box-shadow: 0 2px 10px rgba(37, 99, 235, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .dot-shine {
+      position: absolute;
+      top: 3px;
+      left: 6px;
+      width: 9px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.65);
+      transform: rotate(-25deg);
+      pointer-events: none;
+    }
+    .dot-face {
+      position: relative;
+      width: 22px;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .dot-eyes-svg {
+      width: 100%;
+      height: 100%;
+    }
+    .dot-eye {
+      fill: #0f172a;
+      transition: all 0.15s ease;
+    }
+    .island-dot-avatar.blinking .dot-eye {
+      d: path("M 25 30 L 41 30 M 59 30 L 75 30");
+      stroke: #0f172a;
+      stroke-width: 5;
+      stroke-linecap: round;
+      fill: none;
+    }
+    .island-dot-avatar.hopping .dot-body {
+      animation: dotHop 0.45s ease;
+    }
+    @keyframes dotHop {
+      0%, 100% { transform: translateY(0) scale(1, 1); }
+      30% { transform: translateY(-7px) scale(0.9, 1.12); }
+      60% { transform: translateY(2px) scale(1.12, 0.88); }
+    }
+
+    .island-status-group {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .island-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+      animation: pulseGlow 2.4s infinite ease-in-out;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.55; transform: scale(0.85); }
+    }
+    .island-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      max-width: 170px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .island-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Live Audio Bars */
+    .island-audio-bars {
+      display: flex;
+      align-items: center;
+      gap: 2.5px;
+      height: 14px;
+    }
+    .i-bar {
+      width: 2.5px;
+      height: 4px;
+      border-radius: 2px;
+      background: #60a5fa;
+      transition: height 0.15s ease;
+    }
+    .island-shell.speaking .i-bar:nth-child(1) { animation: barDance 0.5s infinite alternate ease-in-out 0.05s; }
+    .island-shell.speaking .i-bar:nth-child(2) { animation: barDance 0.65s infinite alternate ease-in-out 0.15s; }
+    .island-shell.speaking .i-bar:nth-child(3) { animation: barDance 0.45s infinite alternate ease-in-out 0.25s; }
+    .island-shell.speaking .i-bar:nth-child(4) { animation: barDance 0.6s infinite alternate ease-in-out 0.1s; }
+    @keyframes barDance {
+      0% { height: 3px; }
+      100% { height: 13px; }
+    }
+
+    .island-node-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(37, 99, 235, 0.22);
+      border: 1px solid rgba(96, 165, 250, 0.35);
+      color: #93c5fd;
+      letter-spacing: -0.1px;
+    }
+    body.theme-light .island-node-pill {
+      background: rgba(37, 99, 235, 0.1);
+      border: 1px solid rgba(37, 99, 235, 0.25);
+      color: #1d4ed8;
+    }
+
+    /* Expanded HUD Card */
+    .island-expanded {
+      display: none;
+      padding: 14px 18px 16px;
+      flex-direction: column;
+      gap: 13px;
+      width: 440px;
+      animation: expandHUD 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes expandHUD {
+      from { opacity: 0; transform: scaleY(0.92); }
+      to { opacity: 1; transform: scaleY(1); }
+    }
+
+    .island-shell.is-expanded {
+      border-radius: 26px;
+    }
+    .island-shell.is-expanded .island-compact {
+      display: none;
+    }
+    .island-shell.is-expanded .island-expanded {
+      display: flex;
+    }
+
+    .island-exp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .island-exp-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .island-dot-avatar.exp-size {
+      width: 42px;
+      height: 42px;
+    }
+    .island-exp-name {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .island-exp-sub {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.65);
+    }
+    body.theme-light .island-exp-sub {
+      color: rgba(15, 23, 42, 0.65);
+    }
+
+    .island-exp-top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .island-action-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 12px;
+      color: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.18s ease;
+    }
+    .island-action-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-1px);
+    }
+    .island-action-btn:active {
+      transform: translateY(1px);
+    }
+    body.theme-light .island-action-btn {
+      background: rgba(0, 0, 0, 0.06);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    /* Live Metrics Row */
+    .island-metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.28);
+      border-radius: 14px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    body.theme-light .island-metrics-row {
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .island-metric {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .im-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 0.5px;
+    }
+    body.theme-light .im-label {
+      color: rgba(15, 23, 42, 0.5);
+    }
+    .im-val {
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Quick Tools Grid */
+    .island-tools-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .island-tool-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      color: inherit;
+      transition: all 0.18s ease;
+    }
+    .island-tool-btn:hover {
+      background: rgba(37, 99, 235, 0.28);
+      border-color: rgba(96, 165, 250, 0.45);
+      transform: translateY(-2px);
+    }
+    body.theme-light .island-tool-btn {
+      background: rgba(0, 0, 0, 0.04);
+      border-color: rgba(0, 0, 0, 0.08);
+    }
+    .it-icon {
+      font-size: 18px;
+    }
+    .it-text {
+      font-size: 11px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="island-shell" id="island-shell" tabindex="0">
+    <!-- Compact Capsule -->
+    <div class="island-compact" id="island-compact">
+      <div class="island-left">
+        <div class="island-dot-avatar" id="island-dot-avatar" title="Meet Mave (Click to pet or open HUD)">
+          <div class="dot-body" id="dot-body">
+            <div class="dot-shine"></div>
+            <div class="dot-face">
+              <svg class="dot-eyes-svg" viewBox="0 0 100 60">
+                <path class="dot-eye eye-left" id="dot-eye-left" d="M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z" />
+                <path class="dot-eye eye-right" id="dot-eye-right" d="M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="island-status-group">
+          <span class="island-status-dot" id="island-status-dot"></span>
+          <span class="island-title" id="island-title">Mave Core</span>
+        </div>
+      </div>
+
+      <div class="island-right">
+        <div class="island-audio-bars" id="island-audio-bars">
+          <span class="i-bar bar-1"></span>
+          <span class="i-bar bar-2"></span>
+          <span class="i-bar bar-3"></span>
+          <span class="i-bar bar-4"></span>
+        </div>
+        <span class="island-node-pill" id="island-node-pill">Host AI</span>
+      </div>
+    </div>
+
+    <!-- Expanded Vorssaint HUD Card -->
+    <div class="island-expanded" id="island-expanded">
+      <div class="island-exp-header">
+        <div class="island-exp-profile">
+          <div class="island-dot-avatar exp-size" id="island-dot-avatar-exp">
+            <div class="dot-body">
+              <div class="dot-shine"></div>
+              <div class="dot-face">
+                <svg class="dot-eyes-svg" viewBox="0 0 100 60">
+                  <path class="dot-eye" d="M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z" />
+                  <path class="dot-eye" d="M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="island-exp-name" id="island-exp-name">Mave Companion</div>
+            <div class="island-exp-sub" id="island-exp-sub">Ready • Device Extension Active</div>
+          </div>
+        </div>
+        <div class="island-exp-top-actions">
+          <button type="button" class="island-action-btn" id="island-pet-btn" title="Pet Mave">🐾 Pet</button>
+          <button type="button" class="island-action-btn" id="island-collapse-btn" title="Collapse Island (Esc)">✕</button>
+        </div>
+      </div>
+
+      <!-- Live Metrics Row -->
+      <div class="island-metrics-row">
+        <div class="island-metric">
+          <span class="im-label">ROLE</span>
+          <span class="im-val" id="im-node-role">Host Brain</span>
+        </div>
+        <div class="island-metric">
+          <span class="im-label">PLATFORM</span>
+          <span class="im-val" id="im-platform-val">Windows OS</span>
+        </div>
+        <div class="island-metric">
+          <span class="im-label">MESH LINK</span>
+          <span class="im-val" id="im-mesh-val">UDP:4045 Active</span>
+        </div>
+        <div class="island-metric">
+          <span class="im-label">AUTONOMOUS</span>
+          <span class="im-val" id="im-dag-val">DAG Ready</span>
+        </div>
+      </div>
+
+      <!-- Quick Island Utilities -->
+      <div class="island-tools-grid">
+        <button type="button" class="island-tool-btn" id="tool-chat">
+          <span class="it-icon">💬</span>
+          <span class="it-text">Open Chat</span>
+        </button>
+        <button type="button" class="island-tool-btn" id="tool-voice">
+          <span class="it-icon">🎙️</span>
+          <span class="it-text">Voice Mode</span>
+        </button>
+        <button type="button" class="island-tool-btn" id="tool-cmd">
+          <span class="it-icon">⚡</span>
+          <span class="it-text">Terminal</span>
+        </button>
+        <button type="button" class="island-tool-btn" id="tool-settings">
+          <span class="it-icon">⚙️</span>
+          <span class="it-text">Settings</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="island.js"></script>
+</body>
+</html>

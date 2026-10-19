@@ -362,6 +362,12 @@ async function start() {
   if (!settings.get('onboarded') || (oldSetup && !settings.get('localModel') && !local.active())) windows.openOnboarding();
   else if (upgrading) windows.openSettings('account');
   else if (!process.argv.includes('--hidden')) windows.openMain(resolveProvider(settings, { online: isOnline() }) ? 'home' : 'account');
+
+  // Mount the System Dynamic Island as an OS Device Extension (Vorssaint-style)
+  if (settings.get('showDynamicIsland') !== false) {
+    try { windows.showIsland(); } catch (err) { logger.warn('Dynamic island launch:', err.message); }
+  }
+
   // Visual QA hooks; never set in normal use.
   if (process.env.BIGFOOT_DEMO === 'qa') global.bigfoot = { controller, windows, agent, audio, plugins, pluginManager, require };
   if (process.env.BIGFOOT_DEMO === '1') require('./demo').runDemo({ windows, controller });
@@ -372,7 +378,10 @@ async function start() {
   if (process.env.BIGFOOT_DEMO === 'snap') require('./demo').snapPages({ windows, logger });
   else controller.refreshWakeWord();
 
-  app.on('second-instance', () => windows.openMain('home'));
+  app.on('second-instance', () => {
+    windows.openMain('home');
+    windows.showIsland();
+  });
   app.on('window-all-closed', (e) => e.preventDefault()); // lives in the tray
   app.on('before-quit', () => {
     windows.quitting = true;

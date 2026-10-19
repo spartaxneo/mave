@@ -45,6 +45,7 @@ class WindowManager {
     this.approvalQueue = Promise.resolve();
     this.cancelApproval = null;
     this.petWindow = null;
+    this.islandWindow = null;
   }
 
   send(win, channel, payload) { send(win, channel, payload); }
@@ -378,6 +379,66 @@ class WindowManager {
         this.petWindow.setSize(W, H);
       }
       send(this.petWindow, 'pet:config', config);
+    }
+  }
+
+  // Standalone Device Extension Dynamic Island (Vorssaint macOS-style)
+  createIslandWindow() {
+    if (this.islandWindow && !this.islandWindow.isDestroyed()) return this.islandWindow;
+    const { workArea: wa } = screen.getPrimaryDisplay();
+    const W = 360;
+    const H = 46;
+    const x = Math.round(wa.x + (wa.width - W) / 2);
+    const y = Math.max(0, wa.y + 4);
+    const win = new BrowserWindow({
+      width: W, height: H, x, y,
+      frame: false, transparent: true, resizable: false, alwaysOnTop: true, show: false,
+      skipTaskbar: true, fullscreenable: false, minimizable: false, maximizable: false,
+      backgroundColor: '#00000000', title: 'Mave Dynamic Island',
+      hasShadow: false,
+      webPreferences: webPreferences(),
+    });
+    protect(win);
+    win.setAlwaysOnTop(true, 'screen-saver');
+    win.loadFile(path.join(RENDERER, 'island.html'));
+    this.islandWindow = win;
+    win.on('closed', () => { this.islandWindow = null; });
+    return win;
+  }
+
+  showIsland() {
+    const win = this.createIslandWindow();
+    win.showInactive();
+  }
+
+  hideIsland() {
+    if (this.islandWindow && !this.islandWindow.isDestroyed()) {
+      this.islandWindow.hide();
+    }
+  }
+
+  toggleIsland() {
+    if (this.islandWindow && !this.islandWindow.isDestroyed() && this.islandWindow.isVisible()) {
+      this.hideIsland();
+      return false;
+    }
+    this.showIsland();
+    return true;
+  }
+
+  resizeIsland(expanded) {
+    if (!this.islandWindow || this.islandWindow.isDestroyed()) return;
+    const { workArea: wa } = screen.getPrimaryDisplay();
+    const W = expanded ? 460 : 360;
+    const H = expanded ? 260 : 46;
+    const x = Math.round(wa.x + (wa.width - W) / 2);
+    const y = Math.max(0, wa.y + 4);
+    this.islandWindow.setBounds({ x, y, width: W, height: H });
+  }
+
+  updateIsland(payload) {
+    if (this.islandWindow && !this.islandWindow.isDestroyed()) {
+      send(this.islandWindow, 'island:update', payload);
     }
   }
 }

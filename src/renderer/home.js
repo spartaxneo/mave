@@ -961,6 +961,11 @@
   if ($('talk-btn')) $('talk-btn').addEventListener('click', handleVoiceButtonClick);
   if ($('vso-close-btn')) $('vso-close-btn').addEventListener('click', toggleVoiceMode);
   if ($('vso-end-btn')) $('vso-end-btn').addEventListener('click', toggleVoiceMode);
+  if ($('island-toggle-btn')) {
+    $('island-toggle-btn').addEventListener('click', () => {
+      api.invoke('island:toggle').catch(() => {});
+    });
+  }
 
   if ($('meet-voice-continue-btn')) {
     $('meet-voice-continue-btn').addEventListener('click', () => {

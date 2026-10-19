@@ -673,6 +673,28 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     });
   });
 
+  // Vorssaint-Style System Dynamic Island (OS Device Extension)
+  handle('island:expand', () => {
+    windows.resizeIsland(true);
+    return true;
+  });
+  handle('island:collapse', () => {
+    windows.resizeIsland(false);
+    return true;
+  });
+  handle('island:open-main', (route) => {
+    windows.openMain(route || 'home');
+    return true;
+  });
+  handle('island:toggle', () => {
+    return windows.toggleIsland();
+  });
+  handle('island:status', () => {
+    return {
+      active: Boolean(windows.islandWindow && !windows.islandWindow.isDestroyed() && windows.islandWindow.isVisible()),
+    };
+  });
+
   handle('app:info', () => ({
     version: app.getVersion(), state: controller.state, running: agent.running,
     usage: { task: costs.task, session: costs.session }, plugins: plugins.list(),
