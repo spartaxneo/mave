@@ -43,6 +43,7 @@ const BUILTIN_GROUPS = {
   'builtin/chatgpt_brain_bridge.js': 'ChatGPT Central Brain & Mave Nervous System Bridge (Hands, Eyes & Terminal Actions)',
   'builtin/universal_dictation.js': 'Universal Dictation & Voice Post-Processing (Handy Parity: Voice Typing into Any App)',
   'builtin/voice_studio_omnivoice.js': 'Voice Studio & OmniVoice (Voice Design, Zero-Shot Cloning, Video Dubbing & Audiobook Creation)',
+  'builtin/comfyui_engine.js': 'ComfyUI Generative Studio: Node Workflows, Flux/SDXL Image Generation & Video Diffusion',
 };
 
 

@@ -20,6 +20,8 @@ const { getVoiceDesigner } = require('../voice_studio/voice_designer');
 const { getVoiceCloner } = require('../voice_studio/voice_cloner');
 const { getVideoDubber } = require('../voice_studio/video_dubber');
 const { getAudiobookProducer } = require('../voice_studio/audiobook_producer');
+const { getComfyClient } = require('../comfyui/comfy_client');
+const { getWorkflowBuilder } = require('../comfyui/workflow_builder');
 
 function getLocalIp() {
   const nets = os.networkInterfaces();
@@ -4680,6 +4682,110 @@ class MobileWebServer {
         designed: designer.listVoices(),
         cloned: cloner.listClones()
       }));
+    }
+
+    // --- ComfyUI Generative Studio Endpoints ---
+    if (req.method === 'GET' && url.pathname === '/api/comfyui/status') {
+      try {
+        const client = getComfyClient();
+        const status = await client.checkStatus();
+        const models = await client.getAvailableModels();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, status, models }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/comfyui/generate') {
+      try {
+        const body = await parseBody(req);
+        const builder = getWorkflowBuilder();
+        const client = getComfyClient();
+        const { workflow } = builder.buildText2Img({
+          prompt: body.prompt,
+          negativePrompt: body.negativePrompt || body.negative_prompt,
+          checkpoint: body.checkpoint,
+          width: body.width,
+          height: body.height,
+          steps: body.steps,
+          cfg: body.cfg
+        });
+
+        const status = await client.checkStatus();
+        if (status.online) {
+          const result = await client.executeWorkflow({ workflow });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } else {
+          const fallback = client.generateOfflineFallback({
+            prompt: body.prompt,
+            workflowGraph: workflow,
+            workflowType: 'text2img'
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(fallback));
+        }
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/comfyui/workflow') {
+      try {
+        const body = await parseBody(req);
+        const builder = getWorkflowBuilder();
+        const type = body.type || body.workflow_type || 'text2img';
+        let result;
+        if (type === 'img2img') {
+          result = builder.buildImg2Img(body);
+        } else if (type === 'controlnet') {
+          result = builder.buildControlNet(body);
+        } else if (type === 'upscale') {
+          result = builder.buildUpscale(body);
+        } else if (type === 'video') {
+          result = builder.buildVideo(body);
+        } else {
+          result = builder.buildText2Img(body);
+        }
+        const validation = builder.validateGraph(result.workflow);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, ...result, validation }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/comfyui/upscale') {
+      try {
+        const body = await parseBody(req);
+        const builder = getWorkflowBuilder();
+        const client = getComfyClient();
+        const { workflow } = builder.buildUpscale({
+          inputImagePath: body.imagePath || body.image_path || 'source.png',
+          upscaleModel: body.upscaleModel || body.upscale_model || '4x-UltraSharp.pth'
+        });
+        const status = await client.checkStatus();
+        if (status.online) {
+          const result = await client.executeWorkflow({ workflow });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } else {
+          const fallback = client.generateOfflineFallback({
+            prompt: `Upscaling ${body.imagePath || 'source.png'}`,
+            workflowGraph: workflow,
+            workflowType: 'upscale'
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(fallback));
+        }
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
     }
 
     if (req.method === 'POST' && url.pathname === '/api/chatgpt/eyes/screen') {
