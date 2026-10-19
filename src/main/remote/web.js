@@ -4396,6 +4396,18 @@ class MobileWebServer {
       return res.end(JSON.stringify(status));
     }
 
+    if (req.method === 'POST' && (url.pathname === '/api/chatgpt/instruct' || url.pathname === '/api/chatgpt/dispatch')) {
+      try {
+        const body = await parseBody(req);
+        const result = await this.chatgptBridge.dispatchAutonomousTask(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/chatgpt/eyes/screen') {
       try {
         const body = await parseBody(req).catch(() => ({}));

@@ -26,6 +26,10 @@ function createMockController() {
     audio: {
       speak: async (text) => actions.push({ type: 'speak', text }),
     },
+    runTask: async (text, source, options) => {
+      actions.push({ type: 'run_task', text, source });
+      return { ok: true, text: `Mave local agent completed: ${text}`, thoughts: ['Decomposed high-level goal', 'Executed physical steps'] };
+    },
     actions
   };
 }
@@ -170,6 +174,17 @@ test('MobileWebServer: Serves ChatGPT Action endpoints over HTTP', async () => {
     const term = JSON.parse(termData.body);
     assert.equal(term.ok, true);
     assert.ok(term.stdout.includes('HTTP_NERVOUS_OK'));
+
+    // 5. POST /api/chatgpt/instruct (High-level autonomous execution by Mave's internal agent)
+    const instructData = await makeRequest(`http://127.0.0.1:${testPort}/api/chatgpt/instruct`, 'POST', {
+      instruction: 'Open Chrome and find cheapest flights to Tokyo'
+    });
+    assert.equal(instructData.statusCode, 200);
+    const instructRes = JSON.parse(instructData.body);
+    assert.equal(instructRes.ok, true);
+    assert.equal(instructRes.status, 'completed');
+    assert.ok(instructRes.result.includes('Mave local agent completed'));
+    assert.ok(controller.actions.some(a => a.type === 'run_task' && a.text.includes('cheapest flights')));
 
   } finally {
     webServer.stop();
