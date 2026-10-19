@@ -22,6 +22,8 @@ const { getVideoDubber } = require('../voice_studio/video_dubber');
 const { getAudiobookProducer } = require('../voice_studio/audiobook_producer');
 const { getComfyClient } = require('../comfyui/comfy_client');
 const { getWorkflowBuilder } = require('../comfyui/workflow_builder');
+const { getAvatarProducer } = require('../avatar/avatar_producer');
+const { getLipSyncEngine } = require('../avatar/lip_sync_engine');
 
 function getLocalIp() {
   const nets = os.networkInterfaces();
@@ -4782,6 +4784,69 @@ class MobileWebServer {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify(fallback));
         }
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    // --- Digital Human & Avatar Studio Endpoints (HeyGem / Duix) ---
+    if (req.method === 'GET' && url.pathname === '/api/avatar/list') {
+      try {
+        const producer = getAvatarProducer();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, avatars: producer.listAvatars() }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/avatar/video') {
+      try {
+        const body = await parseBody(req);
+        const producer = getAvatarProducer();
+        const result = await producer.produceAvatarVideo({
+          avatarId: body.avatarId || body.avatar_id || 'alex-tech',
+          scriptText: body.scriptText || body.script_text || '',
+          resolution: body.resolution || '1080p'
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/avatar/clone') {
+      try {
+        const body = await parseBody(req);
+        const producer = getAvatarProducer();
+        const clone = producer.cloneAvatar({
+          name: body.name,
+          sourceMedia: body.sourceMedia || body.source_media,
+          description: body.description,
+          gender: body.gender || 'neutral'
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, avatar: clone }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/avatar/lipsync') {
+      try {
+        const body = await parseBody(req);
+        const engine = getLipSyncEngine();
+        const timeline = engine.generateVisemeTimeline({
+          text: body.text || '',
+          durationSec: body.durationSec || body.duration_seconds || null
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, timeline }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ ok: false, error: err.message }));

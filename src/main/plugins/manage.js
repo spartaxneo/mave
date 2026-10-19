@@ -44,6 +44,7 @@ const BUILTIN_GROUPS = {
   'builtin/universal_dictation.js': 'Universal Dictation & Voice Post-Processing (Handy Parity: Voice Typing into Any App)',
   'builtin/voice_studio_omnivoice.js': 'Voice Studio & OmniVoice (Voice Design, Zero-Shot Cloning, Video Dubbing & Audiobook Creation)',
   'builtin/comfyui_engine.js': 'ComfyUI Generative Studio: Node Workflows, Flux/SDXL Image Generation & Video Diffusion',
+  'builtin/digital_human_heygem.js': 'Digital Human & Avatar Studio (HeyGem / Duix Parity: Lip-Sync, Micro-Expressions & Talking Avatars)',
 };
 
 
