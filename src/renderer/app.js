@@ -1350,7 +1350,7 @@
     });
   }
 
-  // 2. Plugins Loader & Wiring
+  // 2. Plugins & Ghost AI Core MCP Catalog Loader
   async function loadPluginsData() {
     try {
       const s = await api.invoke('settings:get');
@@ -1359,6 +1359,33 @@
         const id = sw.dataset.plugin;
         if (id) sw.checked = enabled.includes(id);
       });
+
+      // Load Ghost AI Core MCP Catalog
+      const mcpCatalog = await api.invoke('ghost:mcp-catalog').catch(() => []);
+      const catalogEl = $('mcp-catalog-list');
+      if (catalogEl && Array.isArray(mcpCatalog)) {
+        catalogEl.innerHTML = mcpCatalog.map((item) => `
+          <div class="mcp-card" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); padding:10px 12px; border-radius:8px; border:1px solid var(--hairline);">
+            <div>
+              <div style="font-size:13px; font-weight:700; color:var(--text-1);">${item.name} <span class="badge" style="font-size:10px; padding:1px 6px; border-radius:4px; background:rgba(59,130,246,0.15); color:#60a5fa;">${item.category}</span></div>
+              <div style="font-size:11px; color:var(--text-3); margin-top:2px;">${item.description} · <span style="color:var(--text-2); font-family:var(--font-mono); font-size:10px;">${item.command}</span></div>
+            </div>
+            <button type="button" class="btn ${item.installed ? 'plain' : 'secondary'} small mcp-action-btn" data-mcp-id="${item.id}" style="${item.installed ? 'color:#10b981; font-weight:700;' : ''}">
+              ${item.installed ? '✓ Connected' : '+ Connect'}
+            </button>
+          </div>
+        `).join('');
+
+        catalogEl.querySelectorAll('.mcp-action-btn').forEach((btn) => {
+          btn.addEventListener('click', async (e) => {
+            const mcpId = e.currentTarget.dataset.mcpId;
+            const res = await api.invoke('ghost:mcp-install', mcpId);
+            if (res.ok) {
+              loadPluginsData();
+            }
+          });
+        });
+      }
     } catch { /* empty */ }
   }
 
@@ -1376,6 +1403,31 @@
   }
   if ($('btn-install-plugin-file')) {
     $('btn-install-plugin-file').addEventListener('click', () => api.invoke('plugins:pick'));
+  }
+
+  if ($('btn-ghost-rrf-search')) {
+    $('btn-ghost-rrf-search').addEventListener('click', async () => {
+      const query = $('ghost-rrf-search-input') ? $('ghost-rrf-search-input').value.trim() : '';
+      if (!query) return;
+      const resContainer = $('ghost-rrf-search-results');
+      if (resContainer) resContainer.textContent = 'Searching lexical & semantic indexes via RRF...';
+      const results = await api.invoke('ghost:search', { query, topK: 5 }).catch(() => []);
+      if (resContainer) {
+        if (!results.length) {
+          resContainer.innerHTML = '<span style="color:var(--text-3);">No matching indexed documents found.</span>';
+        } else {
+          resContainer.innerHTML = results.map((r, i) => `
+            <div style="padding:6px 8px; margin:4px 0; background:var(--surface-2); border-radius:6px; border-left:3px solid #10b981;">
+              <div style="font-weight:700; color:var(--text-1); display:flex; justify-content:space-between;">
+                <span>#${i + 1} ${r.title}</span>
+                <span class="mono" style="font-size:10px; color:#10b981;">RRF Score: ${r.rrfScore}</span>
+              </div>
+              <div style="color:var(--text-2); font-size:11px; margin-top:2px;">${r.snippet}</div>
+            </div>
+          `).join('');
+        }
+      }
+    });
   }
 
   // 3. Billing Loader & Wiring

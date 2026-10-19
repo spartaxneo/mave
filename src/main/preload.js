@@ -40,6 +40,8 @@ const INVOKE = new Set([
   'usage:stats', 'usage:reset', 'analytics:stats', 'data:export-all', 'data:clear-history',
   'security:setup-2fa', 'security:verify-2fa', 'security:disable-2fa', 'security:revoke-sessions',
   'trusted-contact:test-alert', 'plugins:toggle',
+  'ghost:status', 'ghost:search', 'ghost:index-doc', 'ghost:mcp-catalog',
+  'ghost:mcp-install', 'ghost:mcp-uninstall', 'ghost:mcp-call', 'ghost:render-a2ui',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',

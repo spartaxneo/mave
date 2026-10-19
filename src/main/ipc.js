@@ -1019,6 +1019,48 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return { ok: true, enabledPlugins: next };
   });
 
+  // Ghost AI Core Handlers (MCP, AG-UI, A2UI, A2A, Hybrid Search, 3-Tier Security)
+  const { getGhostAICore } = require('./ghost_core');
+  const ghostCore = getGhostAICore();
+
+  handle('ghost:status', () => ghostCore.getStatus());
+
+  handle('ghost:search', ({ query, topK }) => {
+    return ghostCore.search.search(query, topK || 10);
+  });
+
+  handle('ghost:index-doc', (doc) => {
+    ghostCore.search.indexDocument(doc, true);
+    return { ok: true, id: doc.id };
+  });
+
+  handle('ghost:mcp-catalog', () => {
+    return ghostCore.mcpClientManager.getCatalog();
+  });
+
+  handle('ghost:mcp-install', (id) => {
+    return ghostCore.mcpClientManager.installServer(id);
+  });
+
+  handle('ghost:mcp-uninstall', (id) => {
+    return ghostCore.mcpClientManager.uninstallServer(id);
+  });
+
+  handle('ghost:mcp-call', async ({ name, args }) => {
+    return ghostCore.mcpServer.handleJsonRpc({
+      jsonrpc: '2.0',
+      id: Date.now(),
+      method: 'tools/call',
+      params: { name, arguments: args || {} },
+    });
+  });
+
+  handle('ghost:render-a2ui', (component) => {
+    const html = ghostCore.a2ui.toHtml(component);
+    ghostCore.agui.broadcast('ui_render', { component, html });
+    return { ok: true, html };
+  });
+
   handle('app:info', () => ({
     version: app.getVersion(), state: controller.state, running: agent.running,
     usage: { task: costs.task, session: costs.session }, plugins: plugins.list(),

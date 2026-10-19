@@ -5285,6 +5285,16 @@ class MobileWebServer {
       return res.end();
     }
 
+    // --- Ghost AI Core Protocol Endpoints (MCP, AG-UI, A2UI, A2A) ---
+    try {
+      const { getGhostAICore } = require('../ghost_core');
+      const ghostCore = getGhostAICore();
+      const handled = await ghostCore.handleHttpRequest(req, res, url.pathname);
+      if (handled) return;
+    } catch (ghostErr) {
+      if (this.logger) this.logger.warn('Ghost AI Core route error:', ghostErr.message);
+    }
+
     // Serve rich desktop-parity UI at root and /drop
     if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/drop')) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });

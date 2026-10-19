@@ -1951,6 +1951,51 @@
               </div>
             </div>
           </div>
+
+          <!-- Ghost AI Core: 2026 Agent Stack & MCP Catalog -->
+          <div class="section-label">Ghost AI Core · 2026 Agent Protocol Stack</div>
+          <div class="group">
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; padding:12px; background:rgba(255,255,255,0.02); border-bottom:1px solid var(--hairline);">
+              <div style="text-align:center;">
+                <div style="font-size:10px; font-weight:700; color:var(--text-3);">MCP SERVER</div>
+                <div style="font-size:12px; font-weight:800; color:#10b981; margin-top:2px;">/mcp</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:10px; font-weight:700; color:var(--text-3);">AG-UI STREAM</div>
+                <div style="font-size:12px; font-weight:800; color:#3b82f6; margin-top:2px;">/ag-ui/stream</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:10px; font-weight:700; color:var(--text-3);">A2UI GEN-UI</div>
+                <div style="font-size:12px; font-weight:800; color:#8b5cf6; margin-top:2px;">Active</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:10px; font-weight:700; color:var(--text-3);">A2A CARD</div>
+                <div style="font-size:12px; font-weight:800; color:#f59e0b; margin-top:2px;">/.well-known</div>
+              </div>
+            </div>
+
+            <!-- MCP App Store Catalog List -->
+            <div class="row stack">
+              <div class="row-head">
+                <span class="headline">MCP Server Catalog & Connectors</span>
+                <span class="caption">One-click connect to external tools and local databases</span>
+              </div>
+              <div id="mcp-catalog-list" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;"></div>
+            </div>
+
+            <!-- RRF Hybrid Search Diagnostic Tester -->
+            <div class="row stack">
+              <div class="row-head">
+                <span class="headline">RRF Hybrid Search Tester (BM25 + Semantic Vector)</span>
+                <span class="caption">Tests sub-50ms Reciprocal Rank Fusion queries across local knowledge</span>
+              </div>
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <input class="field" id="ghost-rrf-search-input" placeholder="Test a query (e.g. household automation, architecture)..." style="flex:1;">
+                <button type="button" class="btn secondary small" id="btn-ghost-rrf-search">⚡ Search RRF</button>
+              </div>
+              <div id="ghost-rrf-search-results" style="margin-top:8px; font-size:12px; color:var(--text-2);"></div>
+            </div>
+          </div>
         </section>
 
         <!-- Billing & Compute Sovereignty -->
