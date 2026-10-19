@@ -30,6 +30,8 @@ const INVOKE = new Set([
   'firebase:get-devices', 'firebase:save-preferences', 'firebase:get-preferences', 'firebase:password-reset',
   'users:list', 'users:add', 'users:remove', 'users:update-role', 'users:invite', 'users:accept-invite',
   'users:apikeys', 'users:create-key', 'users:revoke-key', 'host:info', 'host:update-settings',
+  'mesh:status', 'mesh:auto-join', 'mesh:offload-page', 'mesh:merge-attn', 'mesh:disconnect',
+  'promptcache:stats', 'promptcache:clear',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',

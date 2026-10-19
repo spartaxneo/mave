@@ -1995,6 +1995,70 @@
             });
           }
         }
+
+        // Backburner Wireless Mesh & Context Window Telemetry
+        try {
+          const meshRes = await api.invoke('mesh:status');
+          if (meshRes && meshRes.mesh) {
+            const ctx = meshRes.mesh.context;
+            if ($('ws-metric-context')) {
+              $('ws-metric-context').textContent = `${(ctx.totalTokens || 32768).toLocaleString()} tokens`;
+            }
+            if ($('ws-metric-context-sub')) {
+              const hostK = Math.round((ctx.hostTokens || 32768) / 1024);
+              const offloadK = Math.round((ctx.offloadCapacityTokens || 0) / 1024);
+              $('ws-metric-context-sub').textContent = `Host: ${hostK}k • Mesh: +${offloadK}k (${ctx.heldPagesCount || 0} pages offloaded)`;
+            }
+            if ($('ws-metric-devices')) {
+              $('ws-metric-devices').textContent = `${ctx.activeCoProcessors || 0} Device(s)`;
+            }
+
+            const listEl = $('ws-coprocessors-list');
+            if (listEl) {
+              const devs = meshRes.mesh.devices || [];
+              if (devs.length === 0) {
+                listEl.innerHTML = '<div style="font-size:12px; color:var(--text-3); padding:6px 0;">No wireless co-processors detected yet. Connect any iPhone, Android, or laptop to this Wi-Fi to automatically join the mesh.</div>';
+              } else {
+                listEl.innerHTML = devs.map((d) => {
+                  const icon = d.os === 'ios' ? '📱' : d.os === 'android' ? '🤖' : '💻';
+                  return `
+                    <div style="background:var(--surface-2); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                      <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:20px;">${icon}</span>
+                        <div>
+                          <div style="font-size:13px; font-weight:700; color:var(--text-1);">${escapeHtml(d.name)}</div>
+                          <div style="font-size:11px; color:var(--text-3);">${d.connectionType === 'usb' ? '🔌 USB-C (10 Gb/s)' : '📡 Wi-Fi 6 Mesh'} • IP: ${d.ip} • Latency: ${d.latencyMs || 5}ms</div>
+                        </div>
+                      </div>
+                      <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="text-align:right;">
+                          <div style="font-size:12px; font-weight:700; color:#38bdf8;">${(d.heldTokens || 0).toLocaleString()} tokens held</div>
+                          <div style="font-size:10px; color:var(--text-3);">${d.heldPagesCount || 0} KV Pages • Cap: ${(d.maxTokens || 0).toLocaleString()}</div>
+                        </div>
+                        <button type="button" class="btn secondary small ws-btn-disconnect-coprocessor" data-did="${d.id}" style="padding:4px 8px; font-size:11px; color:#ef4444;">Eject</button>
+                      </div>
+                    </div>
+                  `;
+                }).join('');
+
+                listEl.querySelectorAll('.ws-btn-disconnect-coprocessor').forEach((btn) => {
+                  btn.addEventListener('click', async () => {
+                    await api.invoke('mesh:disconnect', btn.dataset.did);
+                    this.initWorkspace();
+                    this.avatar.hop();
+                  });
+                });
+              }
+            }
+          }
+
+          const pcRes = await api.invoke('promptcache:stats');
+          if (pcRes && $('ws-metric-cache')) {
+            $('ws-metric-cache').textContent = `${pcRes.hits || 0} Hits (${pcRes.savedSecondsTotal || 0}s saved)`;
+          }
+        } catch (meshErr) {
+          console.warn('Mesh telemetry note:', meshErr);
+        }
       } catch (err) {
         console.warn('Workspace init error:', err);
       }
@@ -2101,6 +2165,38 @@
             navigator.clipboard.writeText(input.value);
             $('ws-btn-copy-key').textContent = 'Copied!';
             setTimeout(() => { $('ws-btn-copy-key').textContent = 'Copy'; }, 2000);
+          }
+        });
+      }
+
+      // Backburner Co-Processor Simulation & Prompt Cache Controls
+      if ($('ws-btn-sim-co-join')) {
+        $('ws-btn-sim-co-join').addEventListener('click', async () => {
+          try {
+            await api.invoke('mesh:auto-join', {
+              deviceId: `dev-iphone-${Date.now().toString().slice(-4)}`,
+              name: 'iPhone 17 Pro (Wireless Wi-Fi Co-Processor)',
+              os: 'ios',
+              ramBytes: 8 * 1024 * 1024 * 1024,
+              freeMemoryBytes: 4 * 1024 * 1024 * 1024,
+              connectionType: 'wireless',
+              computeTier: 'gpu_npu',
+            });
+            this.initWorkspace();
+            this.avatar.bounce();
+            this.avatar.setMood('happy', 2500);
+          } catch (err) {
+            alert(`Failed to pair test phone: ${err.message}`);
+          }
+        });
+      }
+
+      if ($('ws-btn-prompt-cache-stats')) {
+        $('ws-btn-prompt-cache-stats').addEventListener('click', async () => {
+          const stats = await api.invoke('promptcache:stats');
+          if (confirm(`⚡ SSD Preamble Prompt Cache:\n• Active Slots: ${stats.activeSlots}\n• Disk Size: ${stats.totalSizeMB} MB\n• Cache Hits: ${stats.hits}\n• Saved Time: ${stats.savedSecondsTotal} seconds\n\nWould you like to clear the prompt cache?`)) {
+            await api.invoke('promptcache:clear');
+            this.initWorkspace();
           }
         });
       }

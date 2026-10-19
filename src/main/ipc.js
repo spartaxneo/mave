@@ -10,6 +10,9 @@ const catalog = require('./local/catalog');
 const { getGovernanceManager, POWER_TIERS } = require('./security/governance');
 const { firebaseService } = require('./firebase');
 const { userManager } = require('./users');
+const { backburnerMeshEngine } = require('./local/backburner_mesh');
+const { promptCacheManager } = require('./local/prompt_cache');
+const { meshDiscoveryManager } = require('./remote/mesh_discovery');
 
 const LINKS = {
   anthropic: 'https://platform.claude.com/settings/keys',
@@ -606,6 +609,17 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('users:revoke-key', (key) => userManager.revokeApiKey(key));
   handle('host:info', () => userManager.getHostInfo());
   handle('host:update-settings', (patch) => userManager.updateHostSettings(patch || {}));
+  // Backburner Co-Processing Mesh & Prompt Cache
+  handle('mesh:status', () => ({
+    mesh: backburnerMeshEngine.getMeshStatus(),
+    discovery: meshDiscoveryManager.getStatus(),
+  }));
+  handle('mesh:auto-join', (data) => meshDiscoveryManager.handleHttpAutoJoin(data || {}));
+  handle('mesh:offload-page', (opts) => backburnerMeshEngine.offloadKvPage(opts || {}));
+  handle('mesh:merge-attn', ({ hostAttn, satAttn }) => backburnerMeshEngine.mergeAttention(hostAttn, satAttn));
+  handle('mesh:disconnect', (deviceId) => backburnerMeshEngine.disconnectCoProcessor(deviceId));
+  handle('promptcache:stats', () => promptCacheManager.getStats());
+  handle('promptcache:clear', () => promptCacheManager.clear());
 
   handle('app:info', () => ({
     version: app.getVersion(), state: controller.state, running: agent.running,

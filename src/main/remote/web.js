@@ -5206,12 +5206,27 @@ class MobileWebServer {
           }
         }
 
+        try {
+          const { meshDiscoveryManager } = require('./mesh_discovery');
+          const { userManager } = require('../users');
+          meshDiscoveryManager.start({
+            ...userManager.getHostInfo(),
+            port: this.port,
+            httpsPort: this.httpsPort,
+          });
+        } catch {}
+
         resolve(url);
       });
     });
   }
 
   stop() {
+    try {
+      const { meshDiscoveryManager } = require('./mesh_discovery');
+      meshDiscoveryManager.stop();
+    } catch {}
+
     if (this.server) {
       this.server.close();
       this.server = null;
@@ -5666,6 +5681,111 @@ echo "      Web Console: ${hostUrl}/product"
         return res.end(JSON.stringify({ ok: true, hostInfo: updated }));
       } catch (err) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    // --- Backburner Wireless Co-Processing Mesh & KV Cache Paging APIs ---
+    if (req.method === 'GET' && url.pathname === '/api/mesh/status') {
+      try {
+        const { backburnerMeshEngine } = require('../local/backburner_mesh');
+        const { meshDiscoveryManager } = require('./mesh_discovery');
+        const status = backburnerMeshEngine.getMeshStatus();
+        const discovery = meshDiscoveryManager.getStatus();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, mesh: status, discovery }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && (url.pathname === '/api/mesh/auto-join' || url.pathname === '/api/mesh/register')) {
+      try {
+        const body = await parseBody(req);
+        const { meshDiscoveryManager } = require('./mesh_discovery');
+        const result = meshDiscoveryManager.handleHttpAutoJoin(body, req.socket.remoteAddress);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/mesh/offload/page') {
+      try {
+        const body = await parseBody(req);
+        const { backburnerMeshEngine } = require('../local/backburner_mesh');
+        const result = backburnerMeshEngine.offloadKvPage(body);
+        res.writeHead(result.ok ? 200 : 400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/mesh/attn/merge') {
+      try {
+        const body = await parseBody(req);
+        const { backburnerMeshEngine } = require('../local/backburner_mesh');
+        const merged = backburnerMeshEngine.mergeAttention(body.hostAttn, body.satAttn);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, merged }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/mesh/disconnect') {
+      try {
+        const body = await parseBody(req);
+        const { backburnerMeshEngine } = require('../local/backburner_mesh');
+        const ok = backburnerMeshEngine.disconnectCoProcessor(body.deviceId);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok, message: 'Co-processor disconnected' }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    // --- SSD Preamble & Prompt Cache APIs ---
+    if (req.method === 'GET' && url.pathname === '/api/prompt-cache/stats') {
+      try {
+        const { promptCacheManager } = require('../local/prompt_cache');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, stats: promptCacheManager.getStats() }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/prompt-cache/put') {
+      try {
+        const body = await parseBody(req);
+        const { promptCacheManager } = require('../local/prompt_cache');
+        const hash = body.hash || promptCacheManager.computeHash(body.preamble);
+        const success = promptCacheManager.put(hash, body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: success, hash }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/prompt-cache/clear') {
+      try {
+        const { promptCacheManager } = require('../local/prompt_cache');
+        const success = promptCacheManager.clear();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: success, message: 'Prompt cache cleared' }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ ok: false, error: err.message }));
       }
     }
