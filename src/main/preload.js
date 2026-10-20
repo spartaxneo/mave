@@ -60,6 +60,9 @@ const INVOKE = new Set([
   'decision:jev-evaluate', 'decision:jev-intent', 'decision:cdm-compress',
   'decision:cdm-extract', 'decision:cdm-classify',
   'tunnel:status', 'tunnel:start', 'tunnel:stop', 'tunnel:save-token',
+  'common-sense:get-context', 'common-sense:set-location', 'common-sense:pitch-briefing',
+  'common-sense:add-person', 'common-sense:gossip-queue', 'common-sense:resolve-gossip',
+  'common-sense:lookup-social',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',
@@ -68,6 +71,7 @@ const SEND = new Set([
 const RECEIVE = new Set([
   'cursor', 'state', 'bubble', 'bubble-live', 'fly', 'banner', 'welcome', 'settings', 'log', 'log-live', 'log-image', 'usage', 'level',
   'thought', 'recommendations', 'voice:speaking', 'autonomous:update', 'island:update', 'tunnel:update',
+  'common-sense:location-update', 'common-sense:device-update', 'common-sense:gossip-new',
   'engine:cmd', 'approval:show', 'buddy:visible', 'annotate', 'select', 'region', 'terminal:line',
   'local:progress', 'local:runtime', 'toolbar:show', 'ink', 'voice-mode', 'loader', 'tools-blocked', 'term:data', 'term:exit', 'term:list', 'term:focus',
   'sentinel:network-change', 'sentinel:incoming-activity', 'ghost:a2ui', 'ghost:thought',

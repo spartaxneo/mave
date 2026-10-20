@@ -878,6 +878,57 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return { ok: true };
   });
 
+  // --- Common Sense, Spatial Radar & Social Intelligence Engine ---
+  handle('common-sense:get-context', () => {
+    const { getCommonSenseEngine } = require('./intelligence/common_sense');
+    const cs = getCommonSenseEngine({ windows, logger });
+    return {
+      spatial: cs.getSpatialContext(),
+      people: cs.listPeople(),
+      nextGossip: cs.getNextGossipDebrief(),
+      gossipQueue: cs.gossipQueue,
+    };
+  });
+
+  handle('common-sense:set-location', (loc) => {
+    const { getCommonSenseEngine } = require('./intelligence/common_sense');
+    const cs = getCommonSenseEngine({ windows, logger });
+    return cs.updateHostLocation(loc || {});
+  });
+
+  handle('common-sense:pitch-briefing', (personName) => {
+    const { getCommonSenseEngine } = require('./intelligence/common_sense');
+    const cs = getCommonSenseEngine({ windows, logger });
+    return cs.generatePitchBriefing(personName);
+  });
+
+  handle('common-sense:add-person', (data) => {
+    const { getCommonSenseEngine } = require('./intelligence/common_sense');
+    const cs = getCommonSenseEngine({ windows, logger });
+    return cs.registerPerson(data || {});
+  });
+
+  handle('common-sense:gossip-queue', () => {
+    const { getCommonSenseEngine } = require('./intelligence/common_sense');
+    const cs = getCommonSenseEngine({ windows, logger });
+    return {
+      next: cs.getNextGossipDebrief(),
+      queue: cs.gossipQueue
+    };
+  });
+
+  handle('common-sense:resolve-gossip', ({ candidateName, userResponse }) => {
+    const { getCommonSenseEngine } = require('./intelligence/common_sense');
+    const cs = getCommonSenseEngine({ windows, logger });
+    return cs.resolveGossip(candidateName, userResponse);
+  });
+
+  handle('common-sense:lookup-social', (query) => {
+    const { getCommonSenseEngine } = require('./intelligence/common_sense');
+    const cs = getCommonSenseEngine({ windows, logger });
+    return cs.lookupSocialContact(query);
+  });
+
   // Autonomous Sentinel & Activity Learning
   const { getAutonomousSentinel } = require('./sentinel/autonomous_sentinel');
   const sentinel = getAutonomousSentinel({ settings, windows, logger });

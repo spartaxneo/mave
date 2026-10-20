@@ -5682,6 +5682,78 @@ echo "      Web Console: ${hostUrl}/product"
       }
     }
 
+    // --- Common Sense & Spatial / Pitch Radar APIs ---
+    if (req.method === 'GET' && url.pathname === '/api/common-sense/context') {
+      try {
+        const { getCommonSenseEngine } = require('../intelligence/common_sense');
+        const cs = getCommonSenseEngine();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({
+          ok: true,
+          spatial: cs.getSpatialContext(),
+          people: cs.listPeople(),
+          nextGossip: cs.getNextGossipDebrief()
+        }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/common-sense/location') {
+      try {
+        const body = await parseBody(req);
+        const { getCommonSenseEngine } = require('../intelligence/common_sense');
+        const cs = getCommonSenseEngine();
+        if (body.type === 'host') {
+          cs.updateHostLocation(body);
+        } else {
+          const remoteIp = req.socket && req.socket.remoteAddress;
+          cs.recordClientDevice({
+            deviceId: body.deviceId || remoteIp || 'remote_client',
+            name: body.deviceName || req.headers['user-agent']?.slice(0, 30) || 'Mobile Companion',
+            ip: remoteIp,
+            location: body.location || (body.latitude ? `${body.latitude.toFixed(4)}, ${body.longitude.toFixed(4)}` : 'Remote'),
+            isRemote: !isLocalRequest(req),
+            connectedVia: isLocalRequest(req) ? 'Wi-Fi LAN' : 'Cloudflare Tunnel',
+          });
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, spatial: cs.getSpatialContext() }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/common-sense/pitch') {
+      try {
+        const body = await parseBody(req);
+        const { getCommonSenseEngine } = require('../intelligence/common_sense');
+        const cs = getCommonSenseEngine();
+        const briefing = cs.generatePitchBriefing(body.person || body.name || 'Shivam');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, briefing }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/common-sense/gossip/resolve') {
+      try {
+        const body = await parseBody(req);
+        const { getCommonSenseEngine } = require('../intelligence/common_sense');
+        const cs = getCommonSenseEngine();
+        const result = cs.resolveGossip(body.candidateName, body.userResponse);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, result }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/host/settings') {
       try {
         const body = await parseBody(req);
@@ -7432,6 +7504,10 @@ echo "      Web Console: ${hostUrl}/product"
 
         const transcript = await this.controller.speech.transcribe(wavBuffer);
         const cleanText = transcript ? transcript.trim() : '';
+        try {
+          const { getCommonSenseEngine } = require('../intelligence/common_sense');
+          getCommonSenseEngine().observeUtterance(cleanText, { modality: 'remote_mic' });
+        } catch {}
         if (!cleanText) {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ ok: false, error: 'No speech recognized. Please speak closer to device.' }));

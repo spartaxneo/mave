@@ -422,11 +422,25 @@ class Agent {
           }
         } catch {}
 
+        let commonSenseNote = '';
+        try {
+          const { getCommonSenseEngine } = require('./intelligence/common_sense');
+          const cs = getCommonSenseEngine();
+          commonSenseNote = cs.formatCommonSensePromptContext();
+          // Also check if task mentions anyone or resolves curiosity
+          if (/\b(leave it|not important|not that important|ignore him|ignore her)\b/i.test(task)) {
+            const nextGossip = cs.getNextGossipDebrief();
+            if (nextGossip) {
+              cs.resolveGossip(nextGossip.item.candidateName, task);
+            }
+          }
+        } catch {}
+
         const govNote = governanceDirectives ? `\n${governanceDirectives}` : '';
         const now = new Date();
         const timeNote = `\n\n(Current system time: ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}, ${now.toLocaleTimeString('en-US')})`;
         const anchorNote = `\n\n[Mave Task Anchor: "${task}"] Stick strictly to this user request. Do NOT divert to unrelated apps, websites, suggestions, or placeholders found on screen.`;
-        request = (p) => p.addUserMessage(task + activeWindowNote + groundingNote + screenNote + memoryNote + personaNote + personalizationNote + govNote + timeNote + anchorNote);
+        request = (p) => p.addUserMessage(task + activeWindowNote + groundingNote + screenNote + memoryNote + personaNote + personalizationNote + commonSenseNote + govNote + timeNote + anchorNote);
       }
       if (provider.startTask) provider.startTask(); // keep earlier turns lean (local model)
       request(provider);
