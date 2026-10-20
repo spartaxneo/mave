@@ -57,6 +57,8 @@ const INVOKE = new Set([
   'vorssaint:clipboard-copy', 'vorssaint:clipboard-clear', 'vorssaint:scratchpad-get',
   'vorssaint:scratchpad-save', 'vorssaint:keep-awake-set', 'vorssaint:keep-awake-get',
   'vorssaint:cleaning-toggle', 'vorssaint:settings-get', 'vorssaint:settings-update',
+  'decision:jev-evaluate', 'decision:jev-intent', 'decision:cdm-compress',
+  'decision:cdm-extract', 'decision:cdm-classify',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',

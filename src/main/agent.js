@@ -137,14 +137,22 @@ class Agent {
     this.providerKey = key;
     if ('onText' in this.provider && this.hooks.stream) this.provider.onText = (text) => this.hooks.stream(text);
 
-    // Carry over conversational history across turns and model switches (like ChatGPT)
+    // Carry over conversational history across turns with CDM compression (like ChatGPT)
     if (this.conversationHistory && this.conversationHistory.length > 0) {
-      const recent = this.conversationHistory.slice(-8);
-      for (const turn of recent) {
+      let historyToInject = this.conversationHistory;
+      if (historyToInject.length > 4) {
+        try {
+          const { getCDMEngine } = require('./decision/cdm_engine');
+          historyToInject = getCDMEngine().compressConversation(this.conversationHistory, { preserveRecent: 4 });
+        } catch {}
+      }
+      for (const turn of historyToInject) {
         if (turn.role === 'user') {
           this.provider.addUserMessage(turn.content);
         } else if (turn.role === 'assistant') {
           this.provider.messages.push({ role: 'assistant', content: turn.content });
+        } else if (turn.role === 'system') {
+          this.provider.messages.push({ role: 'system', content: turn.content });
         }
       }
     }
@@ -710,10 +718,23 @@ class Agent {
 
       this.hooks.action(call.name, call.input);
       try {
-        const content = call.computer
+        let content = call.computer
           ? await this.runComputer(call.name, call.input, signal)
           : await this.plugins.run(call.name, call.input, this.pluginContext(signal));
-        if (typeof content === 'string') this.hooks.terminal('result', content);
+        if (typeof content === 'string') {
+          // CDM Optimization: If tool output is bulky (> 1800 chars), compress it with CDM
+          if (content.length > 1800) {
+            try {
+              const { getCDMEngine } = require('./decision/cdm_engine');
+              const compressed = getCDMEngine().compress(content, this.task);
+              if (compressed && compressed.savingsPct > 20) {
+                this.hooks.terminal('info', `[CDM Context Compression] Reduced tool payload from ${compressed.originalChars} to ${compressed.compressedChars} chars (${compressed.savingsPct}% token savings)`);
+                content = `[CDM Compressed Output - High Semantic Density]:\n${compressed.compressed}`;
+              }
+            } catch {}
+          }
+          this.hooks.terminal('result', content);
+        }
         results.push({ call, content });
       } catch (err) {
         if (err instanceof StoppedError || signal.aborted) {

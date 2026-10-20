@@ -75,6 +75,41 @@ function matchIntent(text) {
   if (m && (/^file explorer$/i.test(m[1]) || !/\b(?:and|then|to|with|for|in|on|file|folder|it|this|that)\b/i.test(m[1]))) {
     return { calls: [{ name: 'open_app', input: { name: m[1] } }], reply: `Opening ${m[1]}.` };
   }
+
+  // Jev "System 1" Reflex Decision Layer
+  try {
+    const { getJevEngine } = require('./decision/jev_engine');
+    const jev = getJevEngine();
+    const jIntent = jev.evaluateIntent(t);
+    if (jIntent && jIntent.type === 'immediate_action' && jIntent.confidence >= 0.85) {
+      if (jIntent.category === 'open_app' && jIntent.params && jIntent.params.name) {
+        return { calls: [{ name: 'open_app', input: { name: jIntent.params.name } }], reply: jIntent.reply };
+      }
+      if (jIntent.category === 'web_search' && jIntent.params && jIntent.params.query) {
+        return { calls: [{ name: 'open_url', input: { url: `https://www.google.com/search?q=${enc(jIntent.params.query)}` } }], reply: jIntent.reply };
+      }
+      if (jIntent.category === 'system_utility') {
+        const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+        const vorssaint = getVorssaintManager();
+        if (jIntent.action === 'keep_awake') {
+          vorssaint.setKeepAwake(jIntent.params.mode || '1h');
+          return { calls: [], reply: jIntent.reply };
+        }
+        if (jIntent.action === 'cleaning_mode') {
+          vorssaint.toggleCleaningMode(10);
+          return { calls: [], reply: jIntent.reply };
+        }
+        if (jIntent.action === 'scratchpad_append' && jIntent.params.text) {
+          const current = vorssaint.getScratchpad().text || '';
+          vorssaint.saveScratchpad(current + '\n- ' + jIntent.params.text);
+          return { calls: [], reply: jIntent.reply };
+        }
+      }
+    }
+  } catch {
+    // Jev evaluation non-fatal
+  }
+
   return null;
 }
 

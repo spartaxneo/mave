@@ -838,6 +838,28 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return getVorssaintManager({ windows, settings }).updateSettings(patch);
   });
 
+  // Jev (System 1 Reflex Decision) & CDM (Constrained Context Compression)
+  handle('decision:jev-evaluate', (payload) => {
+    const { getJevEngine } = require('./decision/jev_engine');
+    return getJevEngine().evaluate(payload ? payload.context : {}, payload ? payload.questions : {});
+  });
+  handle('decision:jev-intent', (input) => {
+    const { getJevEngine } = require('./decision/jev_engine');
+    return getJevEngine().evaluateIntent(input);
+  });
+  handle('decision:cdm-compress', ({ text, query, options }) => {
+    const { getCDMEngine } = require('./decision/cdm_engine');
+    return getCDMEngine().compress(text, query, options);
+  });
+  handle('decision:cdm-extract', ({ text, schema }) => {
+    const { getCDMEngine } = require('./decision/cdm_engine');
+    return getCDMEngine().extract(text, schema);
+  });
+  handle('decision:cdm-classify', ({ text, labels, options }) => {
+    const { getCDMEngine } = require('./decision/cdm_engine');
+    return getCDMEngine().classify(text, labels, options);
+  });
+
   // Autonomous Sentinel & Activity Learning
   const { getAutonomousSentinel } = require('./sentinel/autonomous_sentinel');
   const sentinel = getAutonomousSentinel({ settings, windows, logger });
