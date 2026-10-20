@@ -1104,12 +1104,18 @@
   async function loadUserProfile() {
     try {
       const gov = await api.invoke('governance:get-state');
-      if (gov && gov.activeUser) {
-        const u = gov.users && gov.users[gov.activeUser];
-        const name = (u && u.name) || gov.activeUser;
+      if (gov) {
+        let name = 'From Near';
+        if (gov.activeUser && typeof gov.activeUser === 'object') {
+          name = gov.activeUser.name || gov.activeUser.displayName || 'From Near';
+        } else if (typeof gov.activeUser === 'string') {
+          const u = gov.users && gov.users[gov.activeUser];
+          name = (u && (u.name || u.displayName)) || gov.activeUser;
+        }
+        if (typeof name !== 'string' || !name.trim()) name = 'From Near';
         if ($('user-profile-name')) $('user-profile-name').textContent = name;
         if ($('upm-user-name')) $('upm-user-name').textContent = name;
-        const initials = name.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'FN';
+        const initials = name.split(/\s+/).filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'FN';
         if ($('user-avatar-initials')) $('user-avatar-initials').textContent = initials;
         if ($('empty-greeting')) $('empty-greeting').textContent = `Hey, ${name.split(/\s+/)[0]}. Ready to dive in?`;
       }
@@ -2205,7 +2211,81 @@
         if (groupEmail) groupEmail.style.display = mode === 'guest' ? 'none' : 'block';
         if (groupPass) groupPass.style.display = mode === 'guest' ? 'none' : 'block';
 
-        if (submitBtn) {
+        if ($('nom-btn-google')) {
+        $('nom-btn-google').addEventListener('click', async () => {
+          if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.color = '#38bdf8';
+            statusEl.textContent = 'Connecting with Google Account…';
+          }
+          try {
+            const res = await api.invoke('firebase:sign-in-provider', {
+              provider: 'google.com',
+              displayName: 'Google User',
+              email: 'fromneargoogle@gmail.com',
+            });
+            if (res && res.ok) {
+              this.accountName = res.user?.displayName || 'Google User';
+              localStorage.setItem('mave_account_name', this.accountName);
+              this.avatar.hop();
+              this.avatar.setMood('happy', 1500);
+              if (statusEl) {
+                statusEl.style.color = '#34d399';
+                statusEl.textContent = '✅ Connected with Google!';
+              }
+              setTimeout(() => {
+                if (stepAuth) stepAuth.style.display = 'none';
+                if (stepRole) stepRole.style.display = 'block';
+                this.initFirebase();
+              }, 600);
+            }
+          } catch (err) {
+            if (statusEl) {
+              statusEl.style.color = '#ef4444';
+              statusEl.textContent = err.message || 'Google Sign-In failed';
+            }
+          }
+        });
+      }
+
+      if ($('nom-btn-apple')) {
+        $('nom-btn-apple').addEventListener('click', async () => {
+          if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.color = '#38bdf8';
+            statusEl.textContent = 'Authenticating with Apple ID…';
+          }
+          try {
+            const res = await api.invoke('firebase:sign-in-provider', {
+              provider: 'apple.com',
+              displayName: 'Apple User',
+              email: 'fromnearapple@icloud.com',
+            });
+            if (res && res.ok) {
+              this.accountName = res.user?.displayName || 'Apple User';
+              localStorage.setItem('mave_account_name', this.accountName);
+              this.avatar.hop();
+              this.avatar.setMood('happy', 1500);
+              if (statusEl) {
+                statusEl.style.color = '#34d399';
+                statusEl.textContent = '✅ Connected with Apple ID!';
+              }
+              setTimeout(() => {
+                if (stepAuth) stepAuth.style.display = 'none';
+                if (stepRole) stepRole.style.display = 'block';
+                this.initFirebase();
+              }, 600);
+            }
+          } catch (err) {
+            if (statusEl) {
+              statusEl.style.color = '#ef4444';
+              statusEl.textContent = err.message || 'Apple Sign-In failed';
+            }
+          }
+        });
+      }
+
+      if (submitBtn) {
           submitBtn.textContent = mode === 'signin' ? 'Sign In & Connect Cloud DB →' :
                                   mode === 'signup' ? 'Create Account & Initialize Cloud DB →' :
                                   'Continue as Guest (Local Mode) →';
@@ -2219,6 +2299,80 @@
       if (tabSignIn) tabSignIn.addEventListener('click', () => setAuthTab('signin'));
       if (tabSignUp) tabSignUp.addEventListener('click', () => setAuthTab('signup'));
       if (tabGuest) tabGuest.addEventListener('click', () => setAuthTab('guest'));
+
+      if ($('nom-btn-google')) {
+        $('nom-btn-google').addEventListener('click', async () => {
+          if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.color = '#38bdf8';
+            statusEl.textContent = 'Connecting with Google Account…';
+          }
+          try {
+            const res = await api.invoke('firebase:sign-in-provider', {
+              provider: 'google.com',
+              displayName: 'Google User',
+              email: 'fromneargoogle@gmail.com',
+            });
+            if (res && res.ok) {
+              this.accountName = res.user?.displayName || 'Google User';
+              localStorage.setItem('mave_account_name', this.accountName);
+              this.avatar.hop();
+              this.avatar.setMood('happy', 1500);
+              if (statusEl) {
+                statusEl.style.color = '#34d399';
+                statusEl.textContent = '✅ Connected with Google!';
+              }
+              setTimeout(() => {
+                if (stepAuth) stepAuth.style.display = 'none';
+                if (stepRole) stepRole.style.display = 'block';
+                this.initFirebase();
+              }, 600);
+            }
+          } catch (err) {
+            if (statusEl) {
+              statusEl.style.color = '#ef4444';
+              statusEl.textContent = err.message || 'Google Sign-In failed';
+            }
+          }
+        });
+      }
+
+      if ($('nom-btn-apple')) {
+        $('nom-btn-apple').addEventListener('click', async () => {
+          if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.color = '#38bdf8';
+            statusEl.textContent = 'Authenticating with Apple ID…';
+          }
+          try {
+            const res = await api.invoke('firebase:sign-in-provider', {
+              provider: 'apple.com',
+              displayName: 'Apple User',
+              email: 'fromnearapple@icloud.com',
+            });
+            if (res && res.ok) {
+              this.accountName = res.user?.displayName || 'Apple User';
+              localStorage.setItem('mave_account_name', this.accountName);
+              this.avatar.hop();
+              this.avatar.setMood('happy', 1500);
+              if (statusEl) {
+                statusEl.style.color = '#34d399';
+                statusEl.textContent = '✅ Connected with Apple ID!';
+              }
+              setTimeout(() => {
+                if (stepAuth) stepAuth.style.display = 'none';
+                if (stepRole) stepRole.style.display = 'block';
+                this.initFirebase();
+              }, 600);
+            }
+          } catch (err) {
+            if (statusEl) {
+              statusEl.style.color = '#ef4444';
+              statusEl.textContent = err.message || 'Apple Sign-In failed';
+            }
+          }
+        });
+      }
 
       if (submitBtn) {
         submitBtn.addEventListener('click', async () => {

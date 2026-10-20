@@ -683,6 +683,7 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('firebase:get-config', () => firebaseService.getConfig());
   handle('firebase:sign-up', (data) => firebaseService.signUp(data || {}));
   handle('firebase:sign-in', (data) => firebaseService.signIn(data || {}));
+  handle('firebase:sign-in-provider', (data) => firebaseService.signInWithProvider(data || {}));
   handle('firebase:sign-in-anon', () => firebaseService.signInAnonymously());
   handle('firebase:sign-out', () => firebaseService.signOut());
   handle('firebase:get-user', () => firebaseService.getCurrentUser());
@@ -785,6 +786,56 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return {
       active: Boolean(windows.islandWindow && !windows.islandWindow.isDestroyed() && windows.islandWindow.isVisible()),
     };
+  });
+
+  // Vorssaint OS Modular Toolkit
+  handle('vorssaint:telemetry', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).getTelemetry();
+  });
+  handle('vorssaint:agents', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).getAgentsStatus();
+  });
+  handle('vorssaint:clipboard-history', (query) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).getClipboardHistory(query);
+  });
+  handle('vorssaint:clipboard-copy', (id) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).copyClipboardItem(id);
+  });
+  handle('vorssaint:clipboard-clear', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).clearClipboardHistory();
+  });
+  handle('vorssaint:scratchpad-get', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).getScratchpad();
+  });
+  handle('vorssaint:scratchpad-save', (content) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).saveScratchpad(content);
+  });
+  handle('vorssaint:keep-awake-set', (mode) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).setKeepAwake(mode);
+  });
+  handle('vorssaint:keep-awake-get', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).getKeepAwakeStatus();
+  });
+  handle('vorssaint:cleaning-toggle', (seconds) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).toggleCleaningMode(seconds);
+  });
+  handle('vorssaint:settings-get', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).getSettings();
+  });
+  handle('vorssaint:settings-update', (patch) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).updateSettings(patch);
   });
 
   // Autonomous Sentinel & Activity Learning

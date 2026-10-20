@@ -25,7 +25,7 @@ const INVOKE = new Set([
   'threads:archive', 'threads:unarchive', 'threads:delete', 'threads:archived', 'threads:groups',
   'projects:list', 'projects:create', 'projects:update', 'projects:delete',
   'media:generate-image', 'media:generate-video', 'media:analyze-file', 'file:pick',
-  'firebase:get-config', 'firebase:sign-up', 'firebase:sign-in', 'firebase:sign-in-anon',
+  'firebase:get-config', 'firebase:sign-up', 'firebase:sign-in', 'firebase:sign-in-provider', 'firebase:sign-in-anon',
   'firebase:sign-out', 'firebase:get-user', 'firebase:update-profile', 'firebase:sync-device',
   'firebase:get-devices', 'firebase:save-preferences', 'firebase:get-preferences', 'firebase:password-reset',
   'users:list', 'users:add', 'users:remove', 'users:update-role', 'users:invite', 'users:accept-invite',
@@ -53,6 +53,10 @@ const INVOKE = new Set([
   'routines:tidy', 'knowledge:list', 'knowledge:add', 'knowledge:delete', 'knowledge:search',
   'voice-mode:toggle', 'voice-mode:status', 'media:list-images', 'media:reveal-folder',
   'region:start', 'dictation:set-mode', 'dictation:toggle', 'dictation:status',
+  'vorssaint:telemetry', 'vorssaint:agents', 'vorssaint:clipboard-history',
+  'vorssaint:clipboard-copy', 'vorssaint:clipboard-clear', 'vorssaint:scratchpad-get',
+  'vorssaint:scratchpad-save', 'vorssaint:keep-awake-set', 'vorssaint:keep-awake-get',
+  'vorssaint:cleaning-toggle', 'vorssaint:settings-get', 'vorssaint:settings-update',
 ]);
 const SEND = new Set([
   'overlay:ready', 'overlay:fly-done', 'overlay:region', 'overlay:region-ask', 'panel:ready',

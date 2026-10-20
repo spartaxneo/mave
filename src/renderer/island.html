@@ -24,15 +24,15 @@
       padding-top: 2px;
     }
 
-    /* System Dynamic Island Capsule (Authentic Vorssaint macOS Notch) */
+    /* System Dynamic Island Capsule (Authentic Vorssaint macOS Notch & Windows Island) */
     .island-shell {
       position: relative;
-      background: #000000;
+      background: #09090b;
       border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 22px;
-      backdrop-filter: blur(32px) saturate(200%);
-      -webkit-backdrop-filter: blur(32px) saturate(200%);
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(36px) saturate(200%);
+      -webkit-backdrop-filter: blur(36px) saturate(200%);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.95);
       color: #ffffff;
       transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
       overflow: hidden;
@@ -44,7 +44,7 @@
       background: #ffffff;
       border: 1px solid rgba(0, 0, 0, 0.12);
       color: #0f172a;
-      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 0 0 1px rgba(0, 0, 0, 0.06);
     }
 
     /* Compact Pill Layout */
@@ -207,22 +207,25 @@
       color: #1d4ed8;
     }
 
-    /* Expanded HUD Card */
+    /* Expanded Vorssaint OS HUD Card */
     .island-expanded {
       display: none;
-      padding: 14px 18px 16px;
+      padding: 12px 16px 14px;
       flex-direction: column;
-      gap: 13px;
-      width: 440px;
+      gap: 10px;
+      width: 560px;
+      height: 374px;
+      box-sizing: border-box;
       animation: expandHUD 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      cursor: default;
     }
     @keyframes expandHUD {
-      from { opacity: 0; transform: scaleY(0.92); }
-      to { opacity: 1; transform: scaleY(1); }
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
     }
 
     .island-shell.is-expanded {
-      border-radius: 26px;
+      border-radius: 24px;
     }
     .island-shell.is-expanded .island-compact {
       display: none;
@@ -231,110 +234,502 @@
       display: flex;
     }
 
+    /* HUD Header */
     .island-exp-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+    }
+    body.theme-light .island-exp-header {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     }
     .island-exp-profile {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
     .island-dot-avatar.exp-size {
-      width: 42px;
-      height: 42px;
+      width: 34px;
+      height: 34px;
     }
     .island-exp-name {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
-      letter-spacing: -0.3px;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .island-exp-badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: rgba(37, 99, 235, 0.25);
+      color: #93c5fd;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      font-weight: 600;
     }
     .island-exp-sub {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.65);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
     }
     body.theme-light .island-exp-sub {
-      color: rgba(15, 23, 42, 0.65);
+      color: rgba(15, 23, 42, 0.6);
     }
 
     .island-exp-top-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
     .island-action-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
       color: inherit;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
-      padding: 5px 11px;
+      padding: 4px 10px;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 5px;
-      transition: all 0.18s ease;
+      gap: 4px;
+      transition: all 0.15s ease;
     }
     .island-action-btn:hover {
-      background: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.16);
       transform: translateY(-1px);
     }
     .island-action-btn:active {
       transform: translateY(1px);
     }
     body.theme-light .island-action-btn {
-      background: rgba(0, 0, 0, 0.06);
-      border: 1px solid rgba(0, 0, 0, 0.12);
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.1);
     }
 
-    /* Live Metrics Row */
-    .island-metrics-row {
+    /* Vorssaint Navigation Tabs Strip */
+    .hud-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 3px;
+      flex-shrink: 0;
+    }
+    body.theme-light .hud-tabs {
+      background: rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .hud-tab-btn {
+      flex: 1;
+      padding: 5px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.6);
+      border-radius: 7px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    body.theme-light .hud-tab-btn {
+      color: rgba(15, 23, 42, 0.6);
+    }
+    .hud-tab-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    body.theme-light .hud-tab-btn:hover {
+      color: #0f172a;
+      background: rgba(0, 0, 0, 0.06);
+    }
+    .hud-tab-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+    }
+
+    /* Panes Container */
+    .hud-pane-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .hud-pane {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      animation: fadeInPane 0.18s ease;
+      height: 100%;
+    }
+    .hud-pane.active {
+      display: flex;
+    }
+    @keyframes fadeInPane {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Scrollbars */
+    .hud-pane-container::-webkit-scrollbar {
+      width: 4px;
+    }
+    .hud-pane-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    /* TAB 1: TELEMETRY GRID */
+    .telemetry-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
-      background: rgba(0, 0, 0, 0.28);
-      border-radius: 14px;
-      padding: 8px 10px;
+    }
+    .tele-card {
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    body.theme-light .island-metrics-row {
-      background: rgba(0, 0, 0, 0.04);
-      border: 1px solid rgba(0, 0, 0, 0.06);
-    }
-    .island-metric {
+      border-radius: 12px;
+      padding: 8px 10px;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
     }
-    .im-label {
-      font-size: 9px;
+    body.theme-light .tele-card {
+      background: rgba(0, 0, 0, 0.03);
+      border-color: rgba(0, 0, 0, 0.07);
+    }
+    .tele-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tc-label {
+      font-size: 10px;
       font-weight: 700;
       color: rgba(255, 255, 255, 0.5);
       letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
-    body.theme-light .im-label {
+    body.theme-light .tc-label {
       color: rgba(15, 23, 42, 0.5);
     }
-    .im-val {
-      font-size: 11px;
-      font-weight: 600;
+    .tc-icon {
+      font-size: 12px;
+    }
+    .tc-val {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: #ffffff;
+    }
+    body.theme-light .tc-val {
+      color: #0f172a;
+    }
+    .tc-sub {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.55);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    body.theme-light .tc-sub {
+      color: rgba(15, 23, 42, 0.55);
+    }
+    .tc-meter {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    body.theme-light .tc-meter {
+      background: rgba(0, 0, 0, 0.08);
+    }
+    .tc-meter-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      width: 0%;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    .tc-meter-fill.warn {
+      background: linear-gradient(90deg, #f59e0b, #ef4444);
+    }
 
-    /* Quick Tools Grid */
-    .island-tools-grid {
+    /* Sub telemetry row */
+    .tele-sub-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .sub-tele-pill {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    body.theme-light .sub-tele-pill {
+      background: rgba(0, 0, 0, 0.02);
+      border-color: rgba(0, 0, 0, 0.05);
+    }
+    .stp-icon { font-size: 14px; }
+    .stp-info { display: flex; flex-direction: column; min-width: 0; }
+    .stp-label { font-size: 9px; font-weight: 700; color: rgba(255, 255, 255, 0.45); }
+    body.theme-light .stp-label { color: rgba(15, 23, 42, 0.45); }
+    .stp-val { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* TAB 2: AGENTS MONITOR */
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .agent-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    body.theme-light .agent-card {
+      background: rgba(0, 0, 0, 0.03);
+      border-color: rgba(0, 0, 0, 0.07);
+    }
+    .agent-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .agent-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .agent-icon { font-size: 14px; }
+    .agent-name { font-size: 12px; font-weight: 700; }
+    .agent-badge {
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 5px;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .agent-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10.5px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+    body.theme-light .agent-meta-row { color: rgba(15, 23, 42, 0.6); }
+
+    /* TAB 3: CLIPBOARD SHELF */
+    .clipboard-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .clip-search-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 5px 10px;
+      color: #ffffff;
+      font-size: 11.5px;
+      outline: none;
+    }
+    body.theme-light .clip-search-input {
+      background: rgba(0, 0, 0, 0.04);
+      border-color: rgba(0, 0, 0, 0.1);
+      color: #0f172a;
+    }
+    .clip-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 9px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+    .clip-btn:hover { background: rgba(255, 255, 255, 0.15); }
+    .clipboard-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      max-height: 205px;
+    }
+    .clip-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 7px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 11px;
+      transition: all 0.15s ease;
+    }
+    body.theme-light .clip-item {
+      background: rgba(0, 0, 0, 0.02);
+      border-color: rgba(0, 0, 0, 0.06);
+    }
+    .clip-item:hover {
+      background: rgba(37, 99, 235, 0.15);
+      border-color: rgba(96, 165, 250, 0.3);
+    }
+    .clip-text-wrap {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: rgba(255, 255, 255, 0.9);
+      font-family: monospace;
+    }
+    body.theme-light .clip-text-wrap { color: rgba(15, 23, 42, 0.9); }
+    .clip-meta {
+      font-size: 9.5px;
+      color: rgba(255, 255, 255, 0.45);
+      flex-shrink: 0;
+    }
+    .clip-copy-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      color: inherit;
+      padding: 2px 7px;
+      font-size: 10px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .clip-copy-btn:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+    /* TAB 4: SCRATCHPAD */
+    .scratchpad-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      height: 100%;
+    }
+    .scratchpad-textarea {
+      flex: 1;
+      height: 180px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 8px 10px;
+      color: #ffffff;
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      font-size: 11.5px;
+      line-height: 1.45;
+      resize: none;
+      outline: none;
+    }
+    body.theme-light .scratchpad-textarea {
+      background: rgba(0, 0, 0, 0.03);
+      border-color: rgba(0, 0, 0, 0.1);
+      color: #0f172a;
+    }
+    .scratchpad-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+    body.theme-light .scratchpad-footer { color: rgba(15, 23, 42, 0.5); }
+    .scratchpad-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* TAB 5: TOOLS */
+    .tools-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .tool-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    body.theme-light .tool-section-title { color: rgba(15, 23, 42, 0.5); }
+    .keep-awake-strip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 6px 8px;
+    }
+    body.theme-light .keep-awake-strip {
+      background: rgba(0, 0, 0, 0.03);
+      border-color: rgba(0, 0, 0, 0.06);
+    }
+    .ka-btn {
+      flex: 1;
+      padding: 5px 6px;
+      font-size: 10.5px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.65);
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    body.theme-light .ka-btn { color: rgba(15, 23, 42, 0.65); }
+    .ka-btn:hover { background: rgba(255, 255, 255, 0.08); }
+    .ka-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(37, 99, 235, 0.4);
+    }
+    .quick-actions-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
     }
-    .island-tool-btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 14px;
+    .qa-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
       padding: 8px 6px;
       display: flex;
       flex-direction: column;
@@ -342,29 +737,43 @@
       gap: 4px;
       cursor: pointer;
       color: inherit;
-      transition: all 0.18s ease;
+      transition: all 0.15s ease;
     }
-    .island-tool-btn:hover {
-      background: rgba(37, 99, 235, 0.28);
-      border-color: rgba(96, 165, 250, 0.45);
-      transform: translateY(-2px);
+    body.theme-light .qa-btn {
+      background: rgba(0, 0, 0, 0.03);
+      border-color: rgba(0, 0, 0, 0.06);
     }
-    body.theme-light .island-tool-btn {
-      background: rgba(0, 0, 0, 0.04);
-      border-color: rgba(0, 0, 0, 0.08);
+    .qa-btn:hover {
+      background: rgba(37, 99, 235, 0.22);
+      border-color: rgba(96, 165, 250, 0.4);
+      transform: translateY(-1px);
     }
-    .it-icon {
-      font-size: 18px;
+    .qa-icon { font-size: 17px; }
+    .qa-text { font-size: 10.5px; font-weight: 600; text-align: center; }
+
+    /* Cleaning Mode Overlay */
+    .cleaning-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 200;
+      border-radius: 24px;
+      text-align: center;
+      padding: 20px;
     }
-    .it-text {
-      font-size: 11px;
-      font-weight: 600;
-    }
+    .cleaning-title { font-size: 16px; font-weight: 700; color: #38bdf8; }
+    .cleaning-sub { font-size: 12px; color: rgba(255, 255, 255, 0.7); max-width: 320px; }
   </style>
 </head>
 <body>
   <div class="island-shell" id="island-shell" tabindex="0">
-    <!-- Compact Capsule -->
+    <!-- Compact Dynamic Capsule -->
     <div class="island-compact" id="island-compact">
       <div class="island-left">
         <div class="island-dot-avatar" id="island-dot-avatar" title="Meet Mave (Click to pet or open HUD)">
@@ -391,12 +800,13 @@
           <span class="i-bar bar-3"></span>
           <span class="i-bar bar-4"></span>
         </div>
-        <span class="island-node-pill" id="island-node-pill">Host AI</span>
+        <span class="island-node-pill" id="island-node-pill">Vorssaint OS</span>
       </div>
     </div>
 
-    <!-- Expanded Vorssaint HUD Card -->
+    <!-- Expanded Vorssaint Modular HUD Card -->
     <div class="island-expanded" id="island-expanded">
+      <!-- HUD Header -->
       <div class="island-exp-header">
         <div class="island-exp-profile">
           <div class="island-dot-avatar exp-size" id="island-dot-avatar-exp">
@@ -411,54 +821,274 @@
             </div>
           </div>
           <div>
-            <div class="island-exp-name" id="island-exp-name">Mave Companion</div>
-            <div class="island-exp-sub" id="island-exp-sub">Ready • Device Extension Active</div>
+            <div class="island-exp-name">
+              <span>Mave Companion</span>
+              <span class="island-exp-badge">Vorssaint-Utils</span>
+            </div>
+            <div class="island-exp-sub" id="island-exp-sub">Active • Telemetry & Copilot Bridge</div>
           </div>
         </div>
         <div class="island-exp-top-actions">
           <button type="button" class="island-action-btn" id="island-pet-btn" title="Pet Mave">🐾 Pet</button>
-          <button type="button" class="island-action-btn" id="island-collapse-btn" title="Collapse Island (Esc)">✕</button>
+          <button type="button" class="island-action-btn" id="island-collapse-btn" title="Collapse (Esc)">✕</button>
         </div>
       </div>
 
-      <!-- Live Metrics Row -->
-      <div class="island-metrics-row">
-        <div class="island-metric">
-          <span class="im-label">ROLE</span>
-          <span class="im-val" id="im-node-role">Host Brain</span>
+      <!-- Navigation Tabs Strip -->
+      <div class="hud-tabs">
+        <button type="button" class="hud-tab-btn active" data-tab="telemetry">
+          <span>📊</span>
+          <span>System</span>
+        </button>
+        <button type="button" class="hud-tab-btn" data-tab="agents">
+          <span>🤖</span>
+          <span>AI Monitor</span>
+        </button>
+        <button type="button" class="hud-tab-btn" data-tab="clipboard">
+          <span>📋</span>
+          <span>Clipboard</span>
+        </button>
+        <button type="button" class="hud-tab-btn" data-tab="scratchpad">
+          <span>📝</span>
+          <span>Notes</span>
+        </button>
+        <button type="button" class="hud-tab-btn" data-tab="tools">
+          <span>🛠️</span>
+          <span>Tools</span>
+        </button>
+      </div>
+
+      <!-- Panes Container -->
+      <div class="hud-pane-container">
+        <!-- 1. System Telemetry Pane -->
+        <div class="hud-pane active" id="pane-telemetry">
+          <div class="telemetry-grid">
+            <div class="tele-card">
+              <div class="tele-card-head">
+                <span class="tc-label">CPU LOAD</span>
+                <span class="tc-icon">⚡</span>
+              </div>
+              <div class="tc-val" id="tc-cpu-val">0%</div>
+              <div class="tc-meter"><div class="tc-meter-fill" id="tc-cpu-fill" style="width: 0%"></div></div>
+              <div class="tc-sub" id="tc-cpu-sub">0 Cores • 0.0 GHz</div>
+            </div>
+
+            <div class="tele-card">
+              <div class="tele-card-head">
+                <span class="tc-label">RAM USAGE</span>
+                <span class="tc-icon">💾</span>
+              </div>
+              <div class="tc-val" id="tc-ram-val">0%</div>
+              <div class="tc-meter"><div class="tc-meter-fill" id="tc-ram-fill" style="width: 0%"></div></div>
+              <div class="tc-sub" id="tc-ram-sub">0 / 0 GB</div>
+            </div>
+
+            <div class="tele-card">
+              <div class="tele-card-head">
+                <span class="tc-label">GPU & VRAM</span>
+                <span class="tc-icon">🎮</span>
+              </div>
+              <div class="tc-val" id="tc-gpu-val">Active</div>
+              <div class="tc-meter"><div class="tc-meter-fill" id="tc-gpu-fill" style="width: 0%"></div></div>
+              <div class="tc-sub" id="tc-gpu-sub">GPU Hardware</div>
+            </div>
+
+            <div class="tele-card">
+              <div class="tele-card-head">
+                <span class="tc-label">PRIMARY DISK</span>
+                <span class="tc-icon">💽</span>
+              </div>
+              <div class="tc-val" id="tc-disk-val">0%</div>
+              <div class="tc-meter"><div class="tc-meter-fill" id="tc-disk-fill" style="width: 0%"></div></div>
+              <div class="tc-sub" id="tc-disk-sub">0 GB Free</div>
+            </div>
+          </div>
+
+          <div class="tele-sub-row">
+            <div class="sub-tele-pill">
+              <span class="stp-icon">🌐</span>
+              <div class="stp-info">
+                <span class="stp-label">NETWORK TRAFFIC</span>
+                <span class="stp-val" id="tc-net-val">↓ 0 KB/s • ↑ 0 KB/s</span>
+              </div>
+            </div>
+            <div class="sub-tele-pill">
+              <span class="stp-icon">🔋</span>
+              <div class="stp-info">
+                <span class="stp-label">POWER / BATTERY</span>
+                <span class="stp-val" id="tc-power-val">AC Plugged (100%)</span>
+              </div>
+            </div>
+            <div class="sub-tele-pill">
+              <span class="stp-icon">☕</span>
+              <div class="stp-info">
+                <span class="stp-label">KEEP AWAKE</span>
+                <span class="stp-val" id="tc-awake-val">Disabled (System Sleep)</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="island-metric">
-          <span class="im-label">PLATFORM</span>
-          <span class="im-val" id="im-platform-val">Windows OS</span>
+
+        <!-- 2. AI Agents Monitor Pane -->
+        <div class="hud-pane" id="pane-agents">
+          <div class="agents-grid">
+            <div class="agent-card">
+              <div class="agent-card-head">
+                <div class="agent-title-wrap">
+                  <span class="agent-icon">💻</span>
+                  <span class="agent-name">Mave Local (Qwen 3-VL)</span>
+                </div>
+                <span class="agent-badge" id="ag-local-badge">Ready</span>
+              </div>
+              <div class="agent-meta-row">
+                <span>Model Architecture</span>
+                <span id="ag-local-arch">8B Vision-Language</span>
+              </div>
+              <div class="agent-meta-row">
+                <span>Context Utilization</span>
+                <span id="ag-local-ctx">Active (On-Device)</span>
+              </div>
+            </div>
+
+            <div class="agent-card">
+              <div class="agent-card-head">
+                <div class="agent-title-wrap">
+                  <span class="agent-icon">⚡</span>
+                  <span class="agent-name">Claude 3.7 Sonnet</span>
+                </div>
+                <span class="agent-badge" id="ag-claude-badge">Ready</span>
+              </div>
+              <div class="agent-meta-row">
+                <span>Hybrid Routing</span>
+                <span>Tier 1 Fallback</span>
+              </div>
+              <div class="agent-meta-row">
+                <span>Context Window</span>
+                <span>200,000 Tokens</span>
+              </div>
+            </div>
+
+            <div class="agent-card">
+              <div class="agent-card-head">
+                <div class="agent-title-wrap">
+                  <span class="agent-icon">✨</span>
+                  <span class="agent-name">ChatGPT 4o</span>
+                </div>
+                <span class="agent-badge" id="ag-chatgpt-badge">Connected</span>
+              </div>
+              <div class="agent-meta-row">
+                <span>Rate Limits</span>
+                <span id="ag-chatgpt-limits">Healthy</span>
+              </div>
+              <div class="agent-meta-row">
+                <span>Reset Countdown</span>
+                <span id="ag-chatgpt-reset">100% Remaining</span>
+              </div>
+            </div>
+
+            <div class="agent-card">
+              <div class="agent-card-head">
+                <div class="agent-title-wrap">
+                  <span class="agent-icon">🦾</span>
+                  <span class="agent-name">GitHub Copilot</span>
+                </div>
+                <span class="agent-badge" id="ag-copilot-badge">Active</span>
+              </div>
+              <div class="agent-meta-row">
+                <span>Workspace Hook</span>
+                <span id="ag-copilot-hook">VSCode Bridge</span>
+              </div>
+              <div class="agent-meta-row">
+                <span>Completions</span>
+                <span id="ag-copilot-stats">Synced</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="island-metric">
-          <span class="im-label">MESH LINK</span>
-          <span class="im-val" id="im-mesh-val">UDP:4045 Active</span>
+
+        <!-- 3. Clipboard Shelf Pane -->
+        <div class="hud-pane" id="pane-clipboard">
+          <div class="clipboard-controls">
+            <input type="search" class="clip-search-input" id="clip-search-input" placeholder="Search clipboard history…">
+            <button type="button" class="clip-btn" id="btn-clip-clear" title="Clear History">🗑️ Clear</button>
+          </div>
+          <div class="clipboard-list" id="clipboard-list">
+            <!-- Rendered dynamically -->
+          </div>
         </div>
-        <div class="island-metric">
-          <span class="im-label">AUTONOMOUS</span>
-          <span class="im-val" id="im-dag-val">DAG Ready</span>
+
+        <!-- 4. Scratchpad Notes Pane -->
+        <div class="hud-pane" id="pane-scratchpad">
+          <div class="scratchpad-wrap">
+            <textarea class="scratchpad-textarea" id="scratchpad-textarea" placeholder="Type floating quick notes, thoughts, or scratch code here… (Autosaved to vorssaint_scratchpad.md)" spellcheck="false"></textarea>
+            <div class="scratchpad-footer">
+              <span id="scratchpad-count">0 chars • 0 words</span>
+              <div class="scratchpad-actions">
+                <button type="button" class="clip-btn" id="btn-scratchpad-copy">📋 Copy All</button>
+                <button type="button" class="clip-btn" id="btn-scratchpad-clear">Clear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Quick Tools Pane -->
+        <div class="hud-pane" id="pane-tools">
+          <div class="tools-pane">
+            <div class="tool-section-title">KEEP AWAKE (CAFFEINATE)</div>
+            <div class="keep-awake-strip" id="keep-awake-strip">
+              <button type="button" class="ka-btn active" data-ka="off">Off (Sleep)</button>
+              <button type="button" class="ka-btn" data-ka="15m">15 Min</button>
+              <button type="button" class="ka-btn" data-ka="1h">1 Hour</button>
+              <button type="button" class="ka-btn" data-ka="4h">4 Hours</button>
+              <button type="button" class="ka-btn" data-ka="indefinite">∞ Indefinite</button>
+            </div>
+
+            <div class="tool-section-title">QUICK SYSTEM UTILITIES</div>
+            <div class="quick-actions-grid">
+              <button type="button" class="qa-btn" id="tool-ocr">
+                <span class="qa-icon">🔍</span>
+                <span class="qa-text">Screen OCR</span>
+              </button>
+              <button type="button" class="qa-btn" id="tool-color-picker">
+                <span class="qa-icon">🎨</span>
+                <span class="qa-text">Color Picker</span>
+              </button>
+              <button type="button" class="qa-btn" id="tool-cleaning">
+                <span class="qa-icon">🧼</span>
+                <span class="qa-text">Clean Lock</span>
+              </button>
+              <button type="button" class="qa-btn" id="tool-terminal">
+                <span class="qa-icon">⚡</span>
+                <span class="qa-text">Terminal</span>
+              </button>
+              <button type="button" class="qa-btn" id="tool-voice">
+                <span class="qa-icon">🎙️</span>
+                <span class="qa-text">Voice Mode</span>
+              </button>
+              <button type="button" class="qa-btn" id="tool-chat">
+                <span class="qa-icon">💬</span>
+                <span class="qa-text">Open Chat</span>
+              </button>
+              <button type="button" class="qa-btn" id="tool-canvas">
+                <span class="qa-icon">◫</span>
+                <span class="qa-text">Canvas</span>
+              </button>
+              <button type="button" class="qa-btn" id="tool-settings">
+                <span class="qa-icon">⚙️</span>
+                <span class="qa-text">Settings</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Quick Island Utilities -->
-      <div class="island-tools-grid">
-        <button type="button" class="island-tool-btn" id="tool-chat">
-          <span class="it-icon">💬</span>
-          <span class="it-text">Open Chat</span>
-        </button>
-        <button type="button" class="island-tool-btn" id="tool-voice">
-          <span class="it-icon">🎙️</span>
-          <span class="it-text">Voice Mode</span>
-        </button>
-        <button type="button" class="island-tool-btn" id="tool-cmd">
-          <span class="it-icon">⚡</span>
-          <span class="it-text">Terminal</span>
-        </button>
-        <button type="button" class="island-tool-btn" id="tool-settings">
-          <span class="it-icon">⚙️</span>
-          <span class="it-text">Settings</span>
-        </button>
+      <!-- Cleaning Mode Overlay (Hidden by default) -->
+      <div class="cleaning-overlay" id="cleaning-overlay" hidden>
+        <span style="font-size: 32px">🧼</span>
+        <div class="cleaning-title">Keyboard Cleaning Mode Active</div>
+        <div class="cleaning-sub">All keyboard &amp; trackpad inputs are safely locked so you can wipe and sanitize your keyboard.</div>
+        <div style="font-size: 20px; font-weight: 700; color: #60a5fa" id="cleaning-timer">10s</div>
+        <button type="button" class="island-action-btn" id="btn-exit-cleaning">Exit Cleaning Mode (Esc)</button>
       </div>
     </div>
   </div>

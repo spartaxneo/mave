@@ -645,11 +645,20 @@ body.running .send .i-stop { display: block; }
 }
 .model-picker-wrap {
   position: relative; z-index: 10;
+  flex-shrink: 0;
 }
 .model-picker-btn {
   display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 9px;
   border: 1px solid transparent; background: transparent; cursor: pointer; color: var(--text-1);
   font-size: 14.5px; font-weight: 650; transition: all var(--fast);
+  white-space: nowrap; flex-shrink: 0; min-width: max-content;
+}
+.model-picker-name {
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
 }
 .model-picker-btn:hover {
   background: var(--surface-2); border-color: var(--border-subtle);
@@ -3151,11 +3160,33 @@ body.theme-light .rc-tag {
 
 /* Ghost AI Core Omnibox & Command Palette (Ctrl+K) */
 .omnibox-trigger-wrap {
-  margin: 0 16px;
+  margin: 0 12px;
   display: flex;
   align-items: center;
   flex: 1;
-  max-width: 440px;
+  max-width: 360px;
+  min-width: 36px;
+}
+
+@media (max-width: 1180px) {
+  .omnibox-trigger-wrap {
+    max-width: 220px;
+  }
+}
+@media (max-width: 980px) {
+  .omnibox-trigger-wrap {
+    flex: 0 0 auto;
+    margin: 0 4px;
+    max-width: 36px;
+  }
+  .omnibox-trigger-text,
+  .omnibox-trigger-kbd {
+    display: none;
+  }
+  .omnibox-trigger-btn {
+    padding: 6px 8px;
+    border-radius: 8px;
+  }
 }
 
 .omnibox-trigger-btn {

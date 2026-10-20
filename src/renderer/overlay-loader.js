@@ -44,6 +44,15 @@
     card.dataset.state = ai.state === 'preparing' ? 'loading' : ai.state;
     const busy = ai.state === 'loading' || ai.state === 'preparing';
     if (dismissed && ai.state !== 'failed') { hide(); return; }
+    if (ai.state === 'ready') {
+      text.textContent = 'Mave is ready';
+      pct.textContent = '';
+      bar.style.width = '100%';
+      sub.textContent = voice.state === 'ready' ? 'Voice ready' : 'Local AI active';
+      show();
+      hide(2800);
+      return;
+    }
     if (busy || (voice.state === 'loading' && ai.state !== 'failed')) {
       clearTimeout(hideTimer);
       shownLoading = true;

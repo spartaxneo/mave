@@ -25,7 +25,7 @@
     'billing', 'usage', 'analytics', 'data-controls', 'storage',
     'safety', 'security', 'governance', 'trusted-contact',
     'account', 'superpowers', 'assistant', 'nodes', 'companion',
-    'firebase', 'workspace', 'sentinel'
+    'firebase', 'workspace', 'sentinel', 'vorssaint'
   ]);
   let activeMain = 'home';
   let micTesting = false;
@@ -57,6 +57,7 @@
     if (tab === 'safety') loadSafetySettings();
     if (tab === 'data-controls') loadDataControlsSettings();
     if (tab === 'billing') loadBillingSettings();
+    if (tab === 'vorssaint') loadVorssaintSettings();
     if (tab === 'workspace' && window.__maveNodeController) window.__maveNodeController.initWorkspace();
     if (tab === 'firebase' && window.__maveNodeController) window.__maveNodeController.initFirebase();
     if (tab === 'nodes' && window.__maveNodeController) window.__maveNodeController.updateNodeDisplay();
@@ -88,6 +89,7 @@
     });
     document.querySelectorAll('#pane > [data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== section; });
     $('section-title').textContent = section === 'assistant' ? s.assistantName : TITLES[section];
+    document.title = section === 'home' ? (s.assistantName || 'Mave') : `${s.assistantName || 'Mave'} · ${TITLES[section] || 'Settings'}`;
     $('pane').scrollTop = 0;
     $('pane').classList.toggle('fill', section === 'home' || section === 'terminal' || section === 'data' || section === 'channels');
     document.dispatchEvent(new CustomEvent('section-shown', { detail: section }));
@@ -289,7 +291,7 @@
     document.querySelectorAll('.name-slot').forEach((el) => { el.textContent = n; });
     const pane = document.querySelector('[data-pane="assistant"]');
     if (pane && !pane.hidden && $('section-title')) $('section-title').textContent = n;
-    document.title = `${n} Settings`;
+    document.title = activeMain === 'home' ? n : `${n} Settings`;
   }
   async function refreshWake() {
     const st = $('wake-status');
@@ -1805,6 +1807,62 @@
       const btn = $('btn-save-tc');
       btn.textContent = '✓ Saved Contact';
       setTimeout(() => { btn.textContent = 'Save Trusted Contact'; }, 1500);
+    });
+  }
+
+  // --- Vorssaint OS Toolkit Settings Loader ---
+  async function loadVorssaintSettings() {
+    try {
+      const vs = await api.invoke('vorssaint:settings-get');
+      if (!vs) return;
+      if ($('vs-toggle-master')) $('vs-toggle-master').checked = vs.enabled !== false;
+      if ($('vs-mod-telemetry')) $('vs-mod-telemetry').checked = vs.enableTelemetry !== false;
+      if ($('vs-mod-agents')) $('vs-mod-agents').checked = vs.enableAgentStrip !== false;
+      if ($('vs-mod-island')) $('vs-mod-island').checked = vs.showDynamicIsland !== false;
+      if ($('vs-mod-clipboard')) $('vs-mod-clipboard').checked = vs.enableClipboardShelf !== false;
+      if ($('vs-mod-scratchpad')) $('vs-mod-scratchpad').checked = vs.enableScratchpad !== false;
+      if ($('vs-mod-caffeinate')) $('vs-mod-caffeinate').checked = vs.enableKeepAwake !== false;
+      if ($('vs-mod-screen')) $('vs-mod-screen').checked = vs.enableScreenTools !== false;
+      if ($('vs-mod-cleaning')) $('vs-mod-cleaning').checked = vs.enableCleaningMode !== false;
+      if ($('vs-island-hover-expand')) $('vs-island-hover-expand').checked = vs.expandOnHover !== false;
+      if ($('vs-mascot-freq')) $('vs-mascot-freq').value = vs.mascotVisitFreq || 'normal';
+      if ($('vs-island-width')) {
+        $('vs-island-width').value = vs.islandWidth || 360;
+        if ($('vs-island-width-val')) $('vs-island-width-val').textContent = `${vs.islandWidth || 360}px`;
+      }
+      if ($('vs-alert-cpu')) $('vs-alert-cpu').value = vs.alertHighCpu || 85;
+      if ($('vs-alert-temp')) $('vs-alert-temp').value = vs.alertHighTemp || 80;
+    } catch {}
+  }
+
+  if ($('vs-island-width')) {
+    $('vs-island-width').addEventListener('input', (e) => {
+      if ($('vs-island-width-val')) $('vs-island-width-val').textContent = `${e.target.value}px`;
+    });
+  }
+
+  if ($('btn-save-vorssaint')) {
+    $('btn-save-vorssaint').addEventListener('click', async () => {
+      const patch = {
+        enabled: $('vs-toggle-master') ? $('vs-toggle-master').checked : true,
+        enableTelemetry: $('vs-mod-telemetry') ? $('vs-mod-telemetry').checked : true,
+        enableAgentStrip: $('vs-mod-agents') ? $('vs-mod-agents').checked : true,
+        showDynamicIsland: $('vs-mod-island') ? $('vs-mod-island').checked : true,
+        enableClipboardShelf: $('vs-mod-clipboard') ? $('vs-mod-clipboard').checked : true,
+        enableScratchpad: $('vs-mod-scratchpad') ? $('vs-mod-scratchpad').checked : true,
+        enableKeepAwake: $('vs-mod-caffeinate') ? $('vs-mod-caffeinate').checked : true,
+        enableScreenTools: $('vs-mod-screen') ? $('vs-mod-screen').checked : true,
+        enableCleaningMode: $('vs-mod-cleaning') ? $('vs-mod-cleaning').checked : true,
+        expandOnHover: $('vs-island-hover-expand') ? $('vs-island-hover-expand').checked : true,
+        mascotVisitFreq: $('vs-mascot-freq') ? $('vs-mascot-freq').value : 'normal',
+        islandWidth: $('vs-island-width') ? parseInt($('vs-island-width').value, 10) : 360,
+        alertHighCpu: $('vs-alert-cpu') ? parseInt($('vs-alert-cpu').value, 10) : 85,
+        alertHighTemp: $('vs-alert-temp') ? parseInt($('vs-alert-temp').value, 10) : 80,
+      };
+      await api.invoke('vorssaint:settings-update', patch);
+      const btn = $('btn-save-vorssaint');
+      btn.textContent = '✓ Saved Settings';
+      setTimeout(() => { btn.textContent = 'Save Vorssaint Settings'; }, 1600);
     });
   }
 
