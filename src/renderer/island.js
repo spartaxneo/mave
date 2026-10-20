@@ -438,6 +438,9 @@ class IslandMascot {
     this.pollTelemetry();
     this.pollAgents();
     this.syncKeepAwake();
+    if (api && api.invoke) {
+      api.invoke('tunnel:status').then((st) => this.updateTunnelStatus(st)).catch(() => {});
+    }
   }
 
   async collapse() {
@@ -591,6 +594,45 @@ class IslandMascot {
         if (api && api.invoke) api.invoke('app:open-settings', 'vorssaint').catch(() => {});
       });
     }
+
+    const toolTunnel = document.getElementById('tool-tunnel');
+    if (toolTunnel) {
+      toolTunnel.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (api && api.invoke) {
+          const cur = await api.invoke('tunnel:status').catch(() => null);
+          if (cur && cur.active) {
+            await api.invoke('tunnel:stop');
+            this.updateTunnelStatus({ active: false });
+          } else {
+            this.updateTunnelStatus({ connecting: true });
+            const res = await api.invoke('tunnel:start');
+            this.updateTunnelStatus(res && res.ok ? { active: true, url: res.url } : { active: false, error: res && res.error });
+          }
+        }
+      });
+    }
+
+    const stpTunnelPill = document.getElementById('stp-tunnel-pill');
+    if (stpTunnelPill) {
+      stpTunnelPill.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (api && api.invoke) {
+          const cur = await api.invoke('tunnel:status').catch(() => null);
+          if (cur && cur.active && cur.url) {
+            navigator.clipboard.writeText(cur.url);
+            const valEl = document.getElementById('tc-tunnel-val');
+            if (valEl) {
+              const prev = valEl.textContent;
+              valEl.textContent = '✓ URL Copied!';
+              setTimeout(() => { valEl.textContent = prev; }, 1800);
+            }
+          } else {
+            this.switchTab('tools');
+          }
+        }
+      });
+    }
   }
 
   // --- IPC EVENT LISTENERS ---
@@ -647,6 +689,27 @@ class IslandMascot {
       setTimeout(() => this.setStatus('Mave Core', 'idle'), 3000);
       this.pollTelemetry();
     });
+
+    // Cloudflare Public Tunnel Updates
+    api.on('tunnel:update', (status) => this.updateTunnelStatus(status));
+  }
+
+  updateTunnelStatus(status) {
+    if (!status) return;
+    const valEl = document.getElementById('tc-tunnel-val');
+    const toolText = document.getElementById('tool-tunnel-text');
+    if (status.connecting) {
+      if (valEl) valEl.textContent = 'Connecting…';
+      if (toolText) toolText.textContent = 'Connecting…';
+      return;
+    }
+    if (status.active && status.url) {
+      if (valEl) valEl.textContent = 'Live (Click to Copy)';
+      if (toolText) toolText.textContent = 'Online 🟢';
+    } else {
+      if (valEl) valEl.textContent = 'Local Wi-Fi Only';
+      if (toolText) toolText.textContent = 'Host Online';
+    }
   }
 }
 

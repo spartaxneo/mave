@@ -860,6 +860,24 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return getCDMEngine().classify(text, labels, options);
   });
 
+  // Cloudflare Free Internet Gateway Tunnel
+  handle('tunnel:status', () => {
+    const { getCloudflareTunnelManager } = require('./remote/cloudflare_tunnel');
+    return getCloudflareTunnelManager({ settings, windows, logger }).getStatus();
+  });
+  handle('tunnel:start', (payload) => {
+    const { getCloudflareTunnelManager } = require('./remote/cloudflare_tunnel');
+    return getCloudflareTunnelManager({ settings, windows, logger }).startTunnel(payload || {});
+  });
+  handle('tunnel:stop', () => {
+    const { getCloudflareTunnelManager } = require('./remote/cloudflare_tunnel');
+    return getCloudflareTunnelManager({ settings, windows, logger }).stopTunnel();
+  });
+  handle('tunnel:save-token', (token) => {
+    settings.update({ cloudflareTunnelToken: token });
+    return { ok: true };
+  });
+
   // Autonomous Sentinel & Activity Learning
   const { getAutonomousSentinel } = require('./sentinel/autonomous_sentinel');
   const sentinel = getAutonomousSentinel({ settings, windows, logger });

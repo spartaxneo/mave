@@ -905,11 +905,11 @@
           </div>
 
           <div class="tele-sub-row">
-            <div class="sub-tele-pill">
+            <div class="sub-tele-pill" id="stp-tunnel-pill" title="Click to toggle or copy Cloudflare Online Link" style="cursor: pointer;">
               <span class="stp-icon">🌐</span>
               <div class="stp-info">
-                <span class="stp-label">NETWORK TRAFFIC</span>
-                <span class="stp-val" id="tc-net-val">↓ 0 KB/s • ↑ 0 KB/s</span>
+                <span class="stp-label">PUBLIC GATEWAY</span>
+                <span class="stp-val" id="tc-tunnel-val">Local Wi-Fi Only</span>
               </div>
             </div>
             <div class="sub-tele-pill">
@@ -1072,6 +1072,10 @@
               <button type="button" class="qa-btn" id="tool-canvas">
                 <span class="qa-icon">◫</span>
                 <span class="qa-text">Canvas</span>
+              </button>
+              <button type="button" class="qa-btn" id="tool-tunnel" title="Toggle Cloudflare Internet Hosting">
+                <span class="qa-icon">🌐</span>
+                <span class="qa-text" id="tool-tunnel-text">Host Online</span>
               </button>
               <button type="button" class="qa-btn" id="tool-settings">
                 <span class="qa-icon">⚙️</span>

@@ -60,7 +60,10 @@
     if (tab === 'vorssaint') loadVorssaintSettings();
     if (tab === 'workspace' && window.__maveNodeController) window.__maveNodeController.initWorkspace();
     if (tab === 'firebase' && window.__maveNodeController) window.__maveNodeController.initFirebase();
-    if (tab === 'nodes' && window.__maveNodeController) window.__maveNodeController.updateNodeDisplay();
+    if (tab === 'nodes') {
+      if (window.__maveNodeController) window.__maveNodeController.updateNodeDisplay();
+      loadTunnelSettings();
+    }
     requestAnimationFrame(() => {
       document.querySelectorAll('#settings-content section:not([hidden]) .segmented').forEach((el) => el._seg && el._seg.set(el._value()));
     });
@@ -2050,6 +2053,114 @@
       localStorage.setItem('mave_host_pin', e.target.value.trim());
     });
   }
+
+  // --- Cloudflare Internet Gateway Tunnel Controller ---
+  async function loadTunnelSettings() {
+    try {
+      const status = await api.invoke('tunnel:status');
+      updateTunnelUI(status);
+    } catch {}
+  }
+
+  function updateTunnelUI(status) {
+    if (!status) return;
+    const toggle = $('toggle-cloudflare-tunnel');
+    const badge = $('tunnel-status-badge');
+    const rowUrl = $('row-tunnel-url');
+    const displayUrl = $('tunnel-url-display');
+
+    if (toggle) toggle.checked = Boolean(status.active);
+    if (badge) {
+      if (status.active) {
+        badge.textContent = '🟢 Live Worldwide';
+        badge.style.background = 'rgba(16, 185, 129, 0.15)';
+        badge.style.color = '#34d399';
+        badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+      } else if (status.error) {
+        badge.textContent = '⚠️ Error';
+        badge.style.background = 'rgba(239, 68, 68, 0.15)';
+        badge.style.color = '#f87171';
+        badge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+      } else {
+        badge.textContent = '🔴 Inactive';
+        badge.style.background = 'rgba(239, 68, 68, 0.15)';
+        badge.style.color = '#f87171';
+        badge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+      }
+    }
+
+    if (rowUrl && displayUrl) {
+      if (status.active && status.url) {
+        rowUrl.style.display = 'flex';
+        displayUrl.value = status.url;
+      } else {
+        rowUrl.style.display = 'none';
+        displayUrl.value = '';
+      }
+    }
+  }
+
+  function initTunnelHandlers() {
+    const toggle = $('toggle-cloudflare-tunnel');
+    if (toggle) {
+      toggle.addEventListener('change', async () => {
+        const badge = $('tunnel-status-badge');
+        if (toggle.checked) {
+          if (badge) {
+            badge.textContent = '🟡 Connecting...';
+            badge.style.background = 'rgba(245, 158, 11, 0.15)';
+            badge.style.color = '#fbbf24';
+            badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+          }
+          const res = await api.invoke('tunnel:start');
+          updateTunnelUI(res && res.ok ? { active: true, url: res.url } : { active: false, error: res && res.error });
+        } else {
+          await api.invoke('tunnel:stop');
+          updateTunnelUI({ active: false });
+        }
+      });
+    }
+
+    const copyBtn = $('btn-tunnel-copy');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const displayUrl = $('tunnel-url-display');
+        if (displayUrl && displayUrl.value) {
+          navigator.clipboard.writeText(displayUrl.value);
+          copyBtn.textContent = '✓ Copied!';
+          setTimeout(() => { copyBtn.textContent = '📋 Copy'; }, 1600);
+        }
+      });
+    }
+
+    const openBtn = $('btn-tunnel-open');
+    if (openBtn) {
+      openBtn.addEventListener('click', () => {
+        const displayUrl = $('tunnel-url-display');
+        if (displayUrl && displayUrl.value) {
+          window.open(displayUrl.value, '_blank');
+        }
+      });
+    }
+
+    const saveTokenBtn = $('btn-tunnel-save-token');
+    if (saveTokenBtn) {
+      saveTokenBtn.addEventListener('click', async () => {
+        const tokenInput = $('tunnel-custom-token');
+        if (tokenInput && tokenInput.value.trim()) {
+          await api.invoke('tunnel:save-token', tokenInput.value.trim());
+          saveTokenBtn.textContent = '✓ Saved';
+          setTimeout(() => { saveTokenBtn.textContent = 'Save'; }, 1500);
+        }
+      });
+    }
+
+    if (api && api.on) {
+      api.on('tunnel:update', (status) => updateTunnelUI(status));
+    }
+  }
+
+  initTunnelHandlers();
 
   show(new URLSearchParams(location.search).get('section') || 'home');
 })();

@@ -1288,6 +1288,42 @@
               </div>
             </div>
 
+            <!-- Cloudflare Free Internet Gateway Section -->
+            <div class="section-label">Cloudflare Free Internet Gateway (Host Mave Online)</div>
+            <div class="group">
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Host Online over Public Internet</span>
+                  <span class="hint">Exposes Mave to remote devices on cellular 5G/Wi-Fi via Cloudflare Quick Tunnel ($0 forever, zero router port forwarding).</span>
+                </div>
+                <div class="control" style="display: flex; align-items: center; gap: 10px;">
+                  <span class="badge" id="tunnel-status-badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 600;">🔴 Inactive</span>
+                  <label class="switch"><input type="checkbox" id="toggle-cloudflare-tunnel"><span class="track"></span></label>
+                </div>
+              </div>
+              <div class="row" id="row-tunnel-url" style="display: none;">
+                <div class="label">
+                  <span class="headline">Public HTTPS Gateway URL</span>
+                  <span class="hint">Open this link from any smartphone, tablet, or laptop worldwide to use Mave.</span>
+                </div>
+                <div class="control" style="display: flex; gap: 8px; width: 100%; max-width: 440px;">
+                  <input class="field mono" id="tunnel-url-display" readonly style="flex: 1; font-size: 12px; background: rgba(0,0,0,0.3);" value="">
+                  <button type="button" class="btn secondary small" id="btn-tunnel-copy" title="Copy public URL">📋 Copy</button>
+                  <button type="button" class="btn secondary small" id="btn-tunnel-open" title="Open in browser">🔗 Open</button>
+                </div>
+              </div>
+              <div class="row">
+                <div class="label">
+                  <span class="headline">Custom Cloudflare Tunnel Token (Optional)</span>
+                  <span class="hint">If you have your own Cloudflare domain, paste your tunnel token here to use a permanent custom domain.</span>
+                </div>
+                <div class="control" style="display: flex; gap: 8px;">
+                  <input class="field mono" id="tunnel-custom-token" type="password" placeholder="eyJhIjoi..." style="width: 220px;">
+                  <button type="button" class="btn secondary small" id="btn-tunnel-save-token">Save</button>
+                </div>
+              </div>
+            </div>
+
             <!-- Cross-Platform Usecases & Capabilities -->
             <div class="section-label">Platform Capabilities & Usecases</div>
             <div class="group">
