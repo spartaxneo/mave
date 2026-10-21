@@ -2992,6 +2992,10 @@
 
   document.addEventListener('section-shown', (e) => { if (e.detail === 'home' && $('prompt')) setTimeout(() => $('prompt').focus(), 60); });
   renderSetup();
-  api.invoke('app:info').then((info) => setState(info.state));
-  api.send('panel:ready');
+  if (api && api.invoke) {
+    api.invoke('app:info').then((info) => {
+      if (info && info.state) setState(info.state);
+    }).catch(() => {});
+  }
+  if (api && api.send) api.send('panel:ready');
 })();

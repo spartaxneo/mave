@@ -439,7 +439,7 @@ class WindowManager {
     if (!this.islandWindow || this.islandWindow.isDestroyed()) return;
     const { workArea: wa } = screen.getPrimaryDisplay();
     const W = expanded ? 580 : 360;
-    const H = expanded ? 390 : 46;
+    const H = expanded ? 414 : 46;
     const x = Math.round(wa.x + (wa.width - W) / 2);
     const y = Math.max(0, wa.y + 4);
     this.islandWindow.setBounds({ x, y, width: W, height: H });

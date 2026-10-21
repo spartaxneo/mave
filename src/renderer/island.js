@@ -25,6 +25,7 @@ class IslandMascot {
     this.initScratchpad();
     this.initClipboard();
     this.initKeepAwake();
+    this.initMediaMixer();
     this.initIpcListeners();
 
     // Start background telemetry polling
@@ -61,6 +62,8 @@ class IslandMascot {
       this.pollAgents();
     } else if (tab === 'telemetry') {
       this.pollTelemetry();
+    } else if (tab === 'media') {
+      // Media pane active
     }
   }
 
@@ -669,9 +672,113 @@ class IslandMascot {
     }
   }
 
+  // --- MEDIA & VOLUME MIXER (AUTHENTIC VORSSAINT OS) ---
+  initMediaMixer() {
+    this.mediaTracks = [
+      { title: 'Sovereign High-Fidelity Audio', artist: 'Vorssaint Dynamic Soundstage • 48 kHz' },
+      { title: 'Neural Flow Coding Session', artist: 'Lo-Fi Ambient Synthesis • 24-bit FLAC' },
+      { title: 'Ultra-Low Latency DirectML', artist: 'Local Hardware Acoustic Matrix' }
+    ];
+    this.currentTrackIdx = 0;
+    this.isPlaying = true;
+    this.isMuted = false;
+    this.prevVolume = 85;
+
+    const masterSlider = document.getElementById('mixer-master-slider');
+    const masterVal = document.getElementById('vol-master-val');
+    const muteBtn = document.getElementById('btn-master-mute');
+
+    if (masterSlider) {
+      masterSlider.addEventListener('input', () => {
+        const val = masterSlider.value;
+        if (masterVal) masterVal.textContent = `${val}%`;
+        if (muteBtn) muteBtn.textContent = val > 0 ? '🔊' : '🔇';
+        this.isMuted = val === '0';
+      });
+    }
+
+    if (muteBtn) {
+      muteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.isMuted) {
+          this.isMuted = false;
+          if (masterSlider) masterSlider.value = this.prevVolume || 85;
+          if (masterVal) masterVal.textContent = `${this.prevVolume || 85}%`;
+          muteBtn.textContent = '🔊';
+        } else {
+          this.prevVolume = masterSlider ? parseInt(masterSlider.value, 10) : 85;
+          this.isMuted = true;
+          if (masterSlider) masterSlider.value = 0;
+          if (masterVal) masterVal.textContent = '0%';
+          muteBtn.textContent = '🔇';
+        }
+      });
+    }
+
+    const mediaSlider = document.getElementById('mixer-media-slider');
+    const mediaVal = document.getElementById('vol-media-val');
+    if (mediaSlider) {
+      mediaSlider.addEventListener('input', () => {
+        if (mediaVal) mediaVal.textContent = `${mediaSlider.value}%`;
+      });
+    }
+
+    const voiceSlider = document.getElementById('mixer-voice-slider');
+    const voiceVal = document.getElementById('vol-voice-val');
+    if (voiceSlider) {
+      voiceSlider.addEventListener('input', () => {
+        if (voiceVal) voiceVal.textContent = `${voiceSlider.value}%`;
+      });
+    }
+
+    const playBtn = document.getElementById('btn-media-play');
+    const waveEl = document.querySelector('.np-wave-indicator');
+    if (playBtn) {
+      playBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.isPlaying = !this.isPlaying;
+        playBtn.textContent = this.isPlaying ? '⏸️' : '▶️';
+        if (waveEl) waveEl.style.display = this.isPlaying ? 'flex' : 'none';
+        this.shell.classList.toggle('speaking', this.isPlaying);
+      });
+    }
+
+    const prevBtn = document.getElementById('btn-media-prev');
+    const nextBtn = document.getElementById('btn-media-next');
+    const titleEl = document.getElementById('np-track-title');
+    const artistEl = document.getElementById('np-track-artist');
+
+    const updateTrack = (delta) => {
+      this.currentTrackIdx = (this.currentTrackIdx + delta + this.mediaTracks.length) % this.mediaTracks.length;
+      const track = this.mediaTracks[this.currentTrackIdx];
+      if (titleEl) titleEl.textContent = track.title;
+      if (artistEl) artistEl.textContent = track.artist;
+      this.hop();
+    };
+
+    if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); updateTrack(-1); });
+    if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); updateTrack(1); });
+  }
+
   // --- IPC EVENT LISTENERS ---
   initIpcListeners() {
     if (!api || !api.on) return;
+
+    // Live Audio Level Reactivity (Equalizer bars in compact Dynamic Island)
+    api.on('level', (level) => {
+      const bars = document.querySelectorAll('.island-audio-bars .i-bar');
+      if (level > 0.04) {
+        this.shell.classList.add('speaking');
+        bars.forEach((bar, i) => {
+          const mult = [1.2, 1.8, 1.5, 1.0][i] || 1.2;
+          const h = Math.max(3, Math.min(13, Math.round(level * 24 * mult)));
+          bar.style.height = `${h}px`;
+        });
+      } else if (!this.isPlaying) {
+        this.shell.classList.remove('speaking');
+        bars.forEach((b) => { b.style.height = ''; });
+      }
+    });
 
     // Listen for speech events
     api.on('voice:speaking', (isSpeaking) => {

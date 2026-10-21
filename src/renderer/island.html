@@ -214,7 +214,7 @@
       flex-direction: column;
       gap: 10px;
       width: 560px;
-      height: 374px;
+      height: 396px;
       box-sizing: border-box;
       animation: expandHUD 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       cursor: default;
@@ -751,6 +751,201 @@
     .qa-icon { font-size: 17px; }
     .qa-text { font-size: 10.5px; font-weight: 600; text-align: center; }
 
+    /* Media & Volume Mixer Pane */
+    .media-mixer-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .now-playing-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+    }
+    body.theme-light .now-playing-card {
+      background: rgba(0, 0, 0, 0.03);
+      border-color: rgba(0, 0, 0, 0.08);
+    }
+    .np-art {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+    .np-art-icon {
+      font-size: 20px;
+    }
+    .np-wave-indicator {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      display: flex;
+      align-items: flex-end;
+      gap: 1.5px;
+      height: 10px;
+    }
+    .np-wave-indicator span {
+      width: 2px;
+      height: 4px;
+      background: #ffffff;
+      border-radius: 1px;
+      animation: npWave 0.8s infinite alternate ease-in-out;
+    }
+    .np-wave-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .np-wave-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    .np-wave-indicator span:nth-child(4) { animation-delay: 0.1s; }
+    @keyframes npWave {
+      0% { height: 3px; }
+      100% { height: 9px; }
+    }
+    .np-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .np-title {
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .np-artist {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    body.theme-light .np-artist {
+      color: rgba(15, 23, 42, 0.6);
+    }
+    .np-progress-bar {
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+    body.theme-light .np-progress-bar {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    .np-progress-fill {
+      height: 100%;
+      background: #38bdf8;
+      border-radius: 2px;
+    }
+    .np-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .np-ctrl-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: inherit;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s ease;
+    }
+    .np-ctrl-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: scale(1.06);
+    }
+    .np-ctrl-btn:active {
+      transform: scale(0.94);
+    }
+    .np-play-btn {
+      background: rgba(37, 99, 235, 0.4);
+      border-color: rgba(96, 165, 250, 0.5);
+    }
+    .mixer-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 2px;
+    }
+    body.theme-light .mixer-section-title {
+      color: rgba(15, 23, 42, 0.5);
+    }
+    .volume-sliders-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .vol-slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+    }
+    body.theme-light .vol-slider-row {
+      background: rgba(0, 0, 0, 0.02);
+      border-color: rgba(0, 0, 0, 0.06);
+    }
+    .vol-slider-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+    .vol-val {
+      font-size: 11px;
+      color: #38bdf8;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .vol-range {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.12);
+      outline: none;
+      cursor: pointer;
+    }
+    body.theme-light .vol-range {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    .vol-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+      transition: transform 0.1s ease;
+    }
+    .vol-range::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+    }
+
     /* Cleaning Mode Overlay */
     .cleaning-overlay {
       position: absolute;
@@ -843,6 +1038,10 @@
         <button type="button" class="hud-tab-btn" data-tab="agents">
           <span>🤖</span>
           <span>AI Monitor</span>
+        </button>
+        <button type="button" class="hud-tab-btn" data-tab="media">
+          <span>🎵</span>
+          <span>Media</span>
         </button>
         <button type="button" class="hud-tab-btn" data-tab="clipboard">
           <span>📋</span>
@@ -1001,6 +1200,68 @@
               <div class="agent-meta-row">
                 <span>Completions</span>
                 <span id="ag-copilot-stats">Synced</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Media & Volume Mixer Pane -->
+        <div class="hud-pane" id="pane-media">
+          <div class="media-mixer-wrap">
+            <!-- Now Playing Card -->
+            <div class="now-playing-card">
+              <div class="np-art">
+                <span class="np-art-icon">🎵</span>
+                <div class="np-wave-indicator">
+                  <span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="np-info">
+                <div class="np-title" id="np-track-title">Sovereign High-Fidelity Audio</div>
+                <div class="np-artist" id="np-track-artist">Vorssaint Dynamic Soundstage • 48 kHz</div>
+                <div class="np-progress-bar"><div class="np-progress-fill" id="np-progress-fill" style="width: 58%;"></div></div>
+              </div>
+              <div class="np-controls">
+                <button type="button" class="np-ctrl-btn" id="btn-media-prev" title="Previous Track">⏮️</button>
+                <button type="button" class="np-ctrl-btn np-play-btn" id="btn-media-play" title="Play / Pause">⏸️</button>
+                <button type="button" class="np-ctrl-btn" id="btn-media-next" title="Next Track">⏭️</button>
+              </div>
+            </div>
+
+            <!-- Volume Mixer Sliders -->
+            <div class="mixer-section-title">SYSTEM VOLUME MIXER (PER-APP)</div>
+            <div class="volume-sliders-grid">
+              <div class="vol-slider-row">
+                <div class="vol-slider-label">
+                  <div>
+                    <span class="vol-icon" id="btn-master-mute" title="Toggle Mute" style="cursor: pointer;">🔊</span>
+                    <span>Master Output</span>
+                  </div>
+                  <span class="vol-val" id="vol-master-val">85%</span>
+                </div>
+                <input type="range" class="vol-range" id="mixer-master-slider" min="0" max="100" value="85">
+              </div>
+
+              <div class="vol-slider-row">
+                <div class="vol-slider-label">
+                  <div>
+                    <span class="vol-icon">🎧</span>
+                    <span>Media &amp; Music</span>
+                  </div>
+                  <span class="vol-val" id="vol-media-val">90%</span>
+                </div>
+                <input type="range" class="vol-range" id="mixer-media-slider" min="0" max="100" value="90">
+              </div>
+
+              <div class="vol-slider-row">
+                <div class="vol-slider-label">
+                  <div>
+                    <span class="vol-icon">🎙️</span>
+                    <span>AI Voice &amp; Speech</span>
+                  </div>
+                  <span class="vol-val" id="vol-voice-val">80%</span>
+                </div>
+                <input type="range" class="vol-range" id="mixer-voice-slider" min="0" max="100" value="80">
               </div>
             </div>
           </div>

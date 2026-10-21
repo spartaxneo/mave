@@ -6,9 +6,16 @@
   const $ = (id) => document.getElementById(id);
   const TITLES = { home: 'Home', terminal: 'Terminal', data: 'Data Tab', channels: 'Channels', assistant: 'Assistant', account: 'Models', voice: 'Voice', superpowers: 'Superpowers', general: 'General' };
   const ALIASES = { listening: 'voice', models: 'account' }; // links to pages
-  const update = (patch) => api.invoke('settings:update', patch).then((v) => { s = v; return v; });
+  const update = (patch) => api.invoke('settings:update', patch).then((v) => { s = v; return v; }).catch(() => patch);
 
-  let s = await api.invoke('settings:get');
+  let s = null;
+  try {
+    s = await api.invoke('settings:get');
+  } catch (err) {
+    console.warn('Initial settings:get fallback:', err);
+  }
+  if (!s) s = { theme: 'dark', assistantName: 'Mave' };
+
   function applyTheme(theme) {
     const t = theme || 'dark';
     document.documentElement.setAttribute('data-theme', t);
@@ -17,7 +24,7 @@
     document.body.classList.toggle('theme-system', t === 'system');
   }
   applyTheme(s.theme || 'dark');
-  UI.titlebar();
+  if (typeof UI !== 'undefined' && UI.titlebar) UI.titlebar();
 
   // navigation & ChatGPT layout
   const SETTINGS_SECTIONS = new Set([
