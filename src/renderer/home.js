@@ -1107,24 +1107,43 @@
 
   async function loadUserProfile() {
     try {
-      const gov = await api.invoke('governance:get-state');
+      const fbUser = await api.invoke('firebase:get-user').catch(() => null);
+      if (fbUser && fbUser.uid && !fbUser.isAnonymous) {
+        const name = fbUser.displayName || fbUser.email?.split('@')[0] || 'User';
+        const email = fbUser.email || '';
+        if ($('user-profile-name')) $('user-profile-name').textContent = name;
+        if ($('upm-user-name')) $('upm-user-name').textContent = name;
+        if ($('fb-profile-name')) $('fb-profile-name').textContent = name;
+        if ($('fb-profile-email')) $('fb-profile-email').textContent = email;
+        const initials = name.split(/\s+/).filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'U';
+        if ($('user-avatar-initials')) $('user-avatar-initials').textContent = initials;
+        if ($('empty-greeting')) $('empty-greeting').textContent = `Hey, ${name.split(/\s+/)[0]}. Ready to dive in?`;
+        if ($('upm-auth-text')) $('upm-auth-text').textContent = 'Switch Account';
+        if ($('user-plan-badge')) $('user-plan-badge').textContent = 'Cloud';
+        return;
+      }
+
+      const gov = await api.invoke('governance:get-state').catch(() => null);
+      let name = 'Local User';
       if (gov) {
-        let name = 'From Near';
         if (gov.activeUser && typeof gov.activeUser === 'object') {
-          name = gov.activeUser.name || gov.activeUser.displayName || 'From Near';
+          name = gov.activeUser.name || gov.activeUser.displayName || 'Local User';
         } else if (typeof gov.activeUser === 'string') {
           const u = gov.users && gov.users[gov.activeUser];
           name = (u && (u.name || u.displayName)) || gov.activeUser;
         }
-        if (typeof name !== 'string' || !name.trim()) name = 'From Near';
-        if ($('user-profile-name')) $('user-profile-name').textContent = name;
-        if ($('upm-user-name')) $('upm-user-name').textContent = name;
-        const initials = name.split(/\s+/).filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'FN';
-        if ($('user-avatar-initials')) $('user-avatar-initials').textContent = initials;
-        if ($('empty-greeting')) $('empty-greeting').textContent = `Hey, ${name.split(/\s+/)[0]}. Ready to dive in?`;
       }
+      if (typeof name !== 'string' || !name.trim() || name === 'From Near') name = 'Local User';
+      if ($('user-profile-name')) $('user-profile-name').textContent = name;
+      if ($('upm-user-name')) $('upm-user-name').textContent = name;
+      const initials = name.split(/\s+/).filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'U';
+      if ($('user-avatar-initials')) $('user-avatar-initials').textContent = initials;
+      if ($('empty-greeting')) $('empty-greeting').textContent = `Hey, ${name.split(/\s+/)[0]}. Ready to dive in?`;
+      if ($('upm-auth-text')) $('upm-auth-text').textContent = 'Sign In / Register';
+      if ($('user-plan-badge')) $('user-plan-badge').textContent = 'Free';
     } catch {}
   }
+  window.loadUserProfile = loadUserProfile;
   loadUserProfile();
 
   async function toggleVoiceMode() {
@@ -1313,10 +1332,27 @@
       api.invoke('app:open-settings', 'assistant');
     });
   }
-  if ($('upm-logout')) {
-    $('upm-logout').addEventListener('click', () => {
+  if ($('upm-auth-btn')) {
+    $('upm-auth-btn').addEventListener('click', () => {
       if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
-      api.invoke('app:open-settings', 'governance');
+      const modal = $('node-onboarding-modal');
+      if (modal) {
+        modal.hidden = false;
+        modal.style.display = 'flex';
+        if ($('nom-step-auth')) $('nom-step-auth').style.display = 'block';
+        if ($('nom-step-role')) $('nom-step-role').style.display = 'none';
+      }
+    });
+  }
+  if ($('upm-logout')) {
+    $('upm-logout').addEventListener('click', async () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      await api.invoke('firebase:sign-out').catch(() => {});
+      localStorage.removeItem('mave_account_name');
+      if (typeof window.loadUserProfile === 'function') window.loadUserProfile();
+      if (window.__maveNodeController && typeof window.__maveNodeController.initFirebase === 'function') {
+        window.__maveNodeController.initFirebase();
+      }
     });
   }
 
@@ -2184,7 +2220,8 @@
       this.role = localStorage.getItem('mave_node_role') || 'host';
       this.hostAddress = localStorage.getItem('mave_host_address') || '127.0.0.1:4040';
       this.hostPin = localStorage.getItem('mave_host_pin') || '8080';
-      this.accountName = localStorage.getItem('mave_account_name') || 'From Near';
+      const savedName = localStorage.getItem('mave_account_name');
+      this.accountName = (savedName && savedName !== 'From Near') ? savedName : 'Local User';
       this.platform = this.detectPlatform();
       this.init();
     }
@@ -2219,10 +2256,10 @@
     async initFirebase() {
       try {
         const user = await api.invoke('firebase:get-user');
-        if (user && user.uid) {
-          this.accountName = user.displayName || user.email || 'From Near';
+        if (user && user.uid && !user.isAnonymous) {
+          this.accountName = user.displayName || user.email?.split('@')[0] || 'User';
           if ($('fb-profile-name')) $('fb-profile-name').textContent = this.accountName;
-          if ($('fb-profile-email')) $('fb-profile-email').textContent = user.email || 'Anonymous Guest Session';
+          if ($('fb-profile-email')) $('fb-profile-email').textContent = user.email || 'Cloud User';
           if ($('fb-profile-cloud-status')) $('fb-profile-cloud-status').textContent = `☁️ Cloud Firestore Connected (UID: ${user.uid.slice(0, 8)}…)`;
           if ($('fb-account-name')) $('fb-account-name').value = this.accountName;
           if ($('fb-btn-signout')) $('fb-btn-signout').style.display = 'inline-block';
@@ -2234,12 +2271,20 @@
           if (devRes && devRes.devices && $('fb-mesh-devices-list')) {
             $('fb-mesh-devices-list').textContent = `${devRes.devices.length} device(s) in cloud mesh`;
           }
+        } else if (user && user.uid && user.isAnonymous) {
+          this.accountName = 'Guest User';
+          if ($('fb-profile-name')) $('fb-profile-name').textContent = 'Guest User (Anonymous Session)';
+          if ($('fb-profile-email')) $('fb-profile-email').textContent = `Anonymous UID: ${user.uid.slice(0, 8)}…`;
+          if ($('fb-profile-cloud-status')) $('fb-profile-cloud-status').textContent = '☁️ Anonymous Cloud Session';
+          if ($('fb-btn-signout')) $('fb-btn-signout').style.display = 'inline-block';
         } else {
+          this.accountName = 'Local User';
           if ($('fb-profile-name')) $('fb-profile-name').textContent = 'Guest / Offline';
           if ($('fb-profile-email')) $('fb-profile-email').textContent = 'Not signed in to Firebase';
           if ($('fb-profile-cloud-status')) $('fb-profile-cloud-status').textContent = '⚠️ Local-only mode';
           if ($('fb-btn-signout')) $('fb-btn-signout').style.display = 'none';
         }
+        if (typeof window.loadUserProfile === 'function') window.loadUserProfile();
       } catch (err) {
         console.warn('Firebase init error:', err);
       }
@@ -2322,84 +2367,10 @@
         if (groupEmail) groupEmail.style.display = mode === 'guest' ? 'none' : 'block';
         if (groupPass) groupPass.style.display = mode === 'guest' ? 'none' : 'block';
 
-        if ($('nom-btn-google')) {
-        $('nom-btn-google').addEventListener('click', async () => {
-          if (statusEl) {
-            statusEl.style.display = 'block';
-            statusEl.style.color = '#38bdf8';
-            statusEl.textContent = 'Connecting with Google Account…';
-          }
-          try {
-            const res = await api.invoke('firebase:sign-in-provider', {
-              provider: 'google.com',
-              displayName: 'Google User',
-              email: 'fromneargoogle@gmail.com',
-            });
-            if (res && res.ok) {
-              this.accountName = res.user?.displayName || 'Google User';
-              localStorage.setItem('mave_account_name', this.accountName);
-              this.avatar.hop();
-              this.avatar.setMood('happy', 1500);
-              if (statusEl) {
-                statusEl.style.color = '#34d399';
-                statusEl.textContent = '✅ Connected with Google!';
-              }
-              setTimeout(() => {
-                if (stepAuth) stepAuth.style.display = 'none';
-                if (stepRole) stepRole.style.display = 'block';
-                this.initFirebase();
-              }, 600);
-            }
-          } catch (err) {
-            if (statusEl) {
-              statusEl.style.color = '#ef4444';
-              statusEl.textContent = err.message || 'Google Sign-In failed';
-            }
-          }
-        });
-      }
-
-      if ($('nom-btn-apple')) {
-        $('nom-btn-apple').addEventListener('click', async () => {
-          if (statusEl) {
-            statusEl.style.display = 'block';
-            statusEl.style.color = '#38bdf8';
-            statusEl.textContent = 'Authenticating with Apple ID…';
-          }
-          try {
-            const res = await api.invoke('firebase:sign-in-provider', {
-              provider: 'apple.com',
-              displayName: 'Apple User',
-              email: 'fromnearapple@icloud.com',
-            });
-            if (res && res.ok) {
-              this.accountName = res.user?.displayName || 'Apple User';
-              localStorage.setItem('mave_account_name', this.accountName);
-              this.avatar.hop();
-              this.avatar.setMood('happy', 1500);
-              if (statusEl) {
-                statusEl.style.color = '#34d399';
-                statusEl.textContent = '✅ Connected with Apple ID!';
-              }
-              setTimeout(() => {
-                if (stepAuth) stepAuth.style.display = 'none';
-                if (stepRole) stepRole.style.display = 'block';
-                this.initFirebase();
-              }, 600);
-            }
-          } catch (err) {
-            if (statusEl) {
-              statusEl.style.color = '#ef4444';
-              statusEl.textContent = err.message || 'Apple Sign-In failed';
-            }
-          }
-        });
-      }
-
-      if (submitBtn) {
+        if (submitBtn) {
           submitBtn.textContent = mode === 'signin' ? 'Sign In & Connect Cloud DB →' :
                                   mode === 'signup' ? 'Create Account & Initialize Cloud DB →' :
-                                  'Continue as Guest (Local Mode) →';
+                                  'Continue as Guest (Anonymous Session) →';
         }
         if (statusEl) {
           statusEl.style.display = 'none';
@@ -2416,70 +2387,81 @@
           if (statusEl) {
             statusEl.style.display = 'block';
             statusEl.style.color = '#38bdf8';
-            statusEl.textContent = 'Connecting with Google Account…';
+            statusEl.textContent = 'Opening secure Google Sign-In window…';
           }
           try {
-            const res = await api.invoke('firebase:sign-in-provider', {
-              provider: 'google.com',
-              displayName: 'Google User',
-              email: 'fromneargoogle@gmail.com',
-            });
-            if (res && res.ok) {
-              this.accountName = res.user?.displayName || 'Google User';
-              localStorage.setItem('mave_account_name', this.accountName);
+            const res = await api.invoke('firebase:google-oauth');
+            if (res && res.ok && res.user) {
+              const displayName = res.user.displayName || res.user.email?.split('@')[0] || 'Google User';
+              this.accountName = displayName;
+              localStorage.setItem('mave_account_name', displayName);
               this.avatar.hop();
               this.avatar.setMood('happy', 1500);
               if (statusEl) {
                 statusEl.style.color = '#34d399';
-                statusEl.textContent = '✅ Connected with Google!';
+                statusEl.textContent = `✅ Connected as ${displayName} (${res.user.email || 'Google User'})!`;
               }
               setTimeout(() => {
-                if (stepAuth) stepAuth.style.display = 'none';
-                if (stepRole) stepRole.style.display = 'block';
+                hideModal();
                 this.initFirebase();
-              }, 600);
+                if (typeof window.loadUserProfile === 'function') window.loadUserProfile();
+              }, 800);
+            } else {
+              if (statusEl) {
+                statusEl.style.color = '#f59e0b';
+                statusEl.textContent = res?.message || 'Google sign-in was cancelled.';
+              }
             }
           } catch (err) {
             if (statusEl) {
               statusEl.style.color = '#ef4444';
-              statusEl.textContent = err.message || 'Google Sign-In failed';
+              statusEl.textContent = err.message || 'Google sign-in failed.';
             }
           }
         });
       }
 
       if ($('nom-btn-apple')) {
-        $('nom-btn-apple').addEventListener('click', async () => {
+        $('nom-btn-apple').addEventListener('click', () => {
           if (statusEl) {
             statusEl.style.display = 'block';
             statusEl.style.color = '#38bdf8';
-            statusEl.textContent = 'Authenticating with Apple ID…';
+            statusEl.textContent = 'Apple Sign-In is supported natively on iOS companion app. For Windows Desktop, please use Google or Email / Password below.';
+          }
+        });
+      }
+
+      if ($('nom-btn-forgot-pass')) {
+        $('nom-btn-forgot-pass').addEventListener('click', async () => {
+          const email = $('nom-fb-email') ? $('nom-fb-email').value.trim() : '';
+          if (!email) {
+            if (statusEl) {
+              statusEl.style.display = 'block';
+              statusEl.style.color = '#ef4444';
+              statusEl.textContent = 'Please enter your email above to receive a password reset link.';
+            }
+            if ($('nom-fb-email')) $('nom-fb-email').focus();
+            return;
+          }
+          if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.color = '#38bdf8';
+            statusEl.textContent = `Sending password reset link to ${email}…`;
           }
           try {
-            const res = await api.invoke('firebase:sign-in-provider', {
-              provider: 'apple.com',
-              displayName: 'Apple User',
-              email: 'fromnearapple@icloud.com',
-            });
+            const res = await api.invoke('firebase:password-reset', email);
             if (res && res.ok) {
-              this.accountName = res.user?.displayName || 'Apple User';
-              localStorage.setItem('mave_account_name', this.accountName);
-              this.avatar.hop();
-              this.avatar.setMood('happy', 1500);
               if (statusEl) {
                 statusEl.style.color = '#34d399';
-                statusEl.textContent = '✅ Connected with Apple ID!';
+                statusEl.textContent = `✅ Password reset email sent to ${email}. Check your inbox!`;
               }
-              setTimeout(() => {
-                if (stepAuth) stepAuth.style.display = 'none';
-                if (stepRole) stepRole.style.display = 'block';
-                this.initFirebase();
-              }, 600);
+            } else {
+              throw new Error(res?.error || 'Could not send reset email.');
             }
           } catch (err) {
             if (statusEl) {
               statusEl.style.color = '#ef4444';
-              statusEl.textContent = err.message || 'Apple Sign-In failed';
+              statusEl.textContent = err.message || 'Password reset request failed.';
             }
           }
         });
@@ -2489,16 +2471,24 @@
         submitBtn.addEventListener('click', async () => {
           if (authMode === 'guest') {
             try {
-              if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Starting guest session…'; }
+              if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Starting anonymous cloud session…'; }
               await api.invoke('firebase:sign-in-anon');
-              this.accountName = 'Local Guest';
+              this.accountName = 'Guest User';
               localStorage.setItem('mave_account_name', this.accountName);
-              if (stepAuth) stepAuth.style.display = 'none';
-              if (stepRole) stepRole.style.display = 'block';
-              this.initFirebase();
-            } catch {
-              if (stepAuth) stepAuth.style.display = 'none';
-              if (stepRole) stepRole.style.display = 'block';
+              if (statusEl) {
+                statusEl.style.color = '#34d399';
+                statusEl.textContent = '✅ Connected as Guest!';
+              }
+              setTimeout(() => {
+                hideModal();
+                this.initFirebase();
+                if (typeof window.loadUserProfile === 'function') window.loadUserProfile();
+              }, 500);
+            } catch (err) {
+              if (statusEl) {
+                statusEl.style.color = '#ef4444';
+                statusEl.textContent = err.message || 'Guest session initialization failed.';
+              }
             }
             return;
           }
@@ -2536,13 +2526,13 @@
 
               if (statusEl) {
                 statusEl.style.color = '#34d399';
-                statusEl.textContent = '✅ Authenticated! Initializing cloud user database…';
+                statusEl.textContent = `✅ Authenticated as ${this.accountName}! Initializing cloud user database…`;
               }
 
               setTimeout(() => {
-                if (stepAuth) stepAuth.style.display = 'none';
-                if (stepRole) stepRole.style.display = 'block';
+                hideModal();
                 this.initFirebase();
+                if (typeof window.loadUserProfile === 'function') window.loadUserProfile();
               }, 700);
             } else {
               throw new Error(res?.error || 'Authentication failed');

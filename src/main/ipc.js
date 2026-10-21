@@ -683,7 +683,8 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('firebase:get-config', () => firebaseService.getConfig());
   handle('firebase:sign-up', (data) => firebaseService.signUp(data || {}));
   handle('firebase:sign-in', (data) => firebaseService.signIn(data || {}));
-  handle('firebase:sign-in-provider', (data) => firebaseService.signInWithProvider(data || {}));
+  handle('firebase:sign-in-provider', (data) => firebaseService.signInWithProvider(data || {}, windows.main));
+  handle('firebase:google-oauth', () => firebaseService.signInWithGoogleOAuth(windows.main));
   handle('firebase:sign-in-anon', () => firebaseService.signInAnonymously());
   handle('firebase:sign-out', () => firebaseService.signOut());
   handle('firebase:get-user', () => firebaseService.getCurrentUser());
