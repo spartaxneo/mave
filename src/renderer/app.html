@@ -29,7 +29,7 @@
         <kbd class="shortcut">Ctrl+N</kbd>
       </button>
 
-      <nav id="nav">
+      <nav id="nav" style="display: none !important;">
         <button data-section="home" class="nav-item active" title="Chat">
           <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <span>Chat</span>
@@ -175,7 +175,7 @@
             <span class="model-brand-icon">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/></svg>
             </span>
-            <span class="model-picker-name" id="model-picker-name">Mave 4o (Auto)</span>
+            <span class="model-picker-name" id="model-picker-name">ChatGPT 4o</span>
             <svg class="chevron-down" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>
           </button>
           <div class="model-picker-dropdown" id="model-picker-dropdown" hidden>
@@ -183,7 +183,7 @@
             <button type="button" class="mp-item" data-model-type="auto">
               <div class="mp-item-head">
                 <span class="mp-badge smart">⚡ Smart</span>
-                <span class="mp-name">Mave 4o (Auto Router)</span>
+                <span class="mp-name">ChatGPT 4o (Auto Router)</span>
               </div>
               <div class="mp-desc">Dynamic multi-tier routing (local speed + cloud depth)</div>
             </button>
@@ -224,12 +224,12 @@
         </div>
 
         <!-- ChatGPT Temporary Chat Mode Toggle -->
-        <button type="button" class="temporary-chat-pill-btn" id="temporary-chat-pill-btn" title="Toggle Temporary Chat (Won't appear in history or use memories)">
+        <button type="button" class="temporary-chat-pill-btn" id="temporary-chat-pill-btn" style="display: none !important;" title="Toggle Temporary Chat (Won't appear in history or use memories)">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
           <span class="temp-chat-label">Temporary</span>
         </button>
 
-        <div class="chat-header-meta">
+        <div class="chat-header-meta" style="display: none !important;">
           <div class="title" id="section-title" hidden>Home</div>
           <span class="chat-header-title" id="chat-header-title">Main Chat</span>
           <button type="button" class="chat-rename-btn" id="chat-rename-btn" title="Rename conversation">
@@ -3091,9 +3091,10 @@
     </div>
   </div>
 
-  <!-- Mave First-Time Onboarding & Core vs Satellite Setup Modal -->
-  <div class="chatgpt-modal-backdrop" id="node-onboarding-modal" hidden>
-    <div class="nom-card">
+  <!-- Mave First-Time Onboarding & Core vs Satellite Setup Modal (Hidden by default; access via Settings) -->
+  <div class="chatgpt-modal-backdrop" id="node-onboarding-modal" hidden style="display: none !important;">
+    <div class="nom-card" style="position: relative;">
+      <button type="button" class="settings-modal-close" id="nom-modal-close-btn" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 18px; color: var(--text-3); cursor: pointer;" title="Close">✕</button>
       <div class="nom-header">
         <div class="nom-avatar-preview">
           <!-- The Cute Little Dot Avatar preview hopping cheerfully -->

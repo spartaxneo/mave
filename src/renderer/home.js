@@ -691,8 +691,12 @@
   }
 
   async function renderSetup() {
-    const active = await api.invoke('provider:active');
-    if ($('setup')) $('setup').hidden = Boolean(active.id);
+    try {
+      const active = await api.invoke('provider:active');
+      if ($('setup')) $('setup').hidden = true; // Minimalist ChatGPT: never banner clutter the top of conversation
+    } catch {
+      if ($('setup')) $('setup').hidden = true;
+    }
   }
 
   function autosize() {
@@ -2131,11 +2135,14 @@
       this.bindSettingsPanel();
       this.bindWorkspacePanel();
 
-      if (!localStorage.getItem('mave_onboarding_completed')) {
-        setTimeout(() => {
-          if ($('node-onboarding-modal')) $('node-onboarding-modal').hidden = false;
-        }, 600);
-      }
+      // Never auto-show blocking modal over the ChatGPT conversation canvas
+      try {
+        localStorage.setItem('mave_onboarding_completed', 'true');
+        if ($('node-onboarding-modal')) {
+          $('node-onboarding-modal').hidden = true;
+          $('node-onboarding-modal').style.display = 'none';
+        }
+      } catch {}
     }
 
     async initFirebase() {
@@ -2192,6 +2199,19 @@
 
     bindOnboardingModal() {
       const modal = $('node-onboarding-modal');
+      const closeBtn = $('nom-modal-close-btn');
+      const hideModal = () => {
+        if (modal) {
+          modal.hidden = true;
+          modal.style.display = 'none';
+        }
+        localStorage.setItem('mave_onboarding_completed', 'true');
+      };
+      if (closeBtn) closeBtn.addEventListener('click', hideModal);
+      if (modal) modal.addEventListener('click', (e) => {
+        if (e.target === modal) hideModal();
+      });
+
       const stepAuth = $('nom-step-auth');
       const stepRole = $('nom-step-role');
       const authGuest = $('nom-auth-guest-btn');
@@ -2472,8 +2492,7 @@
         authGuest.addEventListener('click', () => {
           this.accountName = 'Local Guest';
           localStorage.setItem('mave_account_name', this.accountName);
-          if (stepAuth) stepAuth.style.display = 'none';
-          if (stepRole) stepRole.style.display = 'block';
+          hideModal();
         });
       }
 
@@ -2515,10 +2534,8 @@
             localStorage.setItem('mave_host_pin', this.hostPin);
           }
           localStorage.setItem('mave_node_role', this.role);
-          localStorage.setItem('mave_onboarding_completed', '1');
+          hideModal();
           this.updateNodeDisplay();
-
-          if (modal) modal.hidden = true;
           this.avatar.bounce();
           this.avatar.setMood('happy', 2000);
         });
