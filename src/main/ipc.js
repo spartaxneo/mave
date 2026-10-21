@@ -706,6 +706,20 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('users:revoke-key', (key) => userManager.revokeApiKey(key));
   handle('host:info', () => userManager.getHostInfo());
   handle('host:update-settings', (patch) => userManager.updateHostSettings(patch || {}));
+  handle('network:get-local-info', () => {
+    const { getLocalIp } = require('./remote/web');
+    const ip = getLocalIp();
+    const port = settings.get('webPort') || 4040;
+    const pin = settings.get('remotePin') || '8080';
+    return {
+      ok: true,
+      ip,
+      port,
+      pin,
+      url: `http://${ip}:${port}`,
+      lanAddress: `${ip}:${port}`,
+    };
+  });
   // Backburner Co-Processing Mesh & Prompt Cache
   handle('mesh:status', () => ({
     mesh: backburnerMeshEngine.getMeshStatus(),
@@ -792,11 +806,11 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   // Vorssaint OS Modular Toolkit
   handle('vorssaint:telemetry', () => {
     const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).getTelemetry();
+    return getVorssaintManager({ windows, settings, costs, local, runtime }).getTelemetry();
   });
   handle('vorssaint:agents', () => {
     const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).getAgentsStatus();
+    return getVorssaintManager({ windows, settings, costs, local, runtime }).getAgentsStatus();
   });
   handle('vorssaint:clipboard-history', (query) => {
     const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');

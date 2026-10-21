@@ -2576,12 +2576,20 @@
       }
 
       if ($('nom-scan-lan-btn')) {
-        $('nom-scan-lan-btn').addEventListener('click', () => {
-          $('nom-scan-lan-btn').textContent = 'Scanning…';
-          setTimeout(() => {
-            $('nom-scan-lan-btn').textContent = '✅ Found';
-            if ($('nom-host-address')) $('nom-host-address').value = '192.168.1.50:4040';
-          }, 800);
+        $('nom-scan-lan-btn').addEventListener('click', async () => {
+          $('nom-scan-lan-btn').textContent = 'Scanning network…';
+          try {
+            const netInfo = await api.invoke('network:get-local-info');
+            if (netInfo && netInfo.lanAddress) {
+              $('nom-scan-lan-btn').textContent = `✅ Found: ${netInfo.lanAddress}`;
+              if ($('nom-host-address')) $('nom-host-address').value = netInfo.lanAddress;
+              if ($('nom-host-pin') && netInfo.pin) $('nom-host-pin').value = netInfo.pin;
+            } else {
+              $('nom-scan-lan-btn').textContent = 'No host found on LAN';
+            }
+          } catch {
+            $('nom-scan-lan-btn').textContent = 'Scan failed';
+          }
         });
       }
 
@@ -2624,8 +2632,11 @@
       }
 
       if ($('btn-show-qr-code')) {
-        $('btn-show-qr-code').addEventListener('click', () => {
-          alert('📱 Scan with your Android or iPhone camera on home Wi-Fi:\nhttp://' + (window.location.hostname || '192.168.1.50') + ':4040\nPIN: 8080');
+        $('btn-show-qr-code').addEventListener('click', async () => {
+          const netInfo = await api.invoke('network:get-local-info').catch(() => null);
+          const url = netInfo?.url || 'http://localhost:4040';
+          const pin = netInfo?.pin || '8080';
+          alert(`📱 Scan or open with your phone camera or browser on local Wi-Fi:\n${url}\n\nSecurity PIN: ${pin}`);
         });
       }
 
@@ -2965,25 +2976,13 @@
         });
       }
 
-      // Backburner Co-Processor Simulation & Prompt Cache Controls
+      // Real Mobile Companion Pairing & Prompt Cache Controls
       if ($('ws-btn-sim-co-join')) {
         $('ws-btn-sim-co-join').addEventListener('click', async () => {
-          try {
-            await api.invoke('mesh:auto-join', {
-              deviceId: `dev-iphone-${Date.now().toString().slice(-4)}`,
-              name: 'iPhone 17 Pro (Wireless Wi-Fi Co-Processor)',
-              os: 'ios',
-              ramBytes: 8 * 1024 * 1024 * 1024,
-              freeMemoryBytes: 4 * 1024 * 1024 * 1024,
-              connectionType: 'wireless',
-              computeTier: 'gpu_npu',
-            });
-            this.initWorkspace();
-            this.avatar.bounce();
-            this.avatar.setMood('happy', 2500);
-          } catch (err) {
-            alert(`Failed to pair test phone: ${err.message}`);
-          }
+          const netInfo = await api.invoke('network:get-local-info').catch(() => null);
+          const url = netInfo?.url || 'http://localhost:4040';
+          const pin = netInfo?.pin || '8080';
+          alert(`📱 Connect your real phone or tablet as a companion node:\n\n1. Ensure your mobile device is connected to the same local Wi-Fi.\n2. Open Safari or Chrome on your phone and go to:\n   ${url}\n3. Enter the Access PIN: ${pin}\n\nOnce connected, your device is authenticated in the sovereign mesh.`);
         });
       }
 

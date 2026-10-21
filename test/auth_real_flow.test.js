@@ -60,4 +60,25 @@ test('Sanitization Check: No hardcoded dummy emails or fake identities in render
 
   // Verify Google OAuth invocation
   assert.ok(homeJs.includes("firebase:google-oauth"), 'home.js invokes real Google OAuth');
+
+  // Verify zero hardcoded dummy IP or simulated iPhone pair button
+  assert.ok(!homeJs.includes('192.168.1.50:4040'), 'home.js does not hardcode fake LAN IP');
+  assert.ok(!homeJs.includes('iPhone 17 Pro'), 'home.js does not inject simulated iPhone into mesh');
+  assert.ok(!appHtml.includes('+ Pair Test Phone'), 'app.html does not have fake test phone button');
+});
+
+test('Ground Truth Telemetry: VorssaintManager uses real system stats without mock formulas', async () => {
+  const { getVorssaintManager } = require('../src/main/vorssaint/vorssaint_manager');
+  const vm = getVorssaintManager();
+  const tele = vm.getTelemetry();
+
+  // Real disk stats check
+  assert.ok(typeof tele.disk.totalGB === 'number' && tele.disk.totalGB > 0);
+  assert.notEqual(tele.disk.totalGB, 953, 'Disk size is not hardcoded to 953 GB');
+
+  // Real agents status check
+  const agents = vm.getAgentsStatus();
+  assert.notEqual(agents.local.tokensProcessed, 14820, 'Local tokens are not fabricated (14820)');
+  assert.notEqual(agents.claude.tokensProcessed, 28400, 'Claude tokens are not fabricated (28400)');
+  assert.equal(agents.local.cost, '$0.00 (Local Sovereign)');
 });

@@ -30,7 +30,7 @@ const INVOKE = new Set([
   'firebase:get-devices', 'firebase:save-preferences', 'firebase:get-preferences', 'firebase:password-reset',
   'users:list', 'users:add', 'users:remove', 'users:update-role', 'users:invite', 'users:accept-invite',
   'users:apikeys', 'users:create-key', 'users:revoke-key', 'host:info', 'host:update-settings',
-  'mesh:status', 'mesh:auto-join', 'mesh:offload-page', 'mesh:merge-attn', 'mesh:disconnect',
+  'mesh:status', 'mesh:auto-join', 'mesh:offload-page', 'mesh:merge-attn', 'mesh:disconnect', 'network:get-local-info',
   'promptcache:stats', 'promptcache:clear',
   'autonomous:plan', 'autonomous:execute', 'autonomous:status', 'autonomous:audit',
   'island:expand', 'island:collapse', 'island:open-main', 'island:toggle', 'island:status',

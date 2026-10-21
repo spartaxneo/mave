@@ -30,6 +30,12 @@ class VorssaintManager {
     this.logger = options.logger || console;
     this.windows = options.windows || null;
     this.settings = options.settings || null;
+    this.costs = options.costs || null;
+    this.local = options.local || null;
+    this.runtime = options.runtime || null;
+
+    this._cachedGpu = null;
+    this._cachedGpuTime = 0;
 
     // Clipboard shelf
     this.clipboardHistory = [];
@@ -233,6 +239,81 @@ class VorssaintManager {
     return Math.max(1, Math.min(100, Math.round(((totalTick - totalIdle) / totalTick) * 100)));
   }
 
+  _getGpuStats() {
+    const now = Date.now();
+    if (this._cachedGpu && (now - this._cachedGpuTime) < 3000) {
+      return this._cachedGpu;
+    }
+    try {
+      const child_process = require('child_process');
+      const out = child_process.execSync('nvidia-smi --query-gpu=name,memory.total,memory.used,utilization.gpu,temperature.gpu --format=csv,noheader,nounits', {
+        timeout: 1000,
+        encoding: 'utf8',
+        windowsHide: true,
+      }).trim();
+      const parts = out.split(',').map((s) => s.trim());
+      if (parts.length >= 5) {
+        const totalMB = parseFloat(parts[1]) || 8192;
+        const usedMB = parseFloat(parts[2]) || 0;
+        const load = parseFloat(parts[3]) || 0;
+        const temp = parseFloat(parts[4]) || 0;
+        this._cachedGpu = {
+          name: parts[0] || 'NVIDIA GeForce GPU',
+          model: parts[0] || 'NVIDIA GeForce GPU',
+          loadPct: Math.round(load),
+          vramUsedGB: Math.round((usedMB / 1024) * 10) / 10,
+          vramTotalGB: Math.round((totalMB / 1024) * 10) / 10,
+          tempC: Math.round(temp),
+          isReal: true,
+        };
+        this._cachedGpuTime = now;
+        return this._cachedGpu;
+      }
+    } catch {}
+    this._cachedGpu = {
+      name: 'NVIDIA GeForce RTX 5060',
+      model: 'NVIDIA GeForce RTX 5060',
+      loadPct: 0,
+      vramUsedGB: 0,
+      vramTotalGB: 8.0,
+      tempC: null,
+      isReal: false,
+    };
+    this._cachedGpuTime = now;
+    return this._cachedGpu;
+  }
+
+  _getDiskStats() {
+    try {
+      const root = process.platform === 'win32' ? (process.env.SystemDrive || 'C:') + '\\' : '/';
+      const stat = fs.statfsSync(root);
+      const totalGB = Math.round((stat.bsize * stat.blocks) / (1024 ** 3));
+      const freeGB = Math.round((stat.bsize * stat.bfree) / (1024 ** 3));
+      const usedGB = Math.max(0, totalGB - freeGB);
+      const usagePct = totalGB > 0 ? Math.round((usedGB / totalGB) * 100) : 0;
+      return {
+        totalGB,
+        freeGB,
+        usedGB,
+        usagePct,
+        usedPercent: usagePct,
+        totalDiskGB: totalGB,
+        freeDiskGB: freeGB,
+        usedDiskGB: usedGB,
+      };
+    } catch {}
+    return {
+      totalGB: 232,
+      freeGB: 30,
+      usedGB: 202,
+      usagePct: 87,
+      usedPercent: 87,
+      totalDiskGB: 232,
+      freeDiskGB: 30,
+      usedDiskGB: 202,
+    };
+  }
+
   getTelemetry() {
     const cpuPct = this._getCpuLoad();
     const totalMem = os.totalmem();
@@ -240,13 +321,16 @@ class VorssaintManager {
     const usedMem = totalMem - freeMem;
     const ramPct = Math.round((usedMem / totalMem) * 100);
     const GB = 1024 ** 3;
-
-    // Simulated network throughput delta (smooth realistic desktop telemetry)
     const now = Date.now();
-    const deltaS = Math.max(1, (now - this.lastNetTime) / 1000);
-    this.lastNetTime = now;
-    const downloadSpeedKB = Math.round(18 + (cpuPct * 2.4) + (Math.sin(now / 3000) * 12));
-    const uploadSpeedKB = Math.round(4 + (cpuPct * 0.8) + (Math.cos(now / 4000) * 3));
+
+    const gpu = this._getGpuStats();
+    const disk = this._getDiskStats();
+
+    let localIp = '127.0.0.1';
+    try {
+      const { getLocalIp } = require('../remote/web');
+      localIp = getLocalIp();
+    } catch {}
 
     return {
       timestamp: now,
@@ -255,8 +339,8 @@ class VorssaintManager {
         loadPercent: cpuPct,
         cores: os.cpus().length,
         speedGHz: (os.cpus()[0]?.speed ? (os.cpus()[0].speed / 1000).toFixed(1) : '3.6'),
-        model: os.cpus()[0]?.model || 'AMD Ryzen 5 3600 6-Core',
-        tempC: Math.round(44 + (cpuPct * 0.22)),
+        model: os.cpus()[0]?.model ? os.cpus()[0].model.trim() : 'AMD Ryzen 5 3600 6-Core',
+        tempC: gpu.tempC,
       },
       ram: {
         totalGB: Math.round((totalMem / GB) * 10) / 10,
@@ -265,104 +349,96 @@ class VorssaintManager {
         usagePct: ramPct,
         usedPercent: ramPct,
       },
-      gpu: {
-        name: 'NVIDIA GeForce RTX 5060',
-        model: 'NVIDIA GeForce RTX 5060',
-        loadPct: Math.round(Math.max(6, Math.min(94, cpuPct * 0.9))),
-        vramUsedGB: Math.round((2.2 + (cpuPct / 180)) * 10) / 10,
-        vramTotalGB: 8.0,
-        tempC: Math.round(46 + (cpuPct * 0.18)),
-      },
-      disk: {
-        totalGB: 953,
-        freeGB: 412,
-        usedGB: 541,
-        usagePct: 57,
-        usedPercent: 57,
-      },
-      storage: {
-        totalDiskGB: 953,
-        freeDiskGB: 412,
-        usedDiskGB: 541,
-        usagePct: 57,
-      },
+      gpu,
+      disk,
+      storage: disk,
       network: {
         status: 'online',
-        downloadSpeedKB,
-        uploadSpeedKB,
-        downloadKBps: downloadSpeedKB,
-        uploadKBps: uploadSpeedKB,
+        localIp,
+        downloadSpeedKB: 0,
+        uploadSpeedKB: 0,
+        downloadKBps: 0,
+        uploadKBps: 0,
         latencyMs: 14,
       },
       battery: {
         hasBattery: false,
-        isCharging: true,
+        isCharging: false,
         percent: 100,
         levelPct: 100,
         acConnected: true,
-        source: 'AC Power',
+        source: 'Desktop AC Power',
       },
     };
   }
 
   // --- 5. AI Agents Monitor Strip ---
   getAgentsStatus() {
+    const sessionCosts = this.costs ? this.costs.session : { input: 0, output: 0, cost: 0, requests: 0 };
+    const currentProvider = this.settings ? (this.settings.get('provider') || 'local') : 'local';
+    const currentModel = this.settings ? (this.settings.get('model') || 'gpt-4o') : 'gpt-4o';
+    const localModel = this.settings ? (this.settings.get('localModel') || 'Qwen 3-VL 8B') : 'Qwen 3-VL 8B';
+    const totalTokens = (sessionCosts.input || 0) + (sessionCosts.output || 0);
+
     const list = [
       {
         id: 'local',
-        modelName: 'Qwen 3-VL 8B',
-        architecture: '8B Vision-Language',
         name: 'Mave Local',
-        model: 'Qwen3-VL 8B (On-Device)',
+        modelName: 'Qwen 3-VL 8B',
+        architecture: '8B Vision-Language (On-Device)',
+        model: `${localModel} (On-Device)`,
         engine: 'Local RTX 5060 DirectML / Ollama',
-        status: 'idle',
-        tokensProcessed: 14820,
+        status: currentProvider === 'local' ? 'active' : 'ready',
+        tokensProcessed: currentProvider === 'local' ? totalTokens : 0,
         contextLength: '32,768',
         cost: '$0.00 (Local Sovereign)',
-        speedTps: 48.2,
+        speedTps: 0,
         isLocal: true,
       },
       {
         id: 'claude',
         name: 'Claude 3.7 Sonnet',
+        modelName: 'claude-3-7-sonnet-latest',
         model: 'claude-3-7-sonnet-latest',
         engine: 'Anthropic Cloud',
-        status: 'ready',
-        tokensProcessed: 28400,
+        status: currentProvider === 'anthropic' ? 'active' : 'ready',
+        tokensProcessed: currentProvider === 'anthropic' ? totalTokens : 0,
         limitTokens: 200000,
-        resetsIn: '3h 42m',
-        cost: '$0.14',
+        resetsIn: 'Monthly billing',
+        cost: currentProvider === 'anthropic' && sessionCosts.cost ? `$${sessionCosts.cost.toFixed(4)}` : '$0.00',
         isLocal: false,
       },
       {
         id: 'chatgpt',
         name: 'ChatGPT 4o',
+        modelName: 'gpt-4o',
         model: 'gpt-4o',
         engine: 'OpenAI Cloud',
-        status: 'ready',
-        tokensProcessed: 18900,
+        status: currentProvider === 'openai' ? 'active' : 'ready',
+        tokensProcessed: currentProvider === 'openai' ? totalTokens : 0,
         limitTokens: 128000,
         resetCountdown: '100% Limit',
-        resetsIn: '2h 15m',
-        cost: '$0.09',
+        resetsIn: 'Monthly billing',
+        cost: currentProvider === 'openai' && sessionCosts.cost ? `$${sessionCosts.cost.toFixed(4)}` : '$0.00',
         isLocal: false,
       },
       {
         id: 'copilot',
         name: 'GitHub Copilot',
+        modelName: 'Copilot Workspace CLI',
         model: 'Copilot Workspace CLI',
         engine: 'Local CLI / Session Daemon',
         status: 'active',
-        tokensProcessed: 8300,
-        suggestionsCount: 142,
-        acceptedCount: 98,
+        tokensProcessed: 0,
+        suggestionsCount: 0,
+        acceptedCount: 0,
         cost: '$0.00',
         isLocal: true,
       },
     ];
 
     return {
-      activeAgent: 'Mave',
+      activeAgent: currentProvider === 'local' ? 'Mave Local' : currentModel,
       agents: list,
       local: list[0],
       claude: list[1],
@@ -439,6 +515,12 @@ let instance = null;
 function getVorssaintManager(options = {}) {
   if (!instance) {
     instance = new VorssaintManager(options);
+  } else {
+    if (options.costs) instance.costs = options.costs;
+    if (options.settings) instance.settings = options.settings;
+    if (options.windows) instance.windows = options.windows;
+    if (options.local) instance.local = options.local;
+    if (options.runtime) instance.runtime = options.runtime;
   }
   return instance;
 }
