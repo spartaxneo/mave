@@ -1269,7 +1269,11 @@
     $('nav-item-vorssaint').addEventListener('click', () => {
       const nmd = $('nav-more-dropdown');
       if (nmd) nmd.hidden = true;
-      api.invoke('app:open-settings', 'vorssaint');
+      if (typeof window.openSettingsModal === 'function') {
+        window.openSettingsModal('vorssaint');
+      } else {
+        api.invoke('app:open-settings', 'vorssaint');
+      }
     });
   }
   if ($('nav-item-island')) {
@@ -1279,6 +1283,12 @@
       api.invoke('island:toggle');
     });
   }
+  document.querySelectorAll('#nav-more-dropdown .nmd-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const nmd = $('nav-more-dropdown');
+      if (nmd) nmd.hidden = true;
+    });
+  });
   if ($('upm-personalization')) {
     $('upm-personalization').addEventListener('click', () => {
       if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
@@ -1346,25 +1356,70 @@
   }
 
   // ==========================================
-  // Real Interactive Modals: Images, Library, Scheduled, Plugins
+  // Real Interactive Modals: Images, Library, Scheduled, Plugins, Projects
   // ==========================================
+
+  function closeAllModals() {
+    ['modal-images', 'modal-library', 'modal-scheduled', 'modal-projects', 'modal-archived', 'meet-voice-modal', 'ghost-omnibox-modal'].forEach((id) => {
+      const el = $(id);
+      if (el) el.hidden = true;
+    });
+    const nmd = $('nav-more-dropdown');
+    if (nmd) nmd.hidden = true;
+    if (typeof window.closeSettingsModal === 'function') {
+      window.closeSettingsModal();
+    }
+  }
+  window.closeAllModals = closeAllModals;
+
+  // Global Escape key closes any open modal or dropdown
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeAllModals();
+    }
+  });
+
+  // Attach backdrop dismiss to all dialogs
+  ['modal-images', 'modal-library', 'modal-scheduled', 'modal-projects', 'modal-archived', 'meet-voice-modal'].forEach((id) => {
+    const el = $(id);
+    if (el) {
+      el.addEventListener('click', (e) => {
+        if (e.target === el) el.hidden = true;
+      });
+    }
+  });
+
+  // 0. Chat Tab
+  const chatNavBtn = $('nav-item-chat') || document.querySelector('button[data-section="home"]');
+  if (chatNavBtn) {
+    chatNavBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeAllModals();
+      if (typeof window.showSection === 'function') window.showSection('home');
+      if ($('prompt')) $('prompt').focus();
+    });
+  }
 
   // 1. Real Images Studio Modal
   let currentGeneratedImage = null;
   function openImagesModal() {
-    if ($('modal-images')) $('modal-images').hidden = false;
+    closeAllModals();
+    if ($('modal-images')) {
+      $('modal-images').hidden = false;
+      if ($('images-prompt-input')) $('images-prompt-input').focus();
+    }
   }
   function closeImagesModal() {
     if ($('modal-images')) $('modal-images').hidden = true;
   }
-  if ($('nav-item-images')) $('nav-item-images').addEventListener('click', openImagesModal);
-  if ($('btn-close-images-modal')) $('btn-close-images-modal').addEventListener('click', closeImagesModal);
-  if ($('btn-close-images')) $('btn-close-images').addEventListener('click', closeImagesModal);
-  if ($('modal-images')) {
-    $('modal-images').addEventListener('click', (e) => {
-      if (e.target === $('modal-images')) closeImagesModal();
+  if ($('nav-item-images')) {
+    $('nav-item-images').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openImagesModal();
     });
   }
+  if ($('btn-close-images-modal')) $('btn-close-images-modal').addEventListener('click', closeImagesModal);
+  if ($('btn-close-images')) $('btn-close-images').addEventListener('click', closeImagesModal);
 
   if ($('btn-images-reveal-dir')) {
     $('btn-images-reveal-dir').addEventListener('click', () => {
@@ -1440,20 +1495,24 @@
 
   // 2. Real Knowledge Library Modal
   function openLibraryModal() {
-    if ($('modal-library')) $('modal-library').hidden = false;
-    loadLibraryMemories();
+    closeAllModals();
+    if ($('modal-library')) {
+      $('modal-library').hidden = false;
+      loadLibraryMemories();
+      if ($('library-search-input')) $('library-search-input').focus();
+    }
   }
   function closeLibraryModal() {
     if ($('modal-library')) $('modal-library').hidden = true;
   }
-  if ($('nav-item-library')) $('nav-item-library').addEventListener('click', openLibraryModal);
-  if ($('btn-close-library-modal')) $('btn-close-library-modal').addEventListener('click', closeLibraryModal);
-  if ($('btn-close-library')) $('btn-close-library').addEventListener('click', closeLibraryModal);
-  if ($('modal-library')) {
-    $('modal-library').addEventListener('click', (e) => {
-      if (e.target === $('modal-library')) closeLibraryModal();
+  if ($('nav-item-library')) {
+    $('nav-item-library').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openLibraryModal();
     });
   }
+  if ($('btn-close-library-modal')) $('btn-close-library-modal').addEventListener('click', closeLibraryModal);
+  if ($('btn-close-library')) $('btn-close-library').addEventListener('click', closeLibraryModal);
 
   async function loadLibraryMemories(query = '') {
     const listEl = $('library-items-list');
@@ -1564,19 +1623,20 @@
 
   // 3. Real Scheduled Routines Modal
   function openScheduledModal() {
+    closeAllModals();
     if ($('modal-scheduled')) $('modal-scheduled').hidden = false;
   }
   function closeScheduledModal() {
     if ($('modal-scheduled')) $('modal-scheduled').hidden = true;
   }
-  if ($('nav-item-scheduled')) $('nav-item-scheduled').addEventListener('click', openScheduledModal);
-  if ($('btn-close-scheduled-modal')) $('btn-close-scheduled-modal').addEventListener('click', closeScheduledModal);
-  if ($('btn-close-scheduled')) $('btn-close-scheduled').addEventListener('click', closeScheduledModal);
-  if ($('modal-scheduled')) {
-    $('modal-scheduled').addEventListener('click', (e) => {
-      if (e.target === $('modal-scheduled')) closeScheduledModal();
+  if ($('nav-item-scheduled')) {
+    $('nav-item-scheduled').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openScheduledModal();
     });
   }
+  if ($('btn-close-scheduled-modal')) $('btn-close-scheduled-modal').addEventListener('click', closeScheduledModal);
+  if ($('btn-close-scheduled')) $('btn-close-scheduled').addEventListener('click', closeScheduledModal);
 
   if ($('btn-run-briefing-now')) {
     $('btn-run-briefing-now').addEventListener('click', async () => {
@@ -1635,15 +1695,26 @@
 
   // 4. Real Plugins Button
   if ($('nav-item-plugins')) {
-    $('nav-item-plugins').addEventListener('click', () => {
-      api.invoke('app:open-settings', 'superpowers');
+    $('nav-item-plugins').addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeAllModals();
+      if (typeof window.openSettingsModal === 'function') {
+        window.openSettingsModal('plugins');
+      } else {
+        api.invoke('app:open-settings', 'plugins');
+      }
     });
   }
 
   // 5. Real Projects Button
   if ($('nav-item-projects')) {
-    $('nav-item-projects').addEventListener('click', () => {
-      if ($('modal-projects')) $('modal-projects').hidden = false;
+    $('nav-item-projects').addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeAllModals();
+      if ($('modal-projects')) {
+        $('modal-projects').hidden = false;
+        if ($('project-name-input')) $('project-name-input').focus();
+      }
     });
   }
 

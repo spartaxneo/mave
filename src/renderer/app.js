@@ -104,8 +104,12 @@
     $('pane').classList.toggle('fill', section === 'home' || section === 'terminal' || section === 'data' || section === 'channels');
     document.dispatchEvent(new CustomEvent('section-shown', { detail: section }));
   }
+  window.show = show;
+  window.showSection = show;
 
-  document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => show(b.dataset.section)));
+  document.querySelectorAll('nav button[data-section], #nav-more-dropdown button[data-section]').forEach((b) => {
+    b.addEventListener('click', () => show(b.dataset.section));
+  });
   $('pane').addEventListener('scroll', () => document.querySelector('.content').classList.toggle('scrolled', $('pane').scrollTop > 4));
   document.querySelectorAll('[data-link]').forEach((a) => a.addEventListener('click', () => api.invoke('app:open-link', a.dataset.link)));
 
