@@ -403,7 +403,7 @@ class WindowManager {
       width: W, height: H, x, y,
       frame: false, transparent: true, resizable: false, alwaysOnTop: true, show: false,
       skipTaskbar: true, fullscreenable: false, minimizable: false, maximizable: false,
-      backgroundColor: '#00000000', title: 'Mave Dynamic Island',
+      backgroundColor: '#00000000', title: 'Vorssaint OS · Dynamic Island',
       hasShadow: false,
       webPreferences: webPreferences(),
     });

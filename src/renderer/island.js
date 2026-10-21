@@ -415,7 +415,7 @@ class IslandMascot {
     } else {
       this.setStatus('Loved! 🐾', 'happy');
     }
-    setTimeout(() => this.setStatus('Mave Core', 'idle'), 2400);
+    setTimeout(() => this.setStatus('Vorssaint OS', 'idle'), 2400);
   }
 
   setStatus(text, mood = 'idle') {
@@ -560,7 +560,7 @@ class IslandMascot {
             if (result && result.sRGBHex) {
               await navigator.clipboard.writeText(result.sRGBHex);
               this.setStatus(`Color: ${result.sRGBHex}`, 'idle');
-              setTimeout(() => this.setStatus('Mave Core', 'idle'), 2400);
+              setTimeout(() => this.setStatus('Vorssaint OS', 'idle'), 2400);
             }
           } catch {
             // User cancelled eyedropper
@@ -592,7 +592,7 @@ class IslandMascot {
             this.setStatus('🎙️ Voice Active', 'listening');
           } else {
             this.setStatus('Voice Muted', 'idle');
-            setTimeout(() => this.setStatus('Mave Core', 'idle'), 1800);
+            setTimeout(() => this.setStatus('Vorssaint OS', 'idle'), 1800);
           }
         }
       });
@@ -688,7 +688,7 @@ class IslandMascot {
       if (state === 'processing' || state === 'acting') {
         this.setStatus(state === 'acting' ? 'Operating Screen…' : 'Thinking…', 'thinking');
       } else if (state === 'idle') {
-        this.setStatus('Mave Core', 'idle');
+        this.setStatus('Vorssaint OS', 'idle');
       }
     });
 
@@ -720,7 +720,7 @@ class IslandMascot {
       } else {
         this.setStatus('Offline 🟡', 'idle');
       }
-      setTimeout(() => this.setStatus('Mave Core', 'idle'), 3000);
+      setTimeout(() => this.setStatus('Vorssaint OS', 'idle'), 3000);
       this.pollTelemetry();
     });
 
