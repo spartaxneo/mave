@@ -357,11 +357,10 @@ async function start() {
   // Someone who finished an older setup (before the on-device model step) and has no model yet
   // gets that step; everyone who already has a model is simply marked as up to date.
   local.installedId(); // a model already on disk counts as installed, even if settings were reset
-  const oldSetup = settings.get('onboarded') && settings.get('onboardedVersion') < ONBOARDING_VERSION;
-  if (oldSetup && settings.get('localModel')) settings.update({ onboardedVersion: ONBOARDING_VERSION });
-  if (!settings.get('onboarded') || (oldSetup && !settings.get('localModel') && !local.active())) windows.openOnboarding();
-  else if (upgrading) windows.openSettings('account');
-  else if (!process.argv.includes('--hidden')) windows.openMain(resolveProvider(settings, { online: isOnline() }) ? 'home' : 'account');
+  // Launch directly into Home conversation canvas (ChatGPT-style)
+  if (!process.argv.includes('--hidden')) {
+    windows.openMain('home');
+  }
 
   // Mount the System Dynamic Island as an OS Device Extension (Vorssaint-style)
   if (settings.get('showDynamicIsland') !== false) {

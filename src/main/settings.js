@@ -157,10 +157,11 @@ const DEFAULTS = {
 
   soundEffects: true,
   showBuddy: true,
+  showDynamicIsland: true,
   toolTray: true,                 // double-click empty desktop space for the tool tray
   launchAtLogin: false,
-  onboarded: false,
-  onboardedVersion: 0,            // which setup flow was completed (2 = with the on-device model step)
+  onboarded: true,
+  onboardedVersion: 2,            // which setup flow was completed (2 = with the on-device model step)
   femaleVoiceDefault: true,       // set once the old male default voice has been cleared
   builtInVoice: true,             // set once moved to Bigfoot's own voice
 };
