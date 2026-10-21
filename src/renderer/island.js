@@ -465,6 +465,40 @@ class IslandMascot {
       });
     }
 
+    // Automatic Hover-to-Expand like Vorssaint OS Notch
+    let hoverTimer = null;
+    let leaveTimer = null;
+
+    if (this.shell) {
+      this.shell.addEventListener('mouseenter', () => {
+        if (leaveTimer) {
+          clearTimeout(leaveTimer);
+          leaveTimer = null;
+        }
+        if (!this.isExpanded) {
+          hoverTimer = setTimeout(() => {
+            this.expand();
+          }, 150);
+        }
+      });
+
+      this.shell.addEventListener('mouseleave', () => {
+        if (hoverTimer) {
+          clearTimeout(hoverTimer);
+          hoverTimer = null;
+        }
+        if (this.isExpanded) {
+          leaveTimer = setTimeout(() => {
+            const cleaning = document.getElementById('cleaning-overlay');
+            if (cleaning && !cleaning.hidden) return;
+            const scratchpad = document.getElementById('scratchpad-text');
+            if (scratchpad && document.activeElement === scratchpad) return;
+            this.collapse();
+          }, 450);
+        }
+      });
+    }
+
     const petBtn = document.getElementById('island-pet-btn');
     if (petBtn) petBtn.addEventListener('click', (e) => {
       e.stopPropagation();

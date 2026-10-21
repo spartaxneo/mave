@@ -1255,6 +1255,26 @@
       api.invoke('app:open-settings');
     });
   }
+  if ($('upm-vorssaint')) {
+    $('upm-vorssaint').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      api.invoke('app:open-settings', 'vorssaint');
+    });
+  }
+  if ($('nav-item-vorssaint')) {
+    $('nav-item-vorssaint').addEventListener('click', () => {
+      const nmd = $('nav-more-dropdown');
+      if (nmd) nmd.hidden = true;
+      api.invoke('app:open-settings', 'vorssaint');
+    });
+  }
+  if ($('nav-item-island')) {
+    $('nav-item-island').addEventListener('click', () => {
+      const nmd = $('nav-more-dropdown');
+      if (nmd) nmd.hidden = true;
+      api.invoke('island:toggle');
+    });
+  }
   if ($('upm-personalization')) {
     $('upm-personalization').addEventListener('click', () => {
       if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
