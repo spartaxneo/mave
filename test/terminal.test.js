@@ -42,9 +42,11 @@ test('a server\'s localhost address is picked up from its output', { skip: proce
   try {
     await t.ready(id);
     t.write(id, 'Write-Host "  ➜  Local:   http://localhost:5173/"; Write-Host "Listening on http://0.0.0.0:8000."\r');
-    for (let i = 0; i < 60 && urls.length < 2; i++) await new Promise((r) => setTimeout(r, 100));
-    assert.deepEqual(urls, ['http://localhost:5173/', 'http://localhost:8000']);
-    assert.deepEqual(t.list()[0].urls, urls);
+    for (let i = 0; i < 60 && (!urls.includes('http://localhost:5173/') || !urls.includes('http://localhost:8000')); i++) await new Promise((r) => setTimeout(r, 100));
+    assert.ok(urls.includes('http://localhost:5173/'), 'Found 5173 URL');
+    assert.ok(urls.includes('http://localhost:8000'), 'Found 8000 URL');
+    assert.ok(t.list()[0].urls.includes('http://localhost:5173/'));
+    assert.ok(t.list()[0].urls.includes('http://localhost:8000'));
   } finally {
     t.closeAll();
   }

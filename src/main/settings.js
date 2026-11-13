@@ -414,7 +414,7 @@ const DEFAULTS = {
 
   soundEffects: true,
   showBuddy: true,
-  showDynamicIsland: true,
+  showDynamicIsland: false,
   toolTray: true,                 // double-click empty desktop space for the tool tray
   launchAtLogin: false,
   onboarded: false,

@@ -2461,19 +2461,13 @@ body:not(.theme-light) .meet-voice-continue-btn {
    Mave Dynamic Island & Cute Dot Avatar (Face of Mave)
    ============================================================ */
 
-/* 1. Dynamic Island Fixed Shell */
-.dynamic-island-wrapper {
-  position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9990;
-  pointer-events: none;
-  display: flex;
-  justify-content: center;
-}
-
+/* 1. Dynamic Island Fixed Shell - Fully Disabled */
+.dynamic-island-wrapper,
 .dynamic-island {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
   pointer-events: auto;
   position: relative;
   background: rgba(16, 18, 24, 0.96);

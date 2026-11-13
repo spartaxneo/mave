@@ -106,8 +106,8 @@ const FEATURE_FOOTPRINTS = {
     storageGB: 0.0, ramGB: 0.1, cpuNote: 'Minimal',
   },
   voiceAndHud: {
-    label: 'Voice & Dynamic Island Notch',
-    desc: 'Offline Whisper speech, neural voices & macOS-style Dynamic Notch.',
+    label: 'Voice & Neural Speech Engine',
+    desc: 'Offline Whisper speech, neural voices & low-latency voice mode.',
     storageGB: 0.26, ramGB: 0.3, cpuNote: 'Low CPU',
   },
   gpuComputeCluster: {
@@ -257,6 +257,14 @@ class OnboardingWizard {
   }
 
   _go(nextStepId) {
+    if (this.stepId === 'calibrating' && nextStepId !== 'calibrating' && this._opticRig) {
+      try { this._opticRig.destroy(); } catch {}
+      this._opticRig = null;
+    }
+    if (this.stepId === 'intro_think' && nextStepId !== 'intro_think' && this._wabiRig) {
+      try { this._wabiRig.destroy(); } catch {}
+      this._wabiRig = null;
+    }
     if (this._isSignedIn() && (nextStepId === 'account' || nextStepId.startsWith('intro_'))) {
       nextStepId = 'calibrating';
     }
@@ -552,9 +560,32 @@ class OnboardingWizard {
 
   render() {
     if (!this.container) return;
+
+    // Full-Screen Wabi Experience Stage for Initial Intro Flow
+    if (this.stepId === 'intro_think') {
+      this.container.innerHTML = `
+        <div class="wabi-experience-stage" id="wabi-stage">
+          <div id="wabi-canvas-host" style="width:100%; flex:1; display:flex; align-items:center; justify-content:center; position:relative;"></div>
+          <div class="wabi-auth-dock" id="wabi-auth-dock">
+            <button type="button" class="wabi-auth-pill google" id="wabi-google-btn">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+              <span>Continue with Google</span>
+            </button>
+            <button type="button" class="wabi-auth-pill apple" id="wabi-apple-btn">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 0.92-2.85-.9.04-2 .6-2.65 1.35-.58.66-1.09 1.73-.95 2.76 1.01.08 2.06-.51 2.68-1.26z"/></svg>
+              <span>Continue with Apple</span>
+            </button>
+            <button type="button" class="wabi-link-btn" id="wabi-email-link">or sign in with email</button>
+          </div>
+        </div>
+      `;
+      this._bindEvents();
+      return;
+    }
+
     const prog = this._progressIndex();
     const isIntro = ['intro_think', 'intro_private', 'intro_keep'].includes(this.stepId);
-    const showBack = this.stepId !== 'intro_think' && this.stepId !== 'installing' && !(this.stepId === 'device_role' && this._isSignedIn());
+    const showBack = this.stepId !== 'intro_think' && this.stepId !== 'calibrating' && this.stepId !== 'installing' && !(this.stepId === 'device_role' && this._isSignedIn());
 
     const topRight = isIntro
       ? `<button type="button" class="onb-skip-btn" id="onb-skip-intro">Skip</button>`
@@ -570,7 +601,7 @@ class OnboardingWizard {
            </button>`
         : `<span class="onb-wordmark">mave</span>`;
 
-    const segBar = prog > 0
+    const segBar = (prog > 0 && this.stepId !== 'calibrating')
       ? `<div class="onb-seg-track">
            <div class="onb-seg ${prog >= 1 ? 'done' : ''}"></div>
            <div class="onb-seg ${prog >= 2 ? 'done' : ''}"></div>
@@ -1021,17 +1052,22 @@ class OnboardingWizard {
         const hw = this.hwScan?.hardware || {};
         const gpuName = (hw.gpu || 'Hardware').replace(/^NVIDIA\s+GeForce\s+/i, '');
         const vram = hw.dedicated ? `${hw.vramGB || 0} GB VRAM` : 'Shared RAM';
-        const bestModel = (this.hwScan?.options || []).find((o) => o.id === 'phi-4-mini') || (this.hwScan?.options || [])[0] || {
+        const bestModel = {
           id: 'phi-4-mini',
           label: 'Phi-4-mini 3.8B Sovereign Brain',
           bytes: 2.49 * (1024 ** 3),
         };
-        const sizeGB = ((bestModel.bytes || 0) / (1024 ** 3)).toFixed(1) || '2.5';
+        const sizeGB = '2.5';
 
         return `
-          <div class="onb-hero-stage" style="max-width:480px; margin:0 auto; text-align:center;">
-            <div class="onb-orb pulsing" style="width:104px; height:104px; margin:0 auto 22px auto;"></div>
-            <h1 class="onb-h1" style="font-size:24px; margin-bottom:8px;">Calibrating MAVE Intelligence…</h1>
+          <div class="onb-hero-stage" style="max-width:520px; margin:0 auto; text-align:center;">
+            <div class="onb-optic-rig-host" id="onb-optic-rig-host" style="width:100%; min-height:220px; display:flex; justify-content:center; align-items:center;">
+              <div class="onb-orb pulsing" style="width:104px; height:104px; margin:0 auto 12px auto;"></div>
+            </div>
+            <div class="onb-optic-hint" id="onb-optic-hint">
+              <span id="onb-optic-hint-text">✦ Touch &amp; drag up to awaken specialist swarm</span>
+            </div>
+            <h1 class="onb-h1" style="font-size:28px; margin-bottom:8px;">Calibrating MAVE Intelligence…</h1>
             <p class="onb-sub" style="margin-bottom:18px;">
               ${this.waitingForWifi
                 ? 'MAVE is paused and waiting for Wi-Fi connection to download the core brain.'
@@ -1041,7 +1077,9 @@ class OnboardingWizard {
             <div class="onb-calib-hw-pill">
               <span>⚡ ${escapeHtml(gpuName)} (${escapeHtml(vram)})</span>
               <span>·</span>
-              <span>🧠 ${escapeHtml(bestModel.label || 'Phi-4-mini 3.8B')} (~${sizeGB} GB)</span>
+              <span>🧠 <strong>Phi-4-mini 3.8B</strong> (~${sizeGB} GB)</span>
+              <span>·</span>
+              <span>📶 100% On-Device</span>
             </div>
 
             ${this.isCellular && !this.cellularChoice ? `
@@ -1053,10 +1091,10 @@ class OnboardingWizard {
                     To install MAVE's brain locally on your device, it will need <strong>~${sizeGB} GB</strong> of internet data.
                   </div>
                   <div class="onb-cellular-actions">
-                    <button type="button" class="onb-btn onb-btn-primary" id="onb-wifi-wait-btn">
+                    <button type="button" class="wabi-auth-pill google" id="onb-wifi-wait-btn" style="margin-bottom:8px;">
                       Install when I connect to Wi-Fi
                     </button>
-                    <button type="button" class="onb-btn onb-btn-secondary" id="onb-cellular-continue-btn">
+                    <button type="button" class="wabi-auth-pill" id="onb-cellular-continue-btn" style="background:var(--onb-surface-hover); color:var(--onb-ink); border:0;">
                       Download now on mobile data
                     </button>
                   </div>
@@ -1072,7 +1110,7 @@ class OnboardingWizard {
                   MAVE will automatically start downloading the local brain as soon as this device connects to Wi-Fi. In the meantime, you can customize your preferences!
                 </div>
               </div>
-              <button type="button" class="onb-btn onb-btn-primary" id="onb-calib-continue-btn" style="width:100%; margin-top:18px;">
+              <button type="button" class="onb-btn-pill" id="onb-calib-continue-btn" style="width:100%; margin-top:20px;">
                 Continue to Make MAVE Yours →
               </button>
             ` : `
@@ -1088,7 +1126,7 @@ class OnboardingWizard {
                   ${escapeHtml(this.downloadDetail || 'Downloading ~2.5 GB · Zero cloud dependency once installed')}
                 </div>
               </div>
-              <button type="button" class="onb-btn onb-btn-primary" id="onb-calib-continue-btn" style="width:100%; margin-top:18px;">
+              <button type="button" class="onb-btn-pill" id="onb-calib-continue-btn" style="width:100%; margin-top:20px;">
                 Continue to Make MAVE Yours →
               </button>
             `}
@@ -1672,7 +1710,84 @@ class OnboardingWizard {
       };
     }
 
+    // Wabi Full-Screen Experience Stage events
+    if ($('wabi-canvas-host')) {
+      const RigClass = (typeof window !== 'undefined' && window.MaveOpticGlassRig)
+        ? window.MaveOpticGlassRig
+        : (typeof require === 'function' ? (() => { try { return require('./optic_glass_rig').MaveOpticGlassRig; } catch { return null; } })() : null);
+
+      if (RigClass) {
+        if (this._wabiRig) {
+          try { this._wabiRig.destroy(); } catch {}
+          this._wabiRig = null;
+        }
+        try {
+          const host = $('wabi-canvas-host');
+          const authDock = $('wabi-auth-dock');
+          this._wabiRig = new RigClass(host, {
+            mode: 'wabi_intro',
+            size: Math.min(420, typeof window !== 'undefined' ? (window.innerWidth - 32) : 380),
+            onUnlock: () => {
+              if (authDock) authDock.classList.add('visible');
+            },
+          });
+        } catch {}
+      }
+    }
+
+    if ($('wabi-google-btn')) {
+      $('wabi-google-btn').onclick = async () => {
+        try {
+          if (this.api && this.api.invoke) {
+            const res = await this.api.invoke('firebase:google-login');
+            if (res && res.user) {
+              this.user = res.user;
+              this.state.email = res.user.email || '';
+              this.state.userName = res.user.displayName || (this.state.email ? this.state.email.split('@')[0] : '');
+              this._go('calibrating');
+              return;
+            }
+          }
+        } catch {}
+        this._go('calibrating');
+      };
+    }
+
+    if ($('wabi-apple-btn')) {
+      $('wabi-apple-btn').onclick = () => {
+        this._go('calibrating');
+      };
+    }
+
+    if ($('wabi-email-link')) {
+      $('wabi-email-link').onclick = () => {
+        this._go('account');
+      };
+    }
+
     // Calibrating & Cellular Wi-Fi events
+    if ($('onb-optic-rig-host')) {
+      const RigClass = (typeof window !== 'undefined' && window.MaveOpticGlassRig)
+        ? window.MaveOpticGlassRig
+        : (typeof require === 'function' ? (() => { try { return require('./optic_glass_rig').MaveOpticGlassRig; } catch { return null; } })() : null);
+
+      if (RigClass) {
+        if (this._opticRig) {
+          try { this._opticRig.destroy(); } catch {}
+          this._opticRig = null;
+        }
+        try {
+          const host = $('onb-optic-rig-host');
+          this._opticRig = new RigClass(host, {
+            mode: 'calibrating',
+            size: 260,
+            interactive: true,
+            modelName: 'Phi-4-mini 3.8B',
+            theme: (typeof document !== 'undefined' && document.body?.getAttribute('data-theme')) || 'light',
+          });
+        } catch {}
+      }
+    }
     if ($('onb-wifi-wait-btn')) {
       $('onb-wifi-wait-btn').onclick = () => {
         this.cellularChoice = 'wait_wifi';

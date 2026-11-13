@@ -376,11 +376,6 @@ async function start() {
     else windows.openMain('home');
   }
 
-  // Mount the System Dynamic Island as an OS Device Extension
-  if (settings.get('showDynamicIsland') !== false) {
-    try { windows.showIsland(); } catch (err) { logger.warn('Dynamic island launch:', err.message); }
-  }
-
   // OS Device Extension Global Shortcuts
   try {
     globalShortcut.register('Alt+Space', () => {
@@ -388,9 +383,6 @@ async function start() {
     });
     globalShortcut.register('CommandOrControl+Shift+Space', () => {
       windows.toggleMain();
-    });
-    globalShortcut.register('Alt+I', () => {
-      windows.toggleIsland();
     });
     globalShortcut.register('Alt+Shift+V', () => {
       windows.openMain('home');
@@ -401,7 +393,7 @@ async function start() {
     globalShortcut.register('Alt+Shift+S', () => {
       controller.ask('Look at my active screen and explain what you see in detail.', { source: 'hotkey' });
     });
-    logger.info('Registered OS device extension global hotkeys (Alt+Space, Alt+I, Alt+Shift+V, Alt+Shift+S).');
+    logger.info('Registered OS device extension global hotkeys (Alt+Space, Alt+Shift+V, Alt+Shift+S).');
   } catch (err) {
     logger.warn('Global shortcuts registration:', err.message);
   }
@@ -418,7 +410,6 @@ async function start() {
 
   app.on('second-instance', () => {
     windows.openMain('home');
-    windows.showIsland();
   });
   let isShuttingDown = false;
   function performCleanShutdown() {

@@ -177,9 +177,6 @@ test('Square corners, smooth animations, in-window loader, Vorssaint notch click
   const overlayLoader = fs.readFileSync(path.join(ROOT, 'src/renderer/overlay-loader.js'), 'utf8');
   const mainJs = fs.readFileSync(path.join(ROOT, 'src/main/main.js'), 'utf8');
   const windowsJs = fs.readFileSync(path.join(ROOT, 'src/main/windows.js'), 'utf8');
-  const mascotRig = fs.readFileSync(path.join(ROOT, 'src/renderer/mascot_rig.js'), 'utf8');
-  const islandHtml = fs.readFileSync(path.join(ROOT, 'src/renderer/island.html'), 'utf8');
-  const islandJs = fs.readFileSync(path.join(ROOT, 'src/renderer/island.js'), 'utf8');
 
   // 1. Square window corners (no outer black triangular gaps) & no idle float animation
   assert.ok(stylesCss.includes('--r-window: 0px'), 'Root window radius is 0px');
@@ -193,18 +190,13 @@ test('Square corners, smooth animations, in-window loader, Vorssaint notch click
   assert.ok(homeJs.includes('renderWindowLoader'), 'Main window renders startup progress internally');
   assert.ok(appHtml.includes('id="settings-sub-header"') && appHtml.includes('id="settings-subnav-wrap"'), 'Settings supports clean primary + sub-settings hierarchy');
 
-  // 3. Top notch click/resize + clean blur collapse without mascot propagation block
-  assert.ok(!mascotRig.includes('e.stopPropagation();'), 'Mascot rig allows notch clicks to bubble cleanly');
-  assert.ok(windowsJs.includes('setResizable(true)'), 'Island window enables resizing so notch expansion succeeds on Windows');
-  assert.ok(islandJs.includes("api.on('island:blur'"), 'Expanded island collapses cleanly when focus leaves');
+  // 3. Floating notch / Dynamic Island window is completely removed
+  assert.equal(fs.existsSync(path.join(ROOT, 'src/renderer/island.html')), false, 'island.html is deleted');
+  assert.equal(fs.existsSync(path.join(ROOT, 'src/renderer/island.js')), false, 'island.js is deleted');
+  assert.ok(!mainJs.includes('windows.showIsland()'), 'Dynamic island does not mount on startup');
+  assert.ok(!mainJs.includes('windows.toggleIsland()'), 'No global hotkey for dynamic island');
 
-  // 4. Zero dummy music/app-mixer/calendar/quota strings or Math.random sparklines
-  for (const forbidden of ['Lo-Fi Deep Focus', 'Architecture Review', 'GitHub Copilot CLI', 'reacts to your Mac']) {
-    assert.equal(islandHtml.includes(forbidden), false, `island.html must not contain dummy string: ${forbidden}`);
-  }
-  assert.equal(islandJs.includes('Lo-Fi Deep Focus'), false, 'island.js must not contain dummy lyrics/track copy');
-
-  // 5. Clean shutdown tears down all singletons & background workers
+  // 4. Clean shutdown tears down all singletons & background workers
   for (const svc of ['getJarvisButler().stop()', 'getJarvisTelemetry().stopMonitoring()', 'getAutonomousSentinel().stop()', 'audio.stop()']) {
     assert.ok(mainJs.includes(svc), `Clean shutdown stops ${svc}`);
   }

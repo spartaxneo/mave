@@ -1172,27 +1172,15 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     });
   });
 
-  // Mave System Dynamic Island (OS Device Extension)
-  handle('island:expand', () => {
-    windows.resizeIsland(true);
-    return true;
-  });
-  handle('island:collapse', () => {
-    windows.resizeIsland(false);
-    return true;
-  });
+  // Dynamic Island / Notch completely removed
+  handle('island:expand', () => false);
+  handle('island:collapse', () => false);
   handle('island:open-main', (route) => {
     windows.openMain(route || 'home');
     return true;
   });
-  handle('island:toggle', () => {
-    return windows.toggleIsland();
-  });
-  handle('island:status', () => {
-    return {
-      active: Boolean(windows.islandWindow && !windows.islandWindow.isDestroyed() && windows.islandWindow.isVisible()),
-    };
-  });
+  handle('island:toggle', () => false);
+  handle('island:status', () => ({ active: false }));
 
   // Jev (System 1 Reflex Decision) & CDM (Constrained Context Compression)
   handle('decision:jev-evaluate', (payload) => {

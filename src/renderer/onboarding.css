@@ -1,21 +1,33 @@
-/* MAVE Onboarding — Crisp Ponder-grade minimalist design with MAVE identity */
+/* MAVE Onboarding — Wabi-Grade Sovereign Tactile Design & Optical Motion Engine */
 
 :root {
   --onb-bg: #ffffff;
-  --onb-surface: #f3f4f6;
-  --onb-surface-hover: #eaecf0;
-  --onb-border: rgba(17, 19, 24, 0.07);
-  --onb-ink: #111318;
-  --onb-muted: #6b7280;
-  --onb-subtle: #9ca3af;
-  --onb-pill: #111318;
-  --onb-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --onb-surface: #F0E9E1;
+  --onb-surface-hover: #E7DFD5;
+  --onb-border: rgba(44, 40, 37, 0.08);
+  --onb-ink: #23201E;
+  --onb-muted: #78716C;
+  --onb-subtle: #A8A29E;
+  --onb-pill: #141211;
+  --onb-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --onb-serif: "Editorial New", "Cormorant Garamond", "Playfair Display", "New York", "Didot", Georgia, serif;
+}
+
+[data-theme="dark"] {
+  --onb-bg: #0C0B0A;
+  --onb-surface: #1C1A18;
+  --onb-surface-hover: #292623;
+  --onb-border: rgba(255, 255, 255, 0.08);
+  --onb-ink: #F5F2EB;
+  --onb-muted: #A8A29E;
+  --onb-subtle: #78716C;
+  --onb-pill: #F5F2EB;
 }
 
 html, body {
   background: var(--onb-bg) !important;
   color: var(--onb-ink);
-  font-family: "Segoe UI Variable Display", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   margin: 0;
   padding: 0;
   height: 100%;
@@ -1203,3 +1215,295 @@ html, body {
   transition: width 0.3s ease;
   border-radius: 999px;
 }
+
+/* ==========================================================================
+   MAVE Sovereign Tactile Optical Glass Lens & Swarm Rig
+   Fluid Apple tactile physics, convex optical refraction & chromatic dispersion
+   ========================================================================== */
+
+.mave-optic-rig-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 0 auto 12px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.optic-rig-viewport {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+}
+.optic-rig-viewport:active {
+  cursor: grabbing;
+}
+
+.optic-rig-canvas {
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.08));
+  transition: filter 0.2s ease;
+}
+[data-theme="dark"] .optic-rig-canvas {
+  filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.45));
+}
+
+.onb-optic-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(241, 245, 249, 0.85);
+  border: 1px solid rgba(203, 213, 225, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  margin: 6px auto 14px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+[data-theme="dark"] .onb-optic-hint {
+  background: rgba(30, 41, 59, 0.75);
+  border-color: rgba(51, 65, 85, 0.65);
+  color: #94a3b8;
+}
+
+/* Frosted Glass Floating Specialist Card */
+.optic-card-popover {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.optic-card-inner {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.04);
+  width: 250px;
+  text-align: left;
+}
+[data-theme="dark"] .optic-card-inner {
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(51, 65, 85, 0.85);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+}
+
+.optic-card-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 7px;
+}
+
+.optic-card-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex: none;
+}
+
+.optic-card-title-group {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.optic-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="dark"] .optic-card-name {
+  color: #f8fafc;
+}
+
+.optic-card-model {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="dark"] .optic-card-model {
+  color: #94a3b8;
+}
+
+.optic-card-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  flex: none;
+}
+
+.optic-card-desc {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #334155;
+  margin-bottom: 8px;
+}
+[data-theme="dark"] .optic-card-desc {
+  color: #cbd5e1;
+}
+
+.optic-card-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  color: #64748b;
+  border-top: 1px solid rgba(226, 232, 240, 0.7);
+  padding-top: 6px;
+}
+[data-theme="dark"] .optic-card-meta-row {
+  border-top-color: rgba(51, 65, 85, 0.6);
+  color: #94a3b8;
+}
+
+.optic-meta-item.good {
+  color: #10b981;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Wabi Full-Screen Experience Stage & Auth Dock
+   Matches the exact luxury motion & typography from Wabi reference
+   ========================================================================== */
+
+.wabi-experience-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--onb-bg);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+
+.wabi-auth-dock {
+  width: 100%;
+  max-width: 380px;
+  padding: 0 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 30;
+  opacity: 0;
+  transform: translateY(24px);
+  pointer-events: none;
+  transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1), transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.wabi-auth-dock.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.wabi-auth-pill {
+  width: 100%;
+  height: 50px;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.16s ease;
+  box-shadow: 0 4px 14px rgba(44, 40, 37, 0.06);
+}
+.wabi-auth-pill:active {
+  transform: scale(0.98);
+}
+
+.wabi-auth-pill.google {
+  background: #ffffff;
+  color: #23201E;
+  border: 1px solid rgba(44, 40, 37, 0.12);
+}
+.wabi-auth-pill.google:hover {
+  background: #fafafa;
+  box-shadow: 0 6px 18px rgba(44, 40, 37, 0.10);
+}
+
+.wabi-auth-pill.apple {
+  background: #141211;
+  color: #ffffff;
+  border: 0;
+}
+.wabi-auth-pill.apple:hover {
+  background: #23201E;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.wabi-link-btn {
+  background: none;
+  border: none;
+  font-size: 12.5px;
+  color: var(--onb-muted);
+  cursor: pointer;
+  padding: 6px;
+  transition: color 0.14s ease;
+}
+.wabi-link-btn:hover {
+  color: var(--onb-ink);
+}
+
+/* Ensure all primary and calibration buttons match luxury pill styling */
+.onb-btn-pill,
+#onb-calib-continue-btn {
+  width: 100% !important;
+  height: 50px !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  background: #141211 !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  transition: opacity 120ms ease, transform 90ms ease !important;
+  box-sizing: border-box !important;
+}
+.onb-btn-pill:hover,
+#onb-calib-continue-btn:hover {
+  opacity: 0.94;
+}
+.onb-btn-pill:active,
+#onb-calib-continue-btn:active {
+  transform: scale(0.98);
+}
+
+.onb-h1 {
+  font-family: var(--onb-serif) !important;
+  font-weight: 400 !important;
+  color: var(--onb-ink) !important;
+  letter-spacing: -0.02em !important;
+}
+
+

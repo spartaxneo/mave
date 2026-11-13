@@ -141,7 +141,7 @@ test('Product Site Generator: renders complete commercial portal and OpenAI acco
 
   assert.ok(html.includes('Mave AI — Sovereign Local AI Server'));
   assert.ok(html.includes('avatar-showcase') || html.includes('dot-mascot-hero'));
-  assert.ok(html.includes('Dynamic Island') || html.includes('dynamic-island-preview'));
+  assert.ok(html.includes('avatar-showcase') || html.includes('hero-dot'));
   assert.ok(html.includes('Windows 10 / 11'));
   assert.ok(html.includes('macOS'));
   assert.ok(html.includes('Linux'));

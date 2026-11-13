@@ -1637,13 +1637,6 @@
       api.invoke('app:open-settings');
     });
   }
-  if ($('nav-item-island')) {
-    $('nav-item-island').addEventListener('click', () => {
-      const nmd = $('nav-more-dropdown');
-      if (nmd) nmd.hidden = true;
-      api.invoke('island:toggle');
-    });
-  }
   document.querySelectorAll('#nav-more-dropdown .nmd-item').forEach((btn) => {
     btn.addEventListener('click', () => {
       const nmd = $('nav-more-dropdown');
@@ -2433,130 +2426,15 @@
   }
 
   // ==========================================================
-  // Mave Dynamic Island Controller
+  // Dynamic Island / Notch Stub (Removed)
   // ==========================================================
   class DynamicIslandController {
-    constructor(avatar) {
-      this.avatar = avatar;
-      this.isExpanded = false;
-      this.autoCollapseTimer = null;
-      this.init();
-    }
-
-    init() {
-      const island = $('dynamic-island');
-      const compact = $('island-compact');
-      const collapseBtn = $('island-collapse-btn');
-
-      if (compact) {
-        compact.addEventListener('click', (e) => {
-          if (e.target.closest('#island-dot-avatar')) {
-            this.avatar.hop();
-            this.avatar.setMood('happy', 1200);
-          }
-          this.toggle();
-        });
-      }
-
-      if (collapseBtn) {
-        collapseBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.collapse();
-        });
-      }
-
-      if ($('island-pet-btn')) {
-        $('island-pet-btn').addEventListener('click', () => this.avatar.pet());
-      }
-
-      if ($('island-tool-voice')) {
-        $('island-tool-voice').addEventListener('click', () => {
-          this.collapse();
-          if ($('talk-btn')) $('talk-btn').click();
-        });
-      }
-
-      if ($('island-tool-cmd')) {
-        $('island-tool-cmd').addEventListener('click', () => {
-          this.collapse();
-          if ($('prompt')) $('prompt').focus();
-        });
-      }
-
-      if ($('island-tool-nodes')) {
-        $('island-tool-nodes').addEventListener('click', () => {
-          this.collapse();
-          if ($('node-onboarding-modal')) $('node-onboarding-modal').hidden = false;
-        });
-      }
-
-      if ($('island-tool-snip')) {
-        $('island-tool-snip').addEventListener('click', () => {
-          this.collapse();
-          if ($('cad-select-region')) $('cad-select-region').click();
-        });
-      }
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && this.isExpanded) this.collapse();
-      });
-
-      // Close when clicking outside
-      document.addEventListener('click', (e) => {
-        if (this.isExpanded && !e.target.closest('#dynamic-island')) {
-          this.collapse();
-        }
-      });
-    }
-
-    expand() {
-      const island = $('dynamic-island');
-      const compact = $('island-compact');
-      const expanded = $('island-expanded');
-      if (!island || !expanded) return;
-
-      this.isExpanded = true;
-      island.classList.add('expanded');
-      if (compact) compact.style.display = 'none';
-      expanded.style.display = 'flex';
-      this.avatar.hop();
-
-      clearTimeout(this.autoCollapseTimer);
-      this.autoCollapseTimer = setTimeout(() => this.collapse(), 12000);
-    }
-
-    collapse() {
-      const island = $('dynamic-island');
-      const compact = $('island-compact');
-      const expanded = $('island-expanded');
-      if (!island || !expanded) return;
-
-      this.isExpanded = false;
-      island.classList.remove('expanded');
-      expanded.style.display = 'none';
-      if (compact) compact.style.display = 'flex';
-      clearTimeout(this.autoCollapseTimer);
-    }
-
-    toggle() {
-      if (this.isExpanded) this.collapse();
-      else this.expand();
-    }
-
-    setStatus(text, state = 'idle') {
-      const title = $('island-title');
-      const island = $('dynamic-island');
-      if (title) title.textContent = text;
-      if (island) {
-        island.classList.remove('thinking', 'listening', 'speaking');
-        if (state === 'thinking') island.classList.add('thinking');
-        else if (state === 'listening') island.classList.add('listening');
-        else if (state === 'speaking') island.classList.add('speaking');
-      }
-      if ($('island-exp-sub')) {
-        $('island-exp-sub').textContent = text + ' • Core Brain Connected';
-      }
-    }
+    constructor() {}
+    init() {}
+    expand() {}
+    collapse() {}
+    toggle() {}
+    setStatus() {}
   }
 
   // ==========================================================

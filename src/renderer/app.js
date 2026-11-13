@@ -2585,11 +2585,6 @@
   }
 
   // --- Settings Switches & Controls ---
-  if ($('toggle-dynamic-island')) {
-    $('toggle-dynamic-island').addEventListener('change', () => {
-      api.invoke('island:toggle').catch(() => {});
-    });
-  }
   if ($('toggle-avatar-audio-react')) {
     $('toggle-avatar-audio-react').addEventListener('change', (e) => {
       localStorage.setItem('mave_audio_react', String(e.target.checked));
