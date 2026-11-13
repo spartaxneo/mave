@@ -1,0 +1,463 @@
+{
+  "project_metadata": {
+    "name": "mave",
+    "product_name": "Mave",
+    "tagline": "A Little Friend for Everything",
+    "version": "1.4.8",
+    "legacy_name": "bigfoot",
+    "license": "GPL-3.0-or-later",
+    "repository_url": "git+https://github.com/jhmeel/bigfoot.git",
+    "audit_timestamp": "2026-10-30T20:45:00+05:30",
+    "git_branch": "main",
+    "latest_commit_hash": "5121d4de5e236b90d27b352b13fed62f99d00c27",
+    "uncommitted_changes": true
+  },
+  "host_hardware_baseline": {
+    "cpu": "AMD Ryzen 5 3600 6-Core Processor",
+    "cpu_cores": 6,
+    "cpu_threads": 12,
+    "ram_total_gb": 47.9,
+    "gpu": "NVIDIA GeForce RTX 5060",
+    "gpu_architecture": "Blackwell",
+    "vram_total_mb": 8151,
+    "vram_total_gb": 8.0,
+    "cuda_version": "13.3",
+    "driver_version": "610.88",
+    "os_name": "Microsoft Windows 11 Pro",
+    "os_build": "10.0.26100",
+    "os_arch": "x64",
+    "free_disk_c_gb": 21.3
+  },
+  "components": [
+    {
+      "name": "Electron Desktop Shell",
+      "purpose": "Application lifecycle, multi-window orchestration, tray, and global hotkeys",
+      "runtime": "Electron 38.0.0 / Node.js 22.9.0",
+      "entry_point": "src/main/main.js",
+      "evidence": "src/main/main.js:L1-L150",
+      "status": "WORKING",
+      "confidence": "HIGH"
+    },
+    {
+      "name": "Native Input Helper",
+      "purpose": "Win32 SendInput mouse/keyboard synthesis, UI Automation tree scraping, low-level hooks",
+      "runtime": ".NET Framework 4.8 / Windows SDK C# compiled to native x64 exe",
+      "entry_point": "src/main/native/InputHelper.cs",
+      "evidence": "src/main/native/InputHelper.cs:L1-L120",
+      "status": "WORKING",
+      "confidence": "HIGH"
+    },
+    {
+      "name": "Local LLM Vulkan Server",
+      "purpose": "Out-of-process GGUF vision-language model inference on GPU",
+      "runtime": "llama-server.exe build b11276 with ggml-vulkan.dll",
+      "entry_point": "src/main/local/runtime.js",
+      "evidence": "src/main/local/runtime.js:L1-L100",
+      "status": "WORKING",
+      "confidence": "HIGH"
+    },
+    {
+      "name": "Kokoro Speech Synthesis Engine",
+      "purpose": "In-process neural text-to-speech synthesis across 5 voice latents",
+      "runtime": "onnxruntime-node 1.21.0 on Node.js worker thread",
+      "entry_point": "src/main/kokoro.js",
+      "evidence": "vendor/voice/kokoro.onnx",
+      "status": "WORKING",
+      "confidence": "HIGH"
+    },
+    {
+      "name": "Whisper Speech Recognition Server",
+      "purpose": "Offline microphone speech-to-text transcription",
+      "runtime": "whisper-server.exe build b5130 with ggml-base.en-q8_0.bin",
+      "entry_point": "src/main/local/speech.js",
+      "evidence": "vendor/speech/ggml-base.en-q8_0.bin",
+      "status": "WORKING",
+      "confidence": "HIGH"
+    },
+    {
+      "name": "Dynamic Island HUD",
+      "purpose": "macOS-style top-screen notch overlay with hardware meters, music, and animated mascot",
+      "runtime": "Chromium transparent overlay window",
+      "entry_point": "src/renderer/island.html",
+      "evidence": "src/renderer/island.js:L1-L100",
+      "status": "WORKING",
+      "confidence": "HIGH"
+    },
+    {
+      "name": "Remote Mobile Web Server",
+      "purpose": "LAN and WAN remote companion UI, chat, desktop view, and MaveDrop file sharing",
+      "runtime": "Express HTTP/HTTPS/WebSocket server on ports 4040/4043",
+      "entry_point": "src/main/remote/web.js",
+      "evidence": "src/main/remote/web.js:L1-L100",
+      "status": "WORKING",
+      "confidence": "HIGH"
+    },
+    {
+      "name": "Autonomous Goal DAG Planner",
+      "purpose": "Topological task decomposition, prerequisite resolution, and self-correcting reflexion",
+      "runtime": "Node.js ReAct engine",
+      "entry_point": "src/main/autonomous/goal_graph.js",
+      "evidence": "src/main/autonomous/goal_graph.js:L1-L100",
+      "status": "WORKING",
+      "confidence": "HIGH"
+    }
+  ],
+  "ai_models": [
+    {
+      "model_identifier": "Qwen3VL-8B-Instruct-Q4_K_M.gguf",
+      "family": "Qwen",
+      "role": "Primary Local Brain (Multimodal Text & Screen Perception)",
+      "parameters": "8.29B",
+      "quantization": "Q4_K_M",
+      "disk_footprint_mb": 5027.78,
+      "runtime_memory_mb": 6800,
+      "inference_runtime": "llama-server.exe (b11276 Vulkan)",
+      "deployment": "Local",
+      "context_window_configured": 8192,
+      "context_window_max": 32768,
+      "gpu_acceleration": "Vulkan 1.3 (ggml-vulkan.dll)",
+      "cpu_support": true,
+      "tool_calling": true,
+      "vision": true,
+      "execution_status": "WORKING",
+      "evidence_path": "AppData/Roaming/mave/local-ai/models/qwen3-vl-8b/Qwen3VL-8B-Instruct-Q4_K_M.gguf"
+    },
+    {
+      "model_identifier": "mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf",
+      "family": "Qwen",
+      "role": "Vision Encoder Projector for Qwen3-VL 8B",
+      "parameters": "ViT Projector",
+      "quantization": "Q8_0",
+      "disk_footprint_mb": 752.29,
+      "runtime_memory_mb": 950,
+      "inference_runtime": "llama-server.exe (b11276 Vulkan)",
+      "deployment": "Local",
+      "context_window_configured": null,
+      "context_window_max": null,
+      "gpu_acceleration": "Vulkan 1.3",
+      "cpu_support": true,
+      "tool_calling": false,
+      "vision": true,
+      "execution_status": "WORKING",
+      "evidence_path": "AppData/Roaming/mave/local-ai/models/qwen3-vl-8b/mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf"
+    },
+    {
+      "model_identifier": "Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf",
+      "family": "Qwen",
+      "role": "Fast Assistant & Lightweight Instruction Follower",
+      "parameters": "4.02B",
+      "quantization": "Q4_K_XL",
+      "disk_footprint_mb": 6933.4,
+      "runtime_memory_mb": 4800,
+      "inference_runtime": "llama-server.exe (b11276 Vulkan)",
+      "deployment": "Local",
+      "context_window_configured": 4096,
+      "context_window_max": 32768,
+      "gpu_acceleration": "Vulkan 1.3",
+      "cpu_support": true,
+      "tool_calling": true,
+      "vision": false,
+      "execution_status": "IMPLEMENTED_UNVERIFIED",
+      "evidence_path": "E:/AI-Models/open-generative-ai-models/Qwen3-4B-Instruct-2507-UD-Q4_K_XL.gguf"
+    },
+    {
+      "model_identifier": "z_image_turbo-Q4_K.gguf",
+      "family": "Diffusion / FLUX",
+      "role": "On-Device Image Generation",
+      "parameters": "3.8B",
+      "quantization": "Q4_K",
+      "disk_footprint_mb": 3864.25,
+      "runtime_memory_mb": 5200,
+      "inference_runtime": "sd-server / GGUF",
+      "deployment": "Local",
+      "context_window_configured": null,
+      "context_window_max": null,
+      "gpu_acceleration": "Vulkan / DirectML",
+      "cpu_support": true,
+      "tool_calling": false,
+      "vision": false,
+      "execution_status": "IMPLEMENTED_UNVERIFIED",
+      "evidence_path": "E:/AI-Models/open-generative-ai-models/z_image_turbo-Q4_K.gguf"
+    },
+    {
+      "model_identifier": "kokoro.onnx",
+      "family": "Kokoro (Hexgrad)",
+      "role": "Text-to-Speech (TTS) Neural Synthesis",
+      "parameters": "82M",
+      "quantization": "uint8",
+      "disk_footprint_mb": 177.46,
+      "runtime_memory_mb": 350,
+      "inference_runtime": "onnxruntime-node 1.21.0",
+      "deployment": "Local",
+      "context_window_configured": 512,
+      "context_window_max": 512,
+      "gpu_acceleration": "CPU AVX2 / DirectML",
+      "cpu_support": true,
+      "tool_calling": false,
+      "vision": false,
+      "execution_status": "WORKING",
+      "evidence_path": "vendor/voice/kokoro.onnx"
+    },
+    {
+      "model_identifier": "ggml-base.en-q8_0.bin",
+      "family": "Whisper (OpenAI)",
+      "role": "Speech-to-Text (STT) Offline Transcription",
+      "parameters": "74M",
+      "quantization": "Q8_0",
+      "disk_footprint_mb": 81.78,
+      "runtime_memory_mb": 180,
+      "inference_runtime": "whisper-server.exe (b5130)",
+      "deployment": "Local",
+      "context_window_configured": 30,
+      "context_window_max": 30,
+      "gpu_acceleration": "CPU AVX2 / Vulkan",
+      "cpu_support": true,
+      "tool_calling": false,
+      "vision": false,
+      "execution_status": "WORKING",
+      "evidence_path": "vendor/speech/ggml-base.en-q8_0.bin"
+    },
+    {
+      "model_identifier": "encoder_model.onnx + decoder_model.onnx (Pix2Text MFR 1.5)",
+      "family": "Pix2Text (BreezeDeux)",
+      "role": "Handwritten Mathematical Formula OCR",
+      "parameters": "45M Combined",
+      "quantization": "FP32",
+      "disk_footprint_mb": 119.54,
+      "runtime_memory_mb": 230,
+      "inference_runtime": "onnxruntime-node 1.21.0",
+      "deployment": "Local",
+      "context_window_configured": 512,
+      "context_window_max": 512,
+      "gpu_acceleration": "CPU AVX2 / DirectML",
+      "cpu_support": true,
+      "tool_calling": false,
+      "vision": true,
+      "execution_status": "WORKING",
+      "evidence_path": "vendor/math/encoder_model.onnx"
+    },
+    {
+      "model_identifier": "deepseek-v4-flash",
+      "family": "DeepSeek",
+      "role": "Sol Tier High-Reasoning MoE Brain",
+      "parameters": "284B MoE (43 layers, 256 routed experts)",
+      "quantization": "FP8 / FP4 Dynamic",
+      "disk_footprint_mb": 171000.0,
+      "runtime_memory_mb": 40000,
+      "inference_runtime": "Colibri Engine (py -3 coli serve)",
+      "deployment": "Local",
+      "context_window_configured": 65536,
+      "context_window_max": 1048576,
+      "gpu_acceleration": "CPU/GPU Layer Offloading",
+      "cpu_support": true,
+      "tool_calling": true,
+      "vision": false,
+      "execution_status": "IMPLEMENTED_UNVERIFIED",
+      "evidence_path": "D:/Bigfoot/colibri-models/deepseek-v4-flash"
+    },
+    {
+      "model_identifier": "qwen36-35b",
+      "family": "Qwen",
+      "role": "Mid-Tier Workhorse MoE Engine",
+      "parameters": "35B MoE (Mamba-Attention hybrid, 256 experts)",
+      "quantization": "bfloat16 / FP8",
+      "disk_footprint_mb": 23552.0,
+      "runtime_memory_mb": 23000,
+      "inference_runtime": "Colibri Engine (py -3 coli serve)",
+      "deployment": "Local",
+      "context_window_configured": 65536,
+      "context_window_max": 262144,
+      "gpu_acceleration": "CPU/GPU Layer Offloading",
+      "cpu_support": true,
+      "tool_calling": true,
+      "vision": false,
+      "execution_status": "IMPLEMENTED_UNVERIFIED",
+      "evidence_path": "D:/Bigfoot/colibri-models/qwen36-35b"
+    },
+    {
+      "model_identifier": "claude-3-5-sonnet-20241022",
+      "family": "Claude (Anthropic)",
+      "role": "Cloud Reasoning & Code Fallback",
+      "parameters": "Proprietary",
+      "quantization": "Proprietary",
+      "disk_footprint_mb": 0.0,
+      "runtime_memory_mb": 150,
+      "inference_runtime": "Anthropic HTTPS API",
+      "deployment": "Cloud",
+      "context_window_configured": 200000,
+      "context_window_max": 200000,
+      "gpu_acceleration": "Cloud",
+      "cpu_support": null,
+      "tool_calling": true,
+      "vision": true,
+      "execution_status": "WORKING",
+      "evidence_path": "src/main/llm/anthropic.js"
+    },
+    {
+      "model_identifier": "gpt-4o",
+      "family": "GPT (OpenAI)",
+      "role": "Cloud Multimodal Intelligence Fallback",
+      "parameters": "Proprietary",
+      "quantization": "Proprietary",
+      "disk_footprint_mb": 0.0,
+      "runtime_memory_mb": 150,
+      "inference_runtime": "OpenAI HTTPS API",
+      "deployment": "Cloud",
+      "context_window_configured": 128000,
+      "context_window_max": 128000,
+      "gpu_acceleration": "Cloud",
+      "cpu_support": null,
+      "tool_calling": true,
+      "vision": true,
+      "execution_status": "WORKING",
+      "evidence_path": "src/main/llm/openai.js"
+    }
+  ],
+  "agent_types": [
+    {
+      "type_name": "ReAct Agent",
+      "description": "Provider-agnostic autonomous execution loop handling tools, approvals, and anti-hallucination gates",
+      "file": "src/main/agent.js",
+      "status": "WORKING"
+    },
+    {
+      "type_name": "Autonomous DAG Planner",
+      "description": "Decomposes high-level instructions into dependency-gated GoalDAG nodes with Reflexion self-correction",
+      "file": "src/main/autonomous/goal_graph.js",
+      "status": "WORKING"
+    },
+    {
+      "type_name": "Adversary Action Auditor",
+      "description": "Zero-theatre fresh-context validator preventing harmful actions and unauthorized diversion",
+      "file": "src/main/autonomous/fresh_auditor.js",
+      "status": "WORKING"
+    },
+    {
+      "type_name": "Ghost AI Core",
+      "description": "Autonomous background ReAct engine with hybrid RRF search and MCP tool binding",
+      "file": "src/main/ghost_core/index.js",
+      "status": "WORKING"
+    }
+  ],
+  "memory_systems": {
+    "short_term_dialogue": {
+      "storage": "In-memory Array (Agent.conversationHistory)",
+      "capacity": "Max 60 turns",
+      "retention": "Session scoped",
+      "evidence": "src/main/agent.js:L98"
+    },
+    "long_term_facts": {
+      "storage": "%APPDATA%/mave/memory.json",
+      "capacity": "500 records max",
+      "index": "Inverted keyword index with frequency and recency weighting",
+      "auto_extraction": true,
+      "encryption": false,
+      "evidence": "src/main/memory.js:L1-L150"
+    },
+    "knowledge_graph": {
+      "storage": "%APPDATA%/mave/knowledge_graph.json",
+      "structure": "Entities and directed relationship edges with multi-hop BFS traversal",
+      "encryption": false,
+      "evidence": "src/main/rag/knowledge_graph.js:L1-L100"
+    },
+    "neural_vault_rag": {
+      "storage": "%APPDATA%/mave/vault/vault_index.json",
+      "chunking": "400-char blocks with 50-char overlap",
+      "retrieval": "Lexical BM25 term frequency matching",
+      "vector_model": null,
+      "evidence": "src/main/rag/knowledge_vault.js:L1-L80"
+    }
+  },
+  "device_control_capabilities": {
+    "mouse_click": { "method": "Win32 SendInput (input-helper.exe)", "status": "WORKING" },
+    "mouse_drag": { "method": "Smooth linear interpolation steps via Win32 SendInput", "status": "WORKING" },
+    "keyboard_type": { "method": "Win32 SendInput unicode keystrokes", "status": "WORKING" },
+    "screen_capture": { "method": "Desktop screen capture normalized to virtual desktop space", "status": "WORKING" },
+    "accessibility_scrape": { "method": "Windows UI Automation COM interop (uitree)", "status": "WORKING" },
+    "virtual_terminals": { "method": "ConPTY via @lydell/node-pty (PowerShell, CMD, Git Bash)", "status": "WORKING" },
+    "background_window_actions": { "method": "Simulated (cua_sandbox.js returns formatted strings)", "status": "STUB_MOCK" },
+    "ios_physical_tap": { "method": "HTTP forwarder to external TapKit bridge on port 8088", "status": "PROTOTYPE" },
+    "android_screen_control": { "method": "Android accessibility overlay in vorssaint/android subproject", "status": "PROTOTYPE" }
+  },
+  "supported_platforms": {
+    "windows_10_11_x64": { "supported": true, "notes": "Primary development and deployment target" },
+    "macos": { "supported": false, "notes": "Native Swift menu bar prototype in vorssaint/macos; main Electron app not tested" },
+    "linux": { "supported": false, "notes": "No native input-helper implementation" },
+    "android": { "supported": false, "notes": "Dynamic Island overlay prototype in vorssaint/android; no local LLM" },
+    "ios": { "supported": false, "notes": "Live Activity widget in vorssaint/ios; no local LLM" }
+  },
+  "infrastructure_and_hosting": {
+    "docker_container_support": { "implemented": false, "status": "NOT FOUND", "notes": "docker.exe not found on host; cua_sandbox.js uses in-memory Map" },
+    "virtual_machine_lifecycle": { "implemented": false, "status": "NOT FOUND", "notes": "No hypervisor hooks present in codebase" },
+    "nas_storage_server": { "implemented": false, "status": "NOT FOUND", "notes": "MaveDrop provides LAN P2P file buffering; no RAID or backup schedules" },
+    "multi_user_accounts": { "implemented": true, "status": "WORKING", "notes": "UserManager supports owner, admin, member, guest roles and bcrypt auth" },
+    "multi_user_automation_isolation": { "implemented": false, "status": "BROKEN", "notes": "Hardware mouse cursor is locked to display session 1; concurrent OS clicks conflict" },
+    "cloudflare_tunnel": { "implemented": true, "status": "WORKING", "notes": "cloudflared.exe binary bundled and verified" },
+    "mesh_discovery": { "implemented": true, "status": "WORKING", "notes": "UDP multicast LAN discovery on 239.255.255.250:50061" }
+  },
+  "business_and_marketplace": {
+    "privacy_preserving_ads": { "status": "DOCUMENTED ONLY", "code_present": false },
+    "compute_marketplace": { "status": "DOCUMENTED ONLY", "code_present": false },
+    "host_payout_metering": { "status": "DOCUMENTED ONLY", "code_present": false }
+  },
+  "hardware_tiers_audit": {
+    "mave_crust": {
+      "price_target_inr": 160000,
+      "recommended_specs": "8-Core CPU (Ryzen 7 7700), 32-64GB DDR5, RTX 4070 (12GB VRAM), 1TB NVMe",
+      "concurrency_limit": "1 active local 8B user",
+      "feasibility": "REALISTIC"
+    },
+    "mave_mantel": {
+      "price_target_inr": 320000,
+      "recommended_specs": "16-Core CPU (Ryzen 9 9900X), 64-128GB DDR5, RTX 4090 (24GB VRAM), 2TB NVMe",
+      "concurrency_limit": "2-4 active local 8B users (queued)",
+      "feasibility": "REALISTIC"
+    },
+    "mave_core": {
+      "price_target_inr": 999000,
+      "recommended_specs": "32-64 Core Workstation (Threadripper), 128-256GB ECC DDR5, Dual/Quad RTX 4090 or RTX 6000 Ada (48-96GB VRAM), Enterprise RAID",
+      "concurrency_limit": "6-8 active local 8B users (requires multi-GPU partitioning)",
+      "feasibility": "ACHIEVABLE WITH RIGOROUS MULTI-GPU ENGINEERING"
+    }
+  },
+  "known_issues_and_debt": [
+    {
+      "severity": "CRITICAL",
+      "component": "settings.js",
+      "issue": "API keys (Anthropic, OpenAI) are saved in plaintext JSON at AppData/Roaming/mave/settings.json",
+      "remediation": "Migrate to Chromium safeStorage API (Windows DPAPI)"
+    },
+    {
+      "severity": "CRITICAL",
+      "component": "computer.js",
+      "issue": "OS desktop automation binds directly to physical display session 1; multiple users cannot automate concurrently",
+      "remediation": "Implement headless virtual display driver or browser worker pool"
+    },
+    {
+      "severity": "HIGH",
+      "component": "remote/web.js",
+      "issue": "Monolithic architecture; 8,223 lines containing backend logic, HTML templates, CSS, and websockets",
+      "remediation": "Decompose into modular Express routers and static asset bundles"
+    },
+    {
+      "severity": "HIGH",
+      "component": "memory.js",
+      "issue": "All remote companion users share the single host memory.json and knowledge_graph.json",
+      "remediation": "Implement per-user SQLite database partitions indexed by userId"
+    },
+    {
+      "severity": "HIGH",
+      "component": "cua_sandbox.js & sentinels",
+      "issue": "Features advertise Cua driver, IoT protocols, and OBD-II automotive diagnostics but return simulated strings",
+      "remediation": "Build authentic hardware bridges or classify tools transparently as simulations"
+    }
+  ],
+  "recommended_benchmarks": [
+    { "name": "Cold Start & Memory Footprint", "metric": "Time (ms) & RSS RAM (MB) on clean boot" },
+    { "name": "First-Token Latency (8B Local)", "metric": "Time to first token (ms) with 2k, 4k, 8k context" },
+    { "name": "Sustained Generation Throughput", "metric": "Tokens/sec on RTX 5060 across batch sizes (1, 2, 4)" },
+    { "name": "VRAM Allocation Scaling", "metric": "MiB consumed per 4,096 tokens of KV-cache" },
+    { "name": "Whisper STT Word Error Rate", "metric": "Transcription accuracy and RTF on noisy audio buffers" },
+    { "name": "Kokoro TTS Phoneme Latency", "metric": "Time-to-first-phoneme (ms) on single-threaded CPU" }
+  ]
+}

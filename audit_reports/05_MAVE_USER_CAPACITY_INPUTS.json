@@ -1,0 +1,130 @@
+{
+  "concurrency_modes": {
+    "mode_a_os_automation": {
+      "mode_name": "Physical Desktop & OS Automation (computer.js)",
+      "max_concurrent_users_single_seat": 1,
+      "limiting_factor": "Physical hardware cursor, single active window focus, and display session 1 lock",
+      "multi_user_status": "BLOCKER_HARD_MUTEX",
+      "explanation": "Nut.js operates directly against the host OS desktop coordinates. Concurrent automation instructions will collide and disrupt the shared mouse and keyboard pointer."
+    },
+    "mode_b_headless_api_and_companion": {
+      "mode_name": "Headless Web Companion & API Hub (remote/web.js + users.js)",
+      "max_concurrent_users_single_seat": "Scales with GPU VRAM KV-cache slots and Node.js event loop",
+      "limiting_factor": "GPU VRAM KV-cache capacity and memory bandwidth",
+      "multi_user_status": "SUPPORTED_HEADLESS"
+    }
+  },
+  "kv_cache_scaling_formulas": {
+    "formula_bytes": "2 * n_layers * n_kv_heads * d_head * context_tokens * precision_bytes",
+    "qwen_8b_fp16": {
+      "layers": 32,
+      "kv_heads": 8,
+      "head_dim": 128,
+      "bytes_per_token": 131072,
+      "ram_per_user_2048_tokens_mb": 256,
+      "ram_per_user_4096_tokens_mb": 512,
+      "ram_per_user_8192_tokens_mb": 1024,
+      "ram_per_user_16384_tokens_mb": 2048
+    },
+    "qwen_4b_fp16": {
+      "layers": 28,
+      "kv_heads": 4,
+      "head_dim": 128,
+      "bytes_per_token": 57344,
+      "ram_per_user_2048_tokens_mb": 112,
+      "ram_per_user_4096_tokens_mb": 224,
+      "ram_per_user_8192_tokens_mb": 448
+    }
+  },
+  "host_hardware_capacity_analysis": {
+    "tested_system": {
+      "cpu": "AMD Ryzen 5 3600 (6 Cores / 12 Threads)",
+      "ram_total_gb": 48.0,
+      "ram_free_at_audit_gb": 27.8,
+      "gpu": "NVIDIA GeForce RTX 5060 (8,151 MiB VRAM)"
+    },
+    "base_runtime_footprint": {
+      "electron_main_process_mb": 350,
+      "renderer_ui_process_mb": 280,
+      "sqlite_and_db_cache_mb": 120,
+      "kokoro_tts_engine_mb": 350,
+      "whisper_stt_engine_mb": 180,
+      "web_server_idle_mb": 150,
+      "total_base_system_ram_mb": 1430,
+      "base_vram_overhead_mb": 830
+    },
+    "concurrency_limits_on_tested_hardware": {
+      "model_qwen3_vl_8b": {
+        "model_weights_vram_mb": 5902,
+        "remaining_vram_mb": 1419,
+        "max_concurrent_users_2k_ctx": 5,
+        "max_concurrent_users_4k_ctx": 2,
+        "max_concurrent_users_8k_ctx": 1,
+        "note": "Exceeding 1 concurrent 8K user causes Vulkan memory spillover to system RAM via PCIe, reducing generation speed by 60-75%."
+      },
+      "model_qwen3_4b": {
+        "model_weights_vram_mb": 4420,
+        "remaining_vram_mb": 2901,
+        "max_concurrent_users_2k_ctx": 25,
+        "max_concurrent_users_4k_ctx": 12,
+        "max_concurrent_users_8k_ctx": 6,
+        "note": "Best candidate for multi-user headless companion serving on 8GB VRAM."
+      }
+    }
+  },
+  "architectural_blockers_for_multi_tenancy": [
+    {
+      "subsystem": "Computer Control (computer.js)",
+      "blocker": "Desktop Session Lock",
+      "description": "Windows interactive desktop session 1 is shared. Concurrent mouse actions collide."
+    },
+    {
+      "subsystem": "File Storage (memory.js / db.js)",
+      "blocker": "Global Flat Storage",
+      "description": "SQLite and chat history files are structured for single-installation multi-user profiles, but do not provide cryptographically separated per-user database partitions."
+    },
+    {
+      "subsystem": "Inference Engine (llama-server)",
+      "blocker": "Single Model Context Slot by Default",
+      "description": "Embedded llama-server is currently invoked with default single-sequence slot unless launched with --parallel or -np flags in server.js."
+    }
+  ],
+  "hardware_tier_sizing_recommendations": {
+    "tier_1_single_user_personal_appliance": {
+      "target_users": 1,
+      "target_workload": "Real-time desktop automation, vision perception, coding, voice assistant",
+      "min_cpu": "6 Cores / 12 Threads (AMD Ryzen 5 3600 or Intel i5-12400)",
+      "min_ram_gb": 32,
+      "min_gpu_vram_gb": 8,
+      "target_gpu": "NVIDIA GeForce RTX 4060 / RTX 5060 (8GB)",
+      "storage_gb": "512 GB NVMe SSD"
+    },
+    "tier_2_small_office_home_hub": {
+      "target_users": "3 to 5 Concurrent Users",
+      "target_workload": "Headless web companion, chat, document summarization, background autonomous agents",
+      "min_cpu": "8 Cores / 16 Threads (Ryzen 7 7700 or Intel i7-13700)",
+      "min_ram_gb": 64,
+      "min_gpu_vram_gb": 16,
+      "target_gpu": "NVIDIA GeForce RTX 4080 / RTX 5070 / RTX 4060 Ti 16GB",
+      "storage_gb": "1 TB Gen4 NVMe SSD"
+    },
+    "tier_3_department_enterprise_server": {
+      "target_users": "10 to 25 Concurrent Users",
+      "target_workload": "Multi-agent continuous execution, concurrent RAG vector search, parallel voice & text",
+      "min_cpu": "16 to 32 Cores (AMD Threadripper or EPYC 7003/9004)",
+      "min_ram_gb": 128,
+      "min_gpu_vram_gb": 48,
+      "target_gpu": "2x NVIDIA RTX 4090 (24GB) or 2x RTX 5090 (32GB) or NVIDIA RTX 6000 Ada",
+      "storage_gb": "2 TB PCIe 4.0 NVMe Enterprise SSD"
+    },
+    "tier_4_large_scale_cloud_cluster": {
+      "target_users": "100+ Concurrent Users",
+      "target_workload": "Distributed microservices, vLLM inference cluster, virtualized sandboxed desktop containers",
+      "min_cpu": "64 Cores / 128 Threads",
+      "min_ram_gb": 512,
+      "min_gpu_vram_gb": 160,
+      "target_gpu": "4x to 8x NVIDIA H100 / L40S 48GB",
+      "storage_gb": "8 TB NVMe RAID 10"
+    }
+  }
+}

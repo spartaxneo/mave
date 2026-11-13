@@ -146,10 +146,11 @@ class AutonomousGoalDAG {
    * @param {string} opts.goal - High level user goal
    * @param {string} [opts.context] - Background environment / project context
    */
-  constructor({ id, goal, context = '' }) {
-    this.id = id || `goal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    this.goal = String(goal || '').trim();
-    this.context = String(context || '').trim();
+  constructor(opts = {}) {
+    const options = typeof opts === 'string' ? { goal: opts } : (opts || {});
+    this.id = options.id || `goal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    this.goal = String(options.goal || '').trim();
+    this.context = String(options.context || '').trim();
     this.nodes = new Map(); // id -> GoalNode
     this.status = 'planning'; // 'planning' | 'running' | 'paused' | 'completed' | 'failed'
     this.createdAt = Date.now();
@@ -196,6 +197,11 @@ class AutonomousGoalDAG {
     return executable;
   }
 
+  getNextExecutableNode() {
+    const list = this.getExecutableNodes();
+    return list.length > 0 ? list[0] : null;
+  }
+
   isComplete() {
     if (this.nodes.size === 0) return false;
     for (const node of this.nodes.values()) {
@@ -211,6 +217,10 @@ class AutonomousGoalDAG {
       if (node.status === 'failed') return true;
     }
     return false;
+  }
+
+  isFailed() {
+    return this.hasFailed();
   }
 
   getProgress() {
@@ -245,6 +255,10 @@ class AutonomousGoalDAG {
       percentage,
       status: this.status,
     };
+  }
+
+  getStats() {
+    return this.getProgress();
   }
 
   /**
@@ -507,4 +521,5 @@ class AutonomousGoalDAG {
 module.exports = {
   GoalNode,
   AutonomousGoalDAG,
+  AutonomousGoalGraph: AutonomousGoalDAG,
 };

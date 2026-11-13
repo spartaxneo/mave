@@ -33,7 +33,7 @@ const DEFAULT_VOICE = 'af_heart';
 
 // What a voice says when previewed. Made ahead of time for the default name (vendor/voice/previews),
 // so the play button sounds at once.
-const PREVIEW_NAME = 'Bigfoot';
+const PREVIEW_NAME = 'Mave';
 const previewText = (name) => `Hi! I’m ${name}. Just say hey ${name}, and tell me what to do.`;
 
 /** A short "On it." in this voice, ready-made, played the moment a request goes to the AI. */

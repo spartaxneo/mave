@@ -1,0 +1,494 @@
+{
+  "version": "2.0.0",
+  "generatedAt": "2026-10-31T12:55:00Z",
+  "philosophy": "Same authentic macOS Vorssaint UI/UX design identity. Maximum functional parity. Zero fake buttons or simulated sliders. Where OS sandboxing prevents exact reproduction, provide genuinely useful, native platform-exclusive replacements.",
+  "features": [
+    {
+      "id": "mixer",
+      "name": "Per-App Volume Mixer & 200% Overdrive Boost",
+      "category": "Sound",
+      "macos": {
+        "status": "native",
+        "api": "CoreAudio HAL / AudioDeviceCreateIOProcID",
+        "description": "Per-process volume attenuation and software gain overdrive past 100% up to 200%."
+      },
+      "windows": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "Windows Core Audio (IAudioSessionManager2 / ISimpleAudioVolume) & audio_win.ps1",
+        "implementation": "Native PowerShell and Win32 Core Audio endpoints adjust master volume and individual audio session volumes. Overdrive boosted via software audio gain.",
+        "replacement": null
+      },
+      "android": {
+        "tier": 3,
+        "strategy": "alternative",
+        "status": "IMPLEMENTED",
+        "api": "AudioManager / MediaSessionManager",
+        "restriction": "Android kernel sandboxing blocks non-system apps from adjusting individual third-party process volumes.",
+        "replacement": {
+          "id": "androidMediaController",
+          "name": "System Media Stream Controller & Equalizer",
+          "description": "Granular control of Android audio streams (Media, Call, Ring, Alarm, Notification) plus 5-band Equalizer and Bass Boost using android.media.audiofx.Equalizer."
+        }
+      },
+      "ios": {
+        "tier": 4,
+        "strategy": "platform_exclusive",
+        "status": "IMPLEMENTED",
+        "api": "AVAudioSession / MPVolumeView",
+        "restriction": "iOS sandbox strictly prohibits adjusting volumes of other apps.",
+        "replacement": {
+          "id": "iosAudioTools",
+          "name": "AVFoundation Audio Lab & Spatial Focus Generator",
+          "description": "Binaural white/pink/brown noise generator for deep work, live decibel sound level meter via AVAudioRecorder.averagePower, and high-fidelity Voice Memo capture."
+        }
+      },
+      "ipados": {
+        "tier": 4,
+        "strategy": "platform_exclusive",
+        "status": "IMPLEMENTED",
+        "api": "AVAudioSession / AudioToolbox",
+        "restriction": "iPadOS restricts cross-app volume modification.",
+        "replacement": {
+          "id": "ipadAudioTools",
+          "name": "Multi-Track Audio Focus Hub",
+          "description": "Ambient focus soundscape mixer with independent channels (Rain, Waves, Fire, White Noise) with multi-touch volume sliders on iPad."
+        }
+      }
+    },
+    {
+      "id": "brightness",
+      "name": "Display Brightness & Extra Dim Sub-Zero",
+      "category": "Energy & Display",
+      "macos": {
+        "status": "native",
+        "api": "DisplayServices / IODisplayConnect",
+        "description": "Hardware backlight adjustment and sub-zero extra dimming."
+      },
+      "windows": {
+        "tier": 1,
+        "strategy": "exact_and_alternative",
+        "status": "VERIFIED",
+        "api": "WmiMonitorBrightnessMethods (laptops) & display_win.ps1 + Software Alpha Dimming (desktops)",
+        "implementation": "Direct WMI backlight control for integrated screens; software black-overlay dimming for external DDC/CI desktop monitors.",
+        "replacement": null
+      },
+      "android": {
+        "tier": 2,
+        "strategy": "equivalent",
+        "status": "IMPLEMENTED",
+        "api": "android.provider.Settings.System.SCREEN_BRIGHTNESS & Window.attributes.screenBrightness",
+        "restriction": "Modifying system-wide global brightness requires WRITE_SETTINGS permission; in-app brightness changes apply to window.",
+        "replacement": {
+          "id": "androidBrightnessGuard",
+          "name": "Sub-Zero Night Dimmer & Blue Light Filter",
+          "description": "Software color-matrix overlay (Night Light) reducing blue wavelengths and lowering brightness below device hardware minimum for night reading."
+        }
+      },
+      "ios": {
+        "tier": 2,
+        "strategy": "equivalent",
+        "status": "IMPLEMENTED",
+        "api": "UIScreen.main.brightness (read/write within active app) & software night filter",
+        "restriction": "iOS allows UIScreen brightness modification while app is active, but prevents background global overrides.",
+        "replacement": {
+          "id": "iosNightReadingShield",
+          "name": "OLED True Black Dimmer & Reading Filter",
+          "description": "Zero-power OLED pure black (#000000) canvas and warm amber tint filter for night use without eye strain."
+        }
+      },
+      "ipados": {
+        "tier": 2,
+        "strategy": "equivalent",
+        "status": "IMPLEMENTED",
+        "api": "UIScreen.main.brightness & Paperlike reading filter",
+        "replacement": {
+          "id": "ipadPaperCanvas",
+          "name": "Apple Pencil Low-Glare Paper Mode",
+          "description": "High-contrast monochrome paper tone optimization for comfortable Apple Pencil sketching and reading."
+        }
+      }
+    },
+    {
+      "id": "keepAwake",
+      "name": "Keep Awake (Caffeinate)",
+      "category": "Energy & Display",
+      "macos": {
+        "status": "native",
+        "api": "IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep)",
+        "description": "Prevents display and system sleep."
+      },
+      "windows": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "Electron powerSaveBlocker('prevent-display-sleep') / SetThreadExecutionState",
+        "implementation": "Active power blocker keeps Windows display and CPU awake for 15m, 1h, 4h, or indefinite.",
+        "replacement": null
+      },
+      "android": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "IMPLEMENTED",
+        "api": "android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON & PowerManager.WakeLock & Screen WakeLock API",
+        "implementation": "Foreground wake lock keeps screen on while active; quick settings tile provides 1-tap toggling.",
+        "replacement": null
+      },
+      "ios": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "IMPLEMENTED",
+        "api": "UIApplication.shared.isIdleTimerDisabled = true & navigator.wakeLock",
+        "implementation": "Disables device idle timer to prevent display dimming or auto-locking during presentations and timers.",
+        "replacement": null
+      },
+      "ipados": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "IMPLEMENTED",
+        "api": "UIApplication.shared.isIdleTimerDisabled = true",
+        "implementation": "Keeps iPad screen active on desk or stand indefinitely while docked.",
+        "replacement": null
+      }
+    },
+    {
+      "id": "clipboardHistory",
+      "name": "Clipboard History Shelf & Sensitive Key Masking",
+      "category": "Clipboard & Files",
+      "macos": {
+        "status": "native",
+        "api": "NSPasteboard changeCount polling",
+        "description": "Encrypted local clipboard history with API key auto-masking."
+      },
+      "windows": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "Electron clipboard.readText() background polling (1.2s)",
+        "implementation": "Continuous background clipboard monitoring with regex masking for AWS, GitHub, OpenAI, and Anthropic tokens.",
+        "replacement": null
+      },
+      "android": {
+        "tier": 2,
+        "strategy": "equivalent",
+        "status": "IMPLEMENTED",
+        "api": "ClipboardManager.addPrimaryClipChangedListener (foreground) & AccessibilityService (background)",
+        "restriction": "Android 10+ restricts background apps from reading clipboard unless default IME or active accessibility service.",
+        "replacement": {
+          "id": "androidClipboardVault",
+          "name": "Authorized Clipboard Vault & Tap-to-Share",
+          "description": "Foreground clipboard shelf with Quick Settings tile paste trigger, sensitive secret redaction, and 1-tap copy."
+        }
+      },
+      "ios": {
+        "tier": 2,
+        "strategy": "equivalent",
+        "status": "IMPLEMENTED",
+        "api": "UIPasteboard.general with user paste action / Share Extension",
+        "restriction": "iOS displays system paste banner and disallows background clipboard access.",
+        "replacement": {
+          "id": "iosSnippetShelf",
+          "name": "Secure Snippets Library & Share Sheet Receiver",
+          "description": "Curated library of frequently used snippets, links, and markdown notes accessible via iOS Share Sheet and in-app shelf without paste banner harassment."
+        }
+      },
+      "ipados": {
+        "tier": 2,
+        "strategy": "equivalent",
+        "status": "IMPLEMENTED",
+        "api": "UIPasteboard & Drag and Drop (NSItemProvider)",
+        "replacement": {
+          "id": "ipadDragDropShelf",
+          "name": "iPadOS Drag-and-Drop Floating Shelf",
+          "description": "Multi-window floating shelf supporting drag-and-drop of text, images, and URLs directly from Safari and Notes in Split View."
+        }
+      }
+    },
+    {
+      "id": "cleaningMode",
+      "name": "Keyboard Cleaning Mode",
+      "category": "Tools",
+      "macos": {
+        "status": "native",
+        "api": "CGEventTap intercepting keyboard and trackpad events",
+        "description": "Locks keyboard input for wiping dust without accidental keystrokes."
+      },
+      "windows": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "Fullscreen transparent Electron window (cleaning_mode.html) with key-event absorption",
+        "implementation": "Transparent fullscreen overlay capturing and preventing default on all keystrokes, with 30s countdown and triple-Esc unlock.",
+        "replacement": null
+      },
+      "android": {
+        "tier": 4,
+        "strategy": "platform_exclusive",
+        "status": "IMPLEMENTED",
+        "api": "View.setOnTouchListener & Screen Lock",
+        "restriction": "Touchscreens don't have physical key cavities that gather debris; cleaning mode is touch rejection.",
+        "replacement": {
+          "id": "androidScreenWipeLock",
+          "name": "Screen Wipe Lock & Speaker Water Ejector",
+          "description": "Locks all capacitive touch input with triple-tap unlock, plus 165Hz acoustic frequency pulse to eject water droplets and dust from speaker grilles."
+        }
+      },
+      "ios": {
+        "tier": 4,
+        "strategy": "platform_exclusive",
+        "status": "IMPLEMENTED",
+        "api": "AVAudioEngine acoustic oscillator & touch lock",
+        "restriction": "iPhones have capacitive touchscreens, not mechanical key switches.",
+        "replacement": {
+          "id": "iosSonicEjector",
+          "name": "Sonic Speaker Cleaner & Touch Lock",
+          "description": "Emits targeted low-frequency resonant tones (165Hz–220Hz) through iPhone speakers to dislodge dust and water, accompanied by a touch-freeze wiping card."
+        }
+      },
+      "ipados": {
+        "tier": 3,
+        "strategy": "alternative",
+        "status": "IMPLEMENTED",
+        "api": "GCKeyboard / Key intercept & Touch freeze",
+        "implementation": "Intercepts external Magic Keyboard and Smart Keyboard Folio keystrokes, and freezes touchscreen for microfiber screen cleaning.",
+        "replacement": null
+      }
+    },
+    {
+      "id": "commandBar",
+      "name": "Command Bar (Spotlight Replacement)",
+      "category": "Tools",
+      "macos": {
+        "status": "native",
+        "api": "NSPanel floating window / ⌘Space global hotkey",
+        "description": "Spotlight-style launcher for math, conversions, emoji, apps."
+      },
+      "windows": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "Centered floating window (command_bar.html) / Alt+K / Alt+Space",
+        "implementation": "Instant math calculator, unit converter (km, mi, kg, lbs), emoji search, snippet lookup, and web search fallback.",
+        "replacement": null
+      },
+      "android": {
+        "tier": 2,
+        "strategy": "equivalent",
+        "status": "IMPLEMENTED",
+        "api": "BottomSheetDialogFragment & Quick Search Intent",
+        "replacement": {
+          "id": "androidQuickCommandSheet",
+          "name": "Android Quick Command Sheet & App Shortcuts",
+          "description": "Swipe-up glass bottom sheet with live math evaluator, currency/unit converter, and quick launch shortcuts for frequently used Android apps."
+        }
+      },
+      "ios": {
+        "tier": 2,
+        "strategy": "equivalent",
+        "status": "IMPLEMENTED",
+        "api": "SwiftUI .sheet() & App Intents / Spotlight Search Indexing",
+        "replacement": {
+          "id": "iosSpotlightShortcuts",
+          "name": "iOS Spotlight Actions & Interactive Command Sheet",
+          "description": "Integrates directly into iOS native Spotlight via App Intents and CoreSpotlight, plus an in-app pull-down command sheet."
+        }
+      },
+      "ipados": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "IMPLEMENTED",
+        "api": "SwiftUI modal presentation & ⌘K keyboard shortcut",
+        "implementation": "Hardware keyboard ⌘K opens floating Spotlight bar identical to macOS, supporting trackpad cursor navigation.",
+        "replacement": null
+      }
+    },
+    {
+      "id": "notch",
+      "name": "Dynamic Island Notch HUD & Companion Mascot",
+      "category": "Dynamic Island",
+      "macos": {
+        "status": "native",
+        "api": "NSWindow attached to camera cutout",
+        "description": "Hardware cutout HUD, pearl mascot (● ●), media strip, audio visualizer."
+      },
+      "windows": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "Frameless transparent BrowserWindow (island.html) top-center",
+        "implementation": "Screen-saver level top-center capsule, expandable on hover or click, interactive mascot rig with 7 palettes and 7 moments, live visualizer.",
+        "replacement": null
+      },
+      "android": {
+        "tier": 2,
+        "strategy": "equivalent",
+        "status": "IMPLEMENTED",
+        "api": "SYSTEM_ALERT_WINDOW overlay capsule / notch pill in PWA",
+        "implementation": "Android camera hole-punch notch capsule simulation adhering to DisplayCutout, expandable with media controls and companion pet.",
+        "replacement": null
+      },
+      "ios": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "IMPLEMENTED",
+        "api": "ActivityKit Live Activity & Dynamic Island (WidgetKit)",
+        "implementation": "Genuine native iOS Dynamic Island implementation in VorssaintIslandActivity.swift for iPhone 14 Pro/15/16 series, plus in-app capsule for all devices.",
+        "replacement": null
+      },
+      "ipados": {
+        "tier": 2,
+        "strategy": "equivalent",
+        "status": "IMPLEMENTED",
+        "api": "Floating Pill HUD in NavigationSplitView",
+        "implementation": "Top-center glass capsule on iPad displays live audio playback, system statistics, and companion mascot without obstructing Stage Manager.",
+        "replacement": null
+      }
+    },
+    {
+      "id": "portManager",
+      "name": "Port Manager & Process Killer",
+      "category": "Tools",
+      "macos": {
+        "status": "native",
+        "api": "lsof -iTCP -sTCP:LISTEN & kill -9",
+        "description": "Active TCP port listener and process termination."
+      },
+      "windows": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "netstat -ano -p tcp & taskkill /F /PID",
+        "implementation": "Parses listening TCP ports, extracts PID and process name, and terminates orphan dev servers (Node, Vite, Python, Next.js).",
+        "replacement": null
+      },
+      "android": {
+        "tier": 4,
+        "strategy": "platform_exclusive",
+        "status": "IMPLEMENTED",
+        "api": "ConnectivityManager & NetworkCapabilities & TrafficStats",
+        "restriction": "Android kernel sandboxing does not allow non-root apps to execute lsof/netstat on system sockets or kill other PIDs.",
+        "replacement": {
+          "id": "androidNetworkDiagnostics",
+          "name": "Network Health Sentinel & Latency Analyzer",
+          "description": "Tests gateway ping, DNS resolution latency, public IP lookup, Wi-Fi link speed (RSSI), and cellular signal strength."
+        }
+      },
+      "ios": {
+        "tier": 4,
+        "strategy": "platform_exclusive",
+        "status": "IMPLEMENTED",
+        "api": "Network.framework (NWPathMonitor) & URLSession",
+        "restriction": "iOS strictly forbids accessing system process tables or socket states of other applications.",
+        "replacement": {
+          "id": "iosNetworkDiagnostics",
+          "name": "Network Route & Connectivity Health Monitor",
+          "description": "Monitors active connection type (Wi-Fi / 5G / Cellular), DNS latency, IPv6 reachability, and zero-packet loss testing."
+        }
+      },
+      "ipados": {
+        "tier": 4,
+        "strategy": "platform_exclusive",
+        "status": "IMPLEMENTED",
+        "api": "Network.framework & Local Network discovery",
+        "replacement": {
+          "id": "ipadNetworkDiagnostics",
+          "name": "iPad Pro Network Diagnostics & Local Device Discovery",
+          "description": "Diagnoses Wi-Fi 6E/7 throughput, LAN gateway responsiveness, and AirDrop peer readiness."
+        }
+      }
+    },
+    {
+      "id": "windowLayout",
+      "name": "Window Layout Snapping & Maximizer",
+      "category": "Windows & Dock",
+      "macos": {
+        "status": "native",
+        "api": "Accessibility APIs / AXUIElementSetAttributeValue",
+        "description": "Snaps active window to halves, quarters, center, and fullscreen."
+      },
+      "windows": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "Win32 MoveWindow & ShowWindow via PowerShell / C# P/Invoke",
+        "implementation": "Snaps the most recent foreground window to Left Half, Right Half, Top, Bottom, Fullscreen, Quarters, and Center.",
+        "replacement": null
+      },
+      "android": {
+        "tier": 3,
+        "strategy": "alternative",
+        "status": "IMPLEMENTED",
+        "api": "Activity.enterPictureInPictureMode & Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT",
+        "restriction": "Android manages window splitting through native OS gesture and system multi-window manager.",
+        "replacement": {
+          "id": "androidPiPAndSplit",
+          "name": "Picture-in-Picture & Split Screen Helper",
+          "description": "1-tap Picture-in-Picture trigger for video/companion, and split-screen companion docking."
+        }
+      },
+      "ios": {
+        "tier": 5,
+        "strategy": "additional_utility",
+        "status": "IMPLEMENTED",
+        "api": "SwiftUI NavigationStack & Sheet presentation",
+        "restriction": "iPhones do not support window splitting; apps run in single fullscreen or Picture-in-Picture.",
+        "replacement": {
+          "id": "iosFocusManager",
+          "name": "Focus Mode & Deep Work Timer",
+          "description": "Pomodoro focus timer with ambient soundscape integration and Apple Focus Filter triggers."
+        }
+      },
+      "ipados": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "IMPLEMENTED",
+        "api": "NavigationSplitView & iPadOS Stage Manager / Split View support",
+        "implementation": "Adaptive multi-column layout seamlessly responding to Stage Manager resizing, iPad Split View (50/50, 70/30), and Slide Over.",
+        "replacement": null
+      }
+    },
+    {
+      "id": "urlCleaner",
+      "name": "URL Tracking Stripper",
+      "category": "Clipboard & Files",
+      "macos": {
+        "status": "native",
+        "api": "URL regex stripping",
+        "description": "Removes utm_*, fbclid, gclid from pasted URLs."
+      },
+      "windows": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "VorssaintManager.cleanUrl()",
+        "implementation": "Strips 18+ surveillance and tracking query parameters while preserving legitimate query params.",
+        "replacement": null
+      },
+      "android": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "VorssaintShareActivity.kt & client regex engine",
+        "implementation": "Available via Android Share Sheet ('Clean URL with Vorssaint') and in-app utility card.",
+        "replacement": null
+      },
+      "ios": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "Swift URLComponents & Share Extension",
+        "implementation": "Available via iOS Action Extension, Siri Shortcut App Intent, and in-app utility card.",
+        "replacement": null
+      },
+      "ipados": {
+        "tier": 1,
+        "strategy": "exact",
+        "status": "VERIFIED",
+        "api": "Swift URLComponents & Drag-and-Drop",
+        "implementation": "Drag any link into Vorssaint shelf to clean tracking params immediately.",
+        "replacement": null
+      }
+    }
+  ]
+}

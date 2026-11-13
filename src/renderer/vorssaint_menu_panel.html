@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vorssaint · Menu Panel</title>
+  <link rel="stylesheet" href="mascot_rig.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: transparent;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 8px;
+    }
+
+    /* Popover Container */
+    .popover {
+      width: 344px;
+      height: 580px;
+      background: rgba(18, 18, 22, 0.94);
+      backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      color: #f4f4f5;
+    }
+
+    /* Popover Header */
+    .pop-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .mascot-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    }
+    .mascot-eye {
+      width: 3px;
+      height: 7px;
+      border-radius: 1.5px;
+      background: #000000;
+    }
+    .brand-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.2px;
+    }
+    .status-pill {
+      font-size: 10px;
+      font-weight: 600;
+      color: #71717a;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .icon-btn {
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s ease;
+    }
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .icon-btn.active {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+    }
+
+    /* Segmented Navigation Tabs */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      padding: 8px 10px;
+      background: rgba(0, 0, 0, 0.28);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      scrollbar-width: none;
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: 0 0 auto;
+      background: transparent;
+      border: none;
+      padding: 5px 9px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #a1a1aa;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .toggle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .toggle-tile {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+    .toggle-tile:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+    .toggle-tile.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+    }
+    .toggle-icon { font-size: 16px; }
+    .toggle-name { font-size: 11.5px; font-weight: 600; color: #fff; }
+    .toggle-state { font-size: 10px; color: #a1a1aa; }
+    .toggle-tile.active .toggle-state { color: #38bdf8; font-weight: 600; }
+    .moment-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .moment-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #d4d4d8;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .moment-chip:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .palette-grid {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .palette-btn {
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+      color: #e4e4e7;
+      font-size: 10.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .palette-btn:hover, .palette-btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .url-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 6px 8px;
+      color: #fff;
+      font-size: 11px;
+      outline: none;
+    }
+    .url-input:focus { border-color: #38bdf8; }
+    .btn-clean-action {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      border: none;
+    }
+    .btn-clean-action:hover {
+      background: #38bdf8;
+      color: #000;
+    }
+    .tab-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .tab-btn.active {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Scrollable Tab Content Container */
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 12px 14px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .tab-content.active {
+      display: flex;
+    }
+    .tab-content::-webkit-scrollbar {
+      width: 4px;
+    }
+    .tab-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+
+    /* Card Box */
+    .card-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Sliders */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .app-icon-wrap {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      background: #27272a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .app-title {
+      width: 82px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #e4e4e7;
+      font-weight: 500;
+    }
+    .slider-container {
+      flex: 1;
+      position: relative;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .slider-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: #ffffff;
+      border-radius: 8px;
+      transition: width 0.08s ease;
+    }
+    .slider-fill.boosted {
+      background: linear-gradient(90deg, #ffffff 66%, #38bdf8 100%);
+    }
+    .slider-pct {
+      width: 38px;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: right;
+      color: #a1a1aa;
+      font-variant-numeric: tabular-nums;
+    }
+    .slider-pct.boosted {
+      color: #38bdf8;
+    }
+    .mute-btn {
+      background: transparent;
+      border: none;
+      color: #71717a;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .mute-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .mute-btn.muted {
+      color: #ef4444;
+    }
+
+    /* Output Switcher */
+    .output-select-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      font-size: 12px;
+      color: #e4e4e7;
+    }
+    .output-device-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .metric-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .metric-head {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #71717a;
+      text-transform: uppercase;
+    }
+    .metric-val {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-sub {
+      font-size: 10.5px;
+      color: #a1a1aa;
+    }
+
+    /* Sparkline Canvas */
+    .sparkline-canvas {
+      width: 100%;
+      height: 38px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+
+    /* Window Snapping Matrix */
+    .snap-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .snap-tile {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      color: #a1a1aa;
+      transition: all 0.15s ease;
+    }
+    .snap-tile:hover {
+      background: rgba(255, 255, 255, 0.09);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    .snap-tile:active {
+      transform: scale(0.96);
+    }
+    .snap-icon-box {
+      width: 24px;
+      height: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+      position: relative;
+    }
+    .snap-fill-half-l {
+      position: absolute; left: 1px; top: 1px; bottom: 1px; width: 10px; background: #38bdf8; border-radius: 2px 0 0 2px;
+    }
+    .snap-fill-half-r {
+      position: absolute; right: 1px; top: 1px; bottom: 1px; width: 10px; background: #38bdf8; border-radius: 0 2px 2px 0;
+    }
+    .snap-fill-full {
+      position: absolute; inset: 1px; background: #38bdf8; border-radius: 2px;
+    }
+    .snap-fill-top {
+      position: absolute; left: 1px; right: 1px; top: 1px; height: 6px; background: #38bdf8; border-radius: 2px 2px 0 0;
+    }
+    .snap-fill-bot {
+      position: absolute; left: 1px; right: 1px; bottom: 1px; height: 6px; background: #38bdf8; border-radius: 0 0 2px 2px;
+    }
+    .snap-fill-quad {
+      position: absolute; left: 1px; top: 1px; width: 10px; height: 6px; background: #38bdf8; border-radius: 2px 0 0 0;
+    }
+    .snap-label {
+      font-size: 10.5px;
+      font-weight: 500;
+    }
+
+    /* Clipboard & Utilities Items */
+    .util-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+    }
+    .util-input:focus {
+      border-color: #38bdf8;
+    }
+    .clip-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .clip-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 11.5px;
+      color: #e4e4e7;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      transition: background 0.12s ease;
+    }
+    .clip-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .clip-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .clip-badge {
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    /* Ports List */
+    .port-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 6px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 6px;
+      font-size: 11.5px;
+    }
+    .port-num {
+      font-weight: 700;
+      color: #38bdf8;
+      font-variant-numeric: tabular-nums;
+    }
+    .port-proc {
+      color: #a1a1aa;
+      font-size: 11px;
+    }
+    .btn-kill {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-kill:hover {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    /* Scratchpad textarea */
+    .scratch-area {
+      width: 100%;
+      height: 110px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 8px;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      font-size: 12px;
+      line-height: 1.4;
+      resize: none;
+      outline: none;
+    }
+    .scratch-area:focus {
+      border-color: #38bdf8;
+    }
+
+    /* Keep Awake Mode Selector */
+    .awake-modes {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .awake-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #a1a1aa;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6px 0;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .awake-btn:hover {
+      background: rgba(255, 255, 255, 0.09);
+      color: #fff;
+    }
+    .awake-btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="popover">
+
+    <!-- Header -->
+    <header class="pop-header">
+      <div class="brand-wrap" id="btn-brand" title="Open Dynamic Island">
+        <div id="panel-mascot-host" style="width:22px; height:22px; display:flex; align-items:center; justify-content:center;"></div>
+        <span class="brand-title">Vorssaint</span>
+      </div>
+
+      <span class="status-pill" id="pill-telemetry">AMD Ryzen · 38°C</span>
+
+      <div class="header-actions">
+        <button type="button" class="icon-btn" id="btn-awake-quick" title="Toggle Keep Awake">☕</button>
+        <button type="button" class="icon-btn" id="btn-settings-gear" title="Open Features Hub & Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Tab Bar -->
+    <nav class="tab-bar">
+      <button type="button" class="tab-btn active" data-tab="mixer">🔊 Mixer</button>
+      <button type="button" class="tab-btn" data-tab="system">📊 System</button>
+      <button type="button" class="tab-btn" data-tab="controls">🪟 Windows</button>
+      <button type="button" class="tab-btn" data-tab="toggles">⚡ Toggles</button>
+      <button type="button" class="tab-btn" data-tab="island">🏝️ Island</button>
+      <button type="button" class="tab-btn" data-tab="utilities">🛠 Utilities</button>
+    </nav>
+
+    <!-- TAB 1: MIXER -->
+    <section class="tab-content active" id="tab-mixer">
+      <!-- Output Info -->
+      <div class="output-select-row">
+        <div class="output-device-name">
+          <span>🔊</span>
+          <span id="output-name">System Default Output</span>
+        </div>
+        <span style="font-size: 11px; color: #71717a;">Windows Audio</span>
+      </div>
+
+      <!-- Master Volume -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Master Volume</span>
+          <span id="master-vol-num">65%</span>
+        </div>
+        <div class="slider-row">
+          <span style="font-size: 13px;">🔉</span>
+          <div class="slider-container" id="master-vol-track">
+            <div class="slider-fill" id="master-vol-fill" style="width: 65%;"></div>
+          </div>
+          <span style="font-size: 13px;">🔊</span>
+        </div>
+      </div>
+
+      <!-- Quick Audio Silence -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Instant Mute</span>
+          <span style="font-size: 10px; color: #71717a;">System Master</span>
+        </div>
+        <button type="button" class="btn-clean-action" id="btn-kill-all-audio-mixer" style="width: 100%;" onclick="document.getElementById('btn-kill-all-audio')?.click()">
+          🔇 Mute System Audio
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 2: SYSTEM MONITOR -->
+    <section class="tab-content" id="tab-system">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-head">CPU Load</span>
+          <span class="metric-val" id="val-cpu">—</span>
+          <span class="metric-sub" id="sub-cpu">Loading…</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-head">RAM Usage</span>
+          <span class="metric-val" id="val-ram">—</span>
+          <span class="metric-sub" id="sub-ram">Loading…</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-head">GPU VRAM</span>
+          <span class="metric-val" id="val-gpu">—</span>
+          <span class="metric-sub" id="sub-gpu">Loading…</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-head">System Uptime</span>
+          <span class="metric-val" id="val-uptime">—</span>
+          <span class="metric-sub" id="sub-uptime">Host OS</span>
+        </div>
+      </div>
+
+      <!-- Live CPU Load History Card -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>CPU Load History</span>
+          <span id="val-net-speed">Live telemetry</span>
+        </div>
+        <canvas class="sparkline-canvas" id="sparkline-net"></canvas>
+      </div>
+
+      <!-- Disk & Host Summary -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Storage &amp; Host</span>
+          <span id="val-battery">—</span>
+        </div>
+        <div style="font-size: 11.5px; color: #a1a1aa; display: flex; justify-content: space-between;">
+          <span id="val-disk">Scanning disk…</span>
+          <span id="val-host-health" style="color: #10b981;">Active</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: WINDOWS & CONTROLS -->
+    <section class="tab-content" id="tab-controls">
+      <!-- Window Snapping Layouts -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Window Layout Snapping</span>
+          <span style="font-size: 10px; color: #71717a;">Snap active window</span>
+        </div>
+        <div class="snap-grid">
+          <button type="button" class="snap-tile" data-snap="left">
+            <div class="snap-icon-box"><div class="snap-fill-half-l"></div></div>
+            <span class="snap-label">Left 1/2</span>
+          </button>
+          <button type="button" class="snap-tile" data-snap="right">
+            <div class="snap-icon-box"><div class="snap-fill-half-r"></div></div>
+            <span class="snap-label">Right 1/2</span>
+          </button>
+          <button type="button" class="snap-tile" data-snap="maximize">
+            <div class="snap-icon-box"><div class="snap-fill-full"></div></div>
+            <span class="snap-label">Maximize</span>
+          </button>
+          <button type="button" class="snap-tile" data-snap="top">
+            <div class="snap-icon-box"><div class="snap-fill-top"></div></div>
+            <span class="snap-label">Top 1/2</span>
+          </button>
+          <button type="button" class="snap-tile" data-snap="bottom">
+            <div class="snap-icon-box"><div class="snap-fill-bot"></div></div>
+            <span class="snap-label">Bottom 1/2</span>
+          </button>
+          <button type="button" class="snap-tile" data-snap="corner">
+            <div class="snap-icon-box"><div class="snap-fill-quad"></div></div>
+            <span class="snap-label">Quarter</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: QUICK TOGGLES -->
+    <section class="tab-content" id="tab-toggles">
+      <div class="card-box">
+        <div class="card-title">
+          <span>Quick System Toggles</span>
+          <span style="font-size: 10px; color: #71717a;">1-Click Actions</span>
+        </div>
+        <div class="toggle-grid">
+          <button type="button" class="toggle-tile" id="toggle-mic" data-toggle="micMute">
+            <span class="toggle-icon">🎤</span>
+            <span class="toggle-name">Microphone</span>
+            <span class="toggle-state" id="mic-state-label">Unmuted</span>
+          </button>
+          <button type="button" class="toggle-tile active" id="toggle-dark" data-toggle="darkMode">
+            <span class="toggle-icon">🌙</span>
+            <span class="toggle-name">Dark Mode</span>
+            <span class="toggle-state">Active</span>
+          </button>
+          <button type="button" class="toggle-tile active" id="toggle-icons" data-toggle="desktopIcons">
+            <span class="toggle-icon">🖥️</span>
+            <span class="toggle-name">Desktop Icons</span>
+            <span class="toggle-state" id="icons-state-label">Visible</span>
+          </button>
+          <button type="button" class="toggle-tile" id="toggle-hidden" data-toggle="hiddenFiles">
+            <span class="toggle-icon">📁</span>
+            <span class="toggle-name">Hidden Files</span>
+            <span class="toggle-state" id="hidden-state-label">Hidden</span>
+          </button>
+          <button type="button" class="toggle-tile" id="toggle-caffeinate" data-toggle="keepAwake">
+            <span class="toggle-icon">☕</span>
+            <span class="toggle-name">Caffeinate</span>
+            <span class="toggle-state" id="caff-state-label">Off</span>
+          </button>
+          <button type="button" class="toggle-tile" id="toggle-cleaning" data-toggle="cleaningMode">
+            <span class="toggle-icon">⌨️</span>
+            <span class="toggle-name">Cleaning Lock</span>
+            <span class="toggle-state">Ready</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Audio Silence -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Emergency Audio Kill</span>
+        </div>
+        <button type="button" class="btn-clean-action" id="btn-kill-all-audio" style="width: 100%;">
+          🔇 Mute All Audio Streams Instantly
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 5: DYNAMIC ISLAND & MASCOT -->
+    <section class="tab-content" id="tab-island">
+      <div class="card-box">
+        <div class="card-title">
+          <span>Dynamic Island Capsule</span>
+          <button type="button" id="btn-toggle-island" style="background:transparent; border:none; color:#38bdf8; font-size:11px; cursor:pointer; font-weight:600;">Expand / Toggle</button>
+        </div>
+        <div style="font-size: 11.5px; color: #a1a1aa; line-height: 1.4;">
+          The hardware-cutout HUD displays live audio visualizer waveforms, AI Agent token speeds, and media player tracks.
+        </div>
+      </div>
+
+      <!-- Mascot Moments Trigger -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Companion Mascot Moments</span>
+          <span style="font-size: 10px; color: #38bdf8;">(● ●) Pearl</span>
+        </div>
+        <div class="moment-chips">
+          <button type="button" class="moment-chip" data-moment="hop">🐰 Hop</button>
+          <button type="button" class="moment-chip" data-moment="love">❤️ Love</button>
+          <button type="button" class="moment-chip" data-moment="think">💭 Think</button>
+          <button type="button" class="moment-chip" data-moment="groove">🎵 Groove</button>
+          <button type="button" class="moment-chip" data-moment="sleep">💤 Sleep</button>
+          <button type="button" class="moment-chip" data-moment="wink">😉 Wink</button>
+        </div>
+      </div>
+
+      <!-- Mascot Palette -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Companion Palette</span>
+        </div>
+        <div class="palette-grid">
+          <button type="button" class="palette-btn active" data-palette="pearl">⚪ Pearl</button>
+          <button type="button" class="palette-btn" data-palette="obsidian">⚫ Obsidian</button>
+          <button type="button" class="palette-btn" data-palette="amber">🟡 Amber</button>
+          <button type="button" class="palette-btn" data-palette="cyber">⚡ Cyber</button>
+          <button type="button" class="palette-btn" data-palette="roseGold">🌸 Rose</button>
+          <button type="button" class="palette-btn" data-palette="emerald">🟢 Emerald</button>
+          <button type="button" class="palette-btn" data-palette="solar">☀️ Solar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: UTILITIES -->
+    <section class="tab-content" id="tab-utilities">
+      <!-- Keep Awake (Caffeinate) -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Keep Awake (Caffeinate)</span>
+          <span id="awake-status-text" style="color: #71717a;">Off</span>
+        </div>
+        <div class="awake-modes">
+          <button type="button" class="awake-btn active" data-mode="off">Off</button>
+          <button type="button" class="awake-btn" data-mode="15m">15m</button>
+          <button type="button" class="awake-btn" data-mode="1h">1h</button>
+          <button type="button" class="awake-btn" data-mode="4h">4h</button>
+        </div>
+      </div>
+
+      <!-- Clipboard Shelf -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Clipboard Shelf</span>
+          <span id="clip-count" style="font-size: 10px; color: #71717a;">0 items</span>
+        </div>
+        <input type="text" class="util-input" id="clip-search" placeholder="Search copied history...">
+        <div class="clip-list" id="clip-list">
+          <div class="clip-item"><span class="clip-text" style="color:#71717a;">Copy text to capture it here.</span></div>
+        </div>
+      </div>
+
+      <!-- Scratchpad -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Quick Scratchpad (Autosaved)</span>
+        </div>
+        <textarea class="scratch-area" id="scratch-text" placeholder="Type quick notes, ideas, or markdown..."></textarea>
+      </div>
+
+      <!-- Port Manager -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Port Manager (Dev Tools)</span>
+          <button type="button" id="btn-refresh-ports" style="background:transparent; border:none; color:#38bdf8; font-size:10.5px; cursor:pointer;">Refresh</button>
+        </div>
+        <div id="ports-list" style="display:flex; flex-direction:column; gap:4px; max-height:100px; overflow-y:auto;">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+
+      <!-- URL Cleaner Utility -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>URL Cleaner (Tracking Stripper)</span>
+        </div>
+        <input type="text" class="url-input" id="input-clean-url" placeholder="Paste URL with utm_*, fbclid, gclid...">
+        <button type="button" class="btn-clean-action" id="btn-clean-copy">Clean & Copy URL</button>
+      </div>
+
+      <!-- Text Snippets Quick List -->
+      <div class="card-box">
+        <div class="card-title">
+          <span>Text Snippets Expansion</span>
+        </div>
+        <div id="snippets-quick-list" style="display:flex; flex-direction:column; gap:4px; max-height:90px; overflow-y:auto;">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="mascot_rig.js"></script>
+  <script>
+    const api = window.buddy;
+
+    // --- TAB SWITCHING ---
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const target = document.getElementById(`tab-${btn.dataset.tab}`);
+        if (target) target.classList.add('active');
+      });
+    });
+
+    // --- HEADER BUTTONS ---
+    document.getElementById('btn-brand').addEventListener('click', () => {
+      if (api && api.invoke) api.invoke('island:expand');
+    });
+
+    document.getElementById('btn-settings-gear').addEventListener('click', () => {
+      if (api && api.invoke) api.invoke('vorssaint:open-hub');
+    });
+
+    const awakeQuickBtn = document.getElementById('btn-awake-quick');
+    awakeQuickBtn.addEventListener('click', async () => {
+      const isCurrentlyActive = awakeQuickBtn.classList.contains('active');
+      const newMode = isCurrentlyActive ? 'off' : '1h';
+      if (api && api.invoke) {
+        await api.invoke('vorssaint:keep-awake-set', newMode);
+        updateKeepAwakeUI(newMode);
+      }
+    });
+
+    // --- WINDOW SNAPPING TILES ---
+    document.querySelectorAll('.snap-tile').forEach(tile => {
+      tile.addEventListener('click', () => {
+        const snap = tile.dataset.snap;
+        if (api && api.invoke) api.invoke('vorssaint:snap-window', snap);
+        tile.style.borderColor = '#38bdf8';
+        setTimeout(() => tile.style.borderColor = '', 300);
+      });
+    });
+
+    // --- KEEP AWAKE BUTTONS ---
+    const awakeBtns = document.querySelectorAll('.awake-btn');
+    awakeBtns.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const mode = btn.dataset.mode;
+        if (api && api.invoke) {
+          await api.invoke('vorssaint:keep-awake-set', mode);
+          updateKeepAwakeUI(mode);
+        }
+      });
+    });
+
+    function updateKeepAwakeUI(mode) {
+      awakeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+      const statusText = document.getElementById('awake-status-text');
+      if (statusText) statusText.textContent = mode === 'off' ? 'Off' : `Active (${mode})`;
+      if (statusText) statusText.style.color = mode === 'off' ? '#71717a' : '#38bdf8';
+      awakeQuickBtn.classList.toggle('active', mode !== 'off');
+    }
+
+    // --- REAL SYSTEM AUDIO SLIDERS & PER-APP ROUTING ---
+    function initSlider(trackEl, fillEl, labelEl, maxVal = 100, isBoost = false, onChange = null) {
+      if (!trackEl) return;
+      const setPercent = (pct, fireEvent = true) => {
+        const clamped = Math.max(0, Math.min(maxVal, Math.round(pct)));
+        fillEl.style.width = `${Math.min(100, (clamped / maxVal) * 100)}%`;
+        if (labelEl) {
+          labelEl.textContent = `${clamped}%`;
+          labelEl.classList.toggle('boosted', clamped > 100);
+        }
+        if (fireEvent && typeof onChange === 'function') {
+          onChange(clamped);
+        }
+      };
+      trackEl._setPercent = setPercent;
+
+      const handleMove = (e) => {
+        const rect = trackEl.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const ratio = (clientX - rect.left) / rect.width;
+        setPercent(ratio * maxVal, true);
+      };
+
+      trackEl.addEventListener('mousedown', (e) => {
+        handleMove(e);
+        const onMouseMove = (ev) => handleMove(ev);
+        const onMouseUp = () => {
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    const masterTrack = document.getElementById('master-vol-track');
+    const masterFill = document.getElementById('master-vol-fill');
+    const masterNum = document.getElementById('master-vol-num');
+    initSlider(masterTrack, masterFill, masterNum, 100, false, (val) => {
+      if (api && api.invoke) api.invoke('vorssaint:set-volume', val).catch(() => {});
+    });
+
+    document.querySelectorAll('.app-slider-track').forEach(track => {
+      const fill = track.querySelector('.slider-fill');
+      const row = track.closest('.slider-row');
+      const label = row.querySelector('.slider-pct');
+      const maxVal = parseInt(track.dataset.max || '100', 10);
+      const appKey = track.dataset.app;
+      initSlider(track, fill, label, maxVal, maxVal > 100, (val) => {
+        if (api && api.invoke && appKey) {
+          api.invoke('vorssaint:app-volume-set', { app: appKey, volumePct: val }).catch(() => {});
+        }
+      });
+    });
+
+    // Mute Buttons
+    document.querySelectorAll('.mute-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('.slider-row');
+        const track = row ? row.querySelector('.app-slider-track') : null;
+        const appKey = track ? track.dataset.app : null;
+        const isMuted = btn.classList.toggle('muted');
+        btn.textContent = isMuted ? 'Unmute' : 'Mute';
+        const targetVol = isMuted ? 0 : 80;
+        if (track && track._setPercent) track._setPercent(targetVol, false);
+        if (api && api.invoke && appKey) {
+          api.invoke('vorssaint:app-volume-set', { app: appKey, volumePct: targetVol }).catch(() => {});
+        }
+      });
+    });
+
+    // Load initial app volumes
+    async function loadAppVolumes() {
+      if (!api || !api.invoke) return;
+      try {
+        const vols = await api.invoke('vorssaint:app-volumes-get');
+        if (vols) {
+          document.querySelectorAll('.app-slider-track').forEach(track => {
+            const key = track.dataset.app;
+            if (vols[key] !== undefined && track._setPercent) {
+              track._setPercent(vols[key], false);
+            }
+          });
+        }
+      } catch {}
+    }
+    loadAppVolumes();
+
+    // --- SCRATCHPAD AUTOSAVE ---
+    const scratchArea = document.getElementById('scratch-text');
+    let scratchTimeout = null;
+    scratchArea.addEventListener('input', () => {
+      clearTimeout(scratchTimeout);
+      scratchTimeout = setTimeout(() => {
+        if (api && api.invoke) {
+          api.invoke('vorssaint:scratchpad-save', scratchArea.value);
+        }
+      }, 600);
+    });
+
+    async function loadScratchpad() {
+      if (api && api.invoke) {
+        try {
+          const res = await api.invoke('vorssaint:scratchpad-get');
+          if (res && res.text) scratchArea.value = res.text;
+        } catch {}
+      }
+    }
+    loadScratchpad();
+
+    // --- CLIPBOARD SHELF ---
+    const clipSearch = document.getElementById('clip-search');
+    const clipList = document.getElementById('clip-list');
+
+    async function refreshClipboard(query = '') {
+      if (!api || !api.invoke) return;
+      try {
+        const items = await api.invoke('vorssaint:clipboard-history', query);
+        if (Array.isArray(items)) {
+          clipList.innerHTML = '';
+          document.getElementById('clip-count').textContent = `${items.length} items`;
+          items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'clip-item';
+            div.innerHTML = `
+              <span class="clip-text">${item.isSensitive ? 'sk-••••••••••••••••••••' : item.preview}</span>
+              ${item.isSensitive ? '<span class="clip-badge">MASKED</span>' : ''}
+            `;
+            div.addEventListener('click', async () => {
+              await api.invoke('vorssaint:clipboard-copy', item.id);
+              div.style.background = 'rgba(56, 189, 248, 0.2)';
+              setTimeout(() => div.style.background = '', 400);
+            });
+            clipList.appendChild(div);
+          });
+        }
+      } catch {}
+    }
+    refreshClipboard();
+
+    clipSearch.addEventListener('input', () => {
+      refreshClipboard(clipSearch.value);
+    });
+
+    // --- PORT MANAGER ---
+    const portsList = document.getElementById('ports-list');
+    async function refreshPorts() {
+      if (!api || !api.invoke) return;
+      try {
+        const ports = await api.invoke('vorssaint:ports-get');
+        if (Array.isArray(ports) && portsList) {
+          portsList.innerHTML = '';
+          ports.slice(0, 10).forEach(p => {
+            const row = document.createElement('div');
+            row.className = 'port-row';
+            row.innerHTML = `
+              <div>
+                <span class="port-num">:${p.port}</span>
+                <span class="port-proc">(${p.process || 'PID ' + p.pid})</span>
+              </div>
+              <button type="button" class="btn-kill" data-pid="${p.pid}">Kill</button>
+            `;
+            const killBtn = row.querySelector('.btn-kill');
+            killBtn.addEventListener('click', async () => {
+              await api.invoke('vorssaint:port-kill', p.pid);
+              refreshPorts();
+            });
+            portsList.appendChild(row);
+          });
+        }
+      } catch {}
+    }
+    document.getElementById('btn-refresh-ports').addEventListener('click', refreshPorts);
+    refreshPorts();
+
+    // --- LIVE TELEMETRY SPARKLINE & STATS ---
+    const sparkCanvas = document.getElementById('sparkline-net');
+    const ctx = sparkCanvas ? sparkCanvas.getContext('2d') : null;
+    let netHistory = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+    function drawSparkline() {
+      if (!ctx || !sparkCanvas) return;
+      const w = sparkCanvas.width = sparkCanvas.offsetWidth;
+      const h = sparkCanvas.height = sparkCanvas.offsetHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      const step = w / (netHistory.length - 1);
+      netHistory.forEach((val, i) => {
+        const x = i * step;
+        const y = h - (val / 100) * (h - 6) - 3;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+    window.addEventListener('resize', drawSparkline);
+    drawSparkline();
+
+    // Real Polling Telemetry (zero synthetic random sparklines)
+    async function pollMenuTelemetry() {
+      if (api && api.invoke) {
+        try {
+          const t = await api.invoke('vorssaint:telemetry');
+          if (t) {
+            const loadPct = t.cpu ? (t.cpu.loadPercent ?? t.cpu.usagePct ?? 0) : 0;
+            if (t.cpu) {
+              document.getElementById('val-cpu').textContent = `${loadPct}%`;
+              document.getElementById('sub-cpu').textContent = `${t.cpu.cores} Cores · ${t.cpu.speedGHz} GHz`;
+              document.getElementById('pill-telemetry').textContent = `${t.cpu.model.slice(0, 16)} · ${loadPct}%`;
+            }
+            if (t.ram) {
+              document.getElementById('val-ram').textContent = `${t.ram.usedPercent ?? 0}%`;
+              document.getElementById('sub-ram').textContent = `${t.ram.usedGB} / ${t.ram.totalGB} GB`;
+            }
+            if (t.gpu) {
+              document.getElementById('val-gpu').textContent = `${t.gpu.vramUsedGB || '—'}`;
+              document.getElementById('sub-gpu').textContent = `${(t.gpu.name || 'GPU').slice(0, 16)} · ${t.gpu.vramTotalGB || 'Shared'}`;
+            }
+            if (t.disk) {
+              document.getElementById('val-disk').textContent = `Disk: ${t.disk.freeGB} GB free of ${t.disk.totalGB} GB`;
+            }
+            if (t.uptime && document.getElementById('val-uptime')) {
+              const hrs = Math.floor(t.uptime / 3600);
+              const mins = Math.floor((t.uptime % 3600) / 60);
+              document.getElementById('val-uptime').textContent = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+            }
+            if (document.getElementById('val-net-speed')) {
+              document.getElementById('val-net-speed').textContent = `CPU ${loadPct}% · Local ${t.localIp || '127.0.0.1'}`;
+            }
+            if (document.getElementById('val-battery')) {
+              document.getElementById('val-battery').textContent = t.platform || 'Windows';
+            }
+            netHistory.shift();
+            netHistory.push(Math.max(0, Math.min(100, loadPct)));
+            drawSparkline();
+          }
+        } catch {}
+      }
+    }
+    pollMenuTelemetry();
+    setInterval(pollMenuTelemetry, 2500);
+
+    // --- PANEL MASCOT RIG ---
+    let panelMascot = null;
+    if (typeof window.VorssaintMascotRig === 'function') {
+      const host = document.getElementById('panel-mascot-host');
+      if (host) {
+        panelMascot = new window.VorssaintMascotRig(host, {
+          size: 22,
+          style: 'minimal',
+          shape: 'ball',
+          palette: 'pearl',
+          followsPointer: true,
+        });
+      }
+    }
+
+    if (api && api.on) {
+      api.on('vorssaint:mascot-config-changed', (cfg) => {
+        if (panelMascot && cfg) {
+          panelMascot.configure({
+            style: cfg.mascotStyle || 'minimal',
+            shape: cfg.mascotShape || 'ball',
+            palette: cfg.mascotPalette || 'pearl',
+          });
+        }
+      });
+      api.on('vorssaint:mascot-moment-triggered', (moment) => {
+        if (!panelMascot) return;
+        if (moment === 'hop') panelMascot.hop();
+        else if (moment === 'love') panelMascot.pet();
+        else if (moment === 'think') panelMascot.think();
+        else if (moment === 'groove') panelMascot.groove();
+        else if (moment === 'sleep') panelMascot.sleep();
+        else if (moment === 'wink') panelMascot.wink();
+        else if (moment === 'pet') panelMascot.pet();
+      });
+    }
+
+    if (api && api.invoke) {
+      api.invoke('vorssaint:settings-get').then((cfg) => {
+        if (panelMascot && cfg) {
+          panelMascot.configure({
+            style: cfg.mascotStyle || 'minimal',
+            shape: cfg.mascotShape || 'ball',
+            palette: cfg.mascotPalette || 'pearl',
+          });
+        }
+      }).catch(() => {});
+    }
+
+    // --- QUICK TOGGLES INTERACTION ---
+    async function loadQuickToggles() {
+      if (!api || !api.invoke) return;
+      try {
+        const toggles = await api.invoke('vorssaint:quick-toggles-get');
+        if (toggles) {
+          const micTile = document.getElementById('toggle-mic');
+          if (micTile) {
+            micTile.classList.toggle('active', Boolean(toggles.micMute));
+            const lbl = document.getElementById('mic-state-label');
+            if (lbl) lbl.textContent = toggles.micMute ? 'Muted' : 'Unmuted';
+          }
+          const caffTile = document.getElementById('toggle-caffeinate');
+          if (caffTile) {
+            caffTile.classList.toggle('active', Boolean(toggles.keepAwake));
+            const lbl = document.getElementById('caff-state-label');
+            if (lbl) lbl.textContent = toggles.keepAwake ? 'Active' : 'Off';
+          }
+        }
+      } catch {}
+    }
+    loadQuickToggles();
+
+    document.querySelectorAll('.toggle-tile').forEach(tile => {
+      tile.addEventListener('click', async () => {
+        const toggleKey = tile.dataset.toggle;
+        const willBeActive = !tile.classList.contains('active');
+        tile.classList.toggle('active', willBeActive);
+
+        if (toggleKey === 'micMute') {
+          const lbl = document.getElementById('mic-state-label');
+          if (lbl) lbl.textContent = willBeActive ? 'Muted' : 'Unmuted';
+          if (api && api.invoke) api.invoke('vorssaint:quick-toggle-set', { id: 'micMute', val: willBeActive });
+        } else if (toggleKey === 'keepAwake') {
+          const mode = willBeActive ? '1h' : 'off';
+          if (api && api.invoke) {
+            await api.invoke('vorssaint:keep-awake-set', mode);
+            updateKeepAwakeUI(mode);
+          }
+          const lbl = document.getElementById('caff-state-label');
+          if (lbl) lbl.textContent = willBeActive ? 'Active (1h)' : 'Off';
+        } else if (toggleKey === 'cleaningMode') {
+          if (api && api.invoke) api.invoke('vorssaint:open-cleaning', 30);
+        } else if (toggleKey === 'desktopIcons') {
+          const lbl = document.getElementById('icons-state-label');
+          if (lbl) lbl.textContent = willBeActive ? 'Visible' : 'Hidden';
+          if (api && api.invoke) api.invoke('vorssaint:quick-toggle-set', { id: 'desktopIcons', val: willBeActive });
+        } else if (toggleKey === 'hiddenFiles') {
+          const lbl = document.getElementById('hidden-state-label');
+          if (lbl) lbl.textContent = willBeActive ? 'Visible' : 'Hidden';
+          if (api && api.invoke) api.invoke('vorssaint:quick-toggle-set', { id: 'hiddenFiles', val: willBeActive });
+        }
+      });
+    });
+
+    const killAllAudioBtn = document.getElementById('btn-kill-all-audio');
+    if (killAllAudioBtn) {
+      killAllAudioBtn.addEventListener('click', async () => {
+        if (api && api.invoke) {
+          await api.invoke('vorssaint:set-volume', 0);
+          const masterFillEl = document.getElementById('master-vol-fill');
+          const masterNumEl = document.getElementById('master-vol-num');
+          if (masterFillEl) masterFillEl.style.width = '0%';
+          if (masterNumEl) masterNumEl.textContent = '0%';
+        }
+        killAllAudioBtn.textContent = '✓ All Audio Muted';
+        setTimeout(() => killAllAudioBtn.textContent = '🔇 Mute All Audio Streams Instantly', 1500);
+      });
+    }
+
+    // --- DYNAMIC ISLAND & MASCOT MOMENTS ---
+    const btnToggleIsland = document.getElementById('btn-toggle-island');
+    if (btnToggleIsland) {
+      btnToggleIsland.addEventListener('click', () => {
+        if (api && api.invoke) api.invoke('island:expand');
+      });
+    }
+
+    document.querySelectorAll('.moment-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const moment = chip.dataset.moment;
+        if (api && api.invoke) api.invoke('vorssaint:mascot-moment', moment);
+      });
+    });
+
+    document.querySelectorAll('.palette-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const pal = btn.dataset.palette;
+        if (api && api.invoke) {
+          await api.invoke('vorssaint:settings-update', { mascotPalette: pal });
+        }
+      });
+    });
+
+    // --- URL CLEANER ---
+    const urlInput = document.getElementById('input-clean-url');
+    const urlCopyBtn = document.getElementById('btn-clean-copy');
+    if (urlCopyBtn && urlInput) {
+      urlCopyBtn.addEventListener('click', async () => {
+        const raw = urlInput.value.trim();
+        if (!raw) return;
+        let cleaned = raw;
+        if (api && api.invoke) {
+          const res = await api.invoke('vorssaint:clean-url', raw);
+          if (res && res.cleaned) cleaned = res.cleaned;
+        } else {
+          try {
+            const u = new URL(raw);
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid'].forEach(p => u.searchParams.delete(p));
+            cleaned = u.toString();
+          } catch {}
+        }
+        urlInput.value = cleaned;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(cleaned);
+        }
+        urlCopyBtn.textContent = '✓ Cleaned & Copied to Clipboard!';
+        setTimeout(() => urlCopyBtn.textContent = 'Clean & Copy URL', 2000);
+      });
+    }
+
+    // --- SNIPPETS LIST ---
+    const snippetsList = document.getElementById('snippets-quick-list');
+    async function loadSnippets() {
+      if (!api || !api.invoke || !snippetsList) return;
+      try {
+        const list = await api.invoke('vorssaint:snippets-get');
+        if (Array.isArray(list)) {
+          snippetsList.innerHTML = '';
+          list.forEach(s => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:4px 6px; border-radius:6px; font-size:11px;';
+            row.innerHTML = '<span><strong style="color:#38bdf8;">' + s.trigger + '</strong> ' + (s.label || s.expansion).slice(0, 20) + '</span><button type="button" style="background:transparent; border:none; color:#a1a1aa; cursor:pointer;" title="Copy">📋</button>';
+            row.querySelector('button').addEventListener('click', () => {
+              if (navigator.clipboard) navigator.clipboard.writeText(s.expansion);
+              row.style.background = 'rgba(56, 189, 248, 0.2)';
+              setTimeout(() => row.style.background = '', 400);
+            });
+            snippetsList.appendChild(row);
+          });
+        }
+      } catch {}
+    }
+    loadSnippets();
+  </script>
+</body>
+</html>

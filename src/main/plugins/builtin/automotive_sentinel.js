@@ -6,7 +6,7 @@ const { getAutomotiveSentinel } = require('../../automotive/automotive_sentinel'
 module.exports = [
   {
     name: 'automotive_view_telematics',
-    description: 'Check connected vehicle telematics: battery/fuel level, range in miles, odometer, tire pressures (PSI), cabin climate, and lock status.',
+    description: '[SIMULATED PROTOCOL / DEMO] Check connected vehicle telematics: battery/fuel level, range in miles, odometer, tire pressures (PSI), cabin climate, and lock status.',
     input_schema: {
       type: 'object',
       properties: {
@@ -24,7 +24,7 @@ module.exports = [
 
       const tp = v.tirePressurePsi || { frontLeft: 42, frontRight: 42, rearLeft: 41, rearRight: 42 };
 
-      return `🚗 **VEHICLE TELEMATICS REPORT** (${v.name}):
+      return `🚗 **VEHICLE TELEMATICS REPORT [SIMULATED PROTOCOL / DEMO]** (${v.name}):
 • **Model**: **${v.year} ${v.make} ${v.model}**
 • **Battery / Fuel Level**: **${v.batteryOrFuelPct}%** (${v.estimatedRangeMiles} miles estimated range)
 • **Lock Status**: ${v.locked ? '🔒 Locked & Secured' : '🔓 Unlocked'}
@@ -37,7 +37,7 @@ module.exports = [
 
   {
     name: 'automotive_control_vehicle',
-    description: 'Control connected vehicle: lock, unlock, pre-warm/pre-cool cabin climate, or flash headlights.',
+    description: '[SIMULATED PROTOCOL / DEMO] Control connected vehicle: lock, unlock, pre-warm/pre-cool cabin climate, or flash headlights.',
     input_schema: {
       type: 'object',
       properties: {
@@ -58,7 +58,7 @@ module.exports = [
 
       const res = auto.controlVehicle(input.vehicle_name, input.action, { target_temp_c: input.target_temp_c });
 
-      return `🚗 **VEHICLE COMMAND DISPATCHED**:
+      return `🚗 **VEHICLE COMMAND DISPATCHED [SIMULATED PROTOCOL / DEMO]**:
 • **Vehicle**: **${res.vehicle}**
 • **Command**: \`${input.action.toUpperCase()}\`
 • **Result**: ✅ ${res.message}`;
@@ -67,7 +67,7 @@ module.exports = [
 
   {
     name: 'automotive_diagnose_obd_dtc',
-    description: 'Decode and translate OBD-II Diagnostic Trouble Codes (DTCs) from your check-engine light into plain-English mechanical diagnosis.',
+    description: '[SIMULATED PROTOCOL / DEMO] Decode and translate OBD-II Diagnostic Trouble Codes (DTCs) from your check-engine light into plain-English mechanical diagnosis.',
     input_schema: {
       type: 'object',
       properties: {
@@ -82,7 +82,7 @@ module.exports = [
 
       const diag = auto.readDiagnosticCode(input.dtc_code);
 
-      return `🔧 **OBD-II DIAGNOSTIC REPORT**:
+      return `🔧 **OBD-II DIAGNOSTIC REPORT [SIMULATED PROTOCOL / DEMO]**:
 • **Fault Code**: \`${diag.code}\`
 • **Description**: **${diag.name}**
 • **Severity**: \`${diag.severity.toUpperCase()}\`
@@ -94,7 +94,7 @@ ${diag.advice}`;
 
   {
     name: 'automotive_parking_memory',
-    description: 'Remember or recall the exact spot, garage level, or GPS coordinates where you parked your vehicle.',
+    description: '[SIMULATED PROTOCOL / DEMO] Remember or recall the exact spot, garage level, or GPS coordinates where you parked your vehicle.',
     input_schema: {
       type: 'object',
       properties: {
@@ -110,12 +110,12 @@ ${diag.advice}`;
       if (input.action === 'save') {
         if (!input.location_note) throw new Error('location_note is required to save parking spot.');
         const spot = auto.setParkingLocation({ locationNote: input.location_note });
-        return `📍 **PARKING SPOT SAVED**: "${spot.locationNote}" [Recorded at ${new Date(spot.parkedAt).toLocaleTimeString()}].`;
+        return `📍 **PARKING SPOT SAVED [SIMULATED PROTOCOL / DEMO]**: "${spot.locationNote}" [Recorded at ${new Date(spot.parkedAt).toLocaleTimeString()}].`;
       }
 
       const p = auto.getParkingLocation();
       const elapsedMin = Math.round((Date.now() - p.parkedAt) / 60000);
-      return `📍 **SAVED PARKING LOCATION**:
+      return `📍 **SAVED PARKING LOCATION [SIMULATED PROTOCOL / DEMO]**:
 • **Spot / Notes**: **${p.locationNote}**
 • **Parked**: About ${elapsedMin} minutes ago (${new Date(p.parkedAt).toLocaleTimeString()})
 • **Coordinates**: \`[Lat: ${p.coordinates.lat}, Lon: ${p.coordinates.lon}]\``;

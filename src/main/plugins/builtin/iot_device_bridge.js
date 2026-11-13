@@ -8,7 +8,7 @@ const { getIoTHub } = require('../../iot/iot_hub');
 module.exports = [
   {
     name: 'iot_control_device',
-    description: 'Control any connected IoT device or smart home appliance (lights, smart plugs, AC/thermostats, door locks, air purifiers, robot vacuums) across Home Assistant, MQTT, Tuya, Shelly, and Philips Hue.',
+    description: '[SIMULATED PROTOCOL / DEMO] Control any connected IoT device or smart home appliance (lights, smart plugs, AC/thermostats, door locks, air purifiers, robot vacuums) across Home Assistant, MQTT, Tuya, Shelly, and Philips Hue.',
     input_schema: {
       type: 'object',
       properties: {
@@ -41,7 +41,7 @@ module.exports = [
 
       const result = await hub.controlDevice(input.device_name_or_id, input.action, input.parameters || {});
 
-      return `🔌 **IOT DEVICE CONTROL EXECUTED**:
+      return `🔌 **IOT DEVICE CONTROL EXECUTED [SIMULATED PROTOCOL / DEMO]**:
 • **Target Device**: **${result.device}** [${result.room}]
 • **Protocol / Bus**: \`${result.protocol.toUpperCase()}\`
 • **Action**: \`${result.action.toUpperCase()}\`
@@ -52,7 +52,7 @@ module.exports = [
 
   {
     name: 'iot_list_devices',
-    description: 'List all registered smart home and IoT devices, grouped by room or filtered by category (light, thermostat, switch, lock, sensor, appliance).',
+    description: '[SIMULATED PROTOCOL / DEMO] List all registered smart home and IoT devices, grouped by room or filtered by category (light, thermostat, switch, lock, sensor, appliance).',
     input_schema: {
       type: 'object',
       properties: {
@@ -83,7 +83,7 @@ module.exports = [
       ctx.log('info', `Listing ${devices.length} IoT devices...`);
 
       if (!devices.length) {
-        return '🔍 No matching IoT devices found in registry.';
+        return '🔍 [SIMULATED PROTOCOL / DEMO] No matching IoT devices found in registry.';
       }
 
       const rows = devices.map((d) => {
@@ -99,13 +99,13 @@ module.exports = [
         return `• **${d.name}** [${d.room}] (\`${d.protocol}\`, Type: ${d.type}): ${stateStr}`;
       }).join('\n');
 
-      return `🌐 **REGISTERED IOT & SMART HOME DEVICES** (${devices.length}):\n\n${rows}`;
+      return `🌐 **REGISTERED IOT & SMART HOME DEVICES [SIMULATED PROTOCOL / DEMO]** (${devices.length}):\n\n${rows}`;
     },
   },
 
   {
     name: 'iot_register_device',
-    description: 'Register a new smart home or IoT device into Mave\'s local device registry.',
+    description: '[SIMULATED PROTOCOL / DEMO] Register a new smart home or IoT device into Mave\'s local device registry.',
     input_schema: {
       type: 'object',
       properties: {
@@ -132,7 +132,7 @@ module.exports = [
       const dev = hub.registerDevice(input);
       ctx.log('info', `Registered new IoT device: ${dev.name} [${dev.room}]`);
 
-      return `✅ **NEW IOT DEVICE REGISTERED**:
+      return `✅ **NEW IOT DEVICE REGISTERED [SIMULATED PROTOCOL / DEMO]**:
 • **Name**: **${dev.name}**
 • **Room**: ${dev.room}
 • **Type**: \`${dev.type.toUpperCase()}\`
@@ -143,7 +143,7 @@ module.exports = [
 
   {
     name: 'iot_query_ecosystem_status',
-    description: 'Get a comprehensive status overview of connected IoT ecosystems, supported protocols, active devices, and local performance metrics.',
+    description: '[SIMULATED PROTOCOL / DEMO] Get a comprehensive status overview of connected IoT ecosystems, supported protocols, active devices, and local performance metrics.',
     input_schema: {
       type: 'object',
       properties: {},
@@ -152,7 +152,8 @@ module.exports = [
     },
     async run(input, ctx) {
       const hub = getIoTHub();
-      return hub.getCapabilityOverview();
+      const overview = hub.getCapabilityOverview();
+      return `[SIMULATED PROTOCOL / DEMO]\n${overview}`;
     },
   },
 ];

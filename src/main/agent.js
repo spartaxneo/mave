@@ -7,6 +7,9 @@ const llm = require('./llm');
 const { ProviderError } = require('./llm/errors');
 const { StoppedError, READ_ONLY, isRisky, describeAction, sleep } = require('./computer');
 const { findElement } = require('./uicommand');
+const { getGoalDriftDetector } = require('./orchestrator/goal_drift_detector');
+const { getToolRegistryAndVerifier } = require('./orchestrator/tool_contract');
+const { GoalContract, TaskStatus } = require('./orchestrator/goal_contract');
 
 const HALT_TEXT = 'Not executed: an earlier action in this turn failed.';
 const STOPPED_TEXT = 'Not executed: the user stopped the agent.';
@@ -14,7 +17,7 @@ const TRUNCATED_TEXT = 'Not executed: your response hit the length limit, so thi
 const LOOKING = new Set(['screenshot', 'zoom']);
 // Asking for something done on screen (as opposed to a question or a chat): the screen list goes
 // with the request, which saves the model a whole step of asking for it.
-const ON_SCREEN = /\b(?:click|tap|press|select|choose|pick|check|uncheck|tick|type|enter|fill|write in|scroll|drag|move|open the|close the|go to the|play the|download|sign in|log in|search (?:for|on this)|find (?:the|a)|switch to|expand|collapse|highlight|show me where|where is|which button|what(?:'s| is) on (?:the |my )?screen)\b/i;
+const ON_SCREEN = /\b(?:click|tap|press|select|choose|pick|check|uncheck|tick|type|enter|fill|write in|scroll|drag|move|open the|close the|go to the|play the|download|sign in|log in|search (?:for|on this)|find (?:the|a)|switch to|expand|collapse|highlight|show me where|where is|which button|what(?:'s| is) on (?:the |my )?screen|inspect(?: the)? (?:screen|window|display|elements?|page|ui|desktop)|see (?:the |my )?screen|look at (?:the |my )?screen)\b/i;
 
 class AgentError extends ProviderError {}
 
@@ -29,21 +32,79 @@ function extractPoint(text) {
 const pngItem = (png) => ({ type: 'image', data: png.toString('base64') });
 
 /**
- * A reply that announces actions without taking any: "I'll use open_url to…", "Let me open…",
- * "First, I'll…". A plain answer or a question back to the user isn't a plan.
+ * Detect explicit requests to inspect or read the user's live desktop screen or window.
  */
-const INFORMATIONAL_QUESTIONS = /\b(what (?:can you|are you able to|do you|all you can|is|are|should|would)|what's|how (?:can you|could you|are you|do you|does|to|would you)|who (?:are you|is|made you)|tell me (?:about|what|why|how)|explain|help me (?:understand|with)|list (?:your|all)|why (?:is|do|does|are)|describe|can you (?:be better|improve|help|give|explain)|improve|be better|advice|feedback|opinion|thoughts on|who are you)\b/i;
+function isScreenInspectionQuery(task = '') {
+  const t = String(task || '').trim();
+  if (!t) return false;
+  if (/\b(?:what (?:(?:all|else|other|things) )?(?:you can|can you|are you able to) do|what capabilities|who are you)\b/i.test(t)) {
+    return false;
+  }
+  return /\b(?:what(?:'s| is)\s+on\s+(?:the\s+|my\s+|this\s+)?screen|inspect\s+(?:the\s+|my\s+|this\s+)?(?:screen|window|display|ui|page|desktop)|read\s+(?:the\s+|my\s+)?screen|look\s+at\s+(?:the\s+|my\s+)?screen|see\s+(?:the\s+|my\s+)?screen|where\s+is\s+(?:the\s+|my\s+)?.+(?:button|icon|link|menu|tab|window|box)|which\s+button|take\s+a\s+screenshot|screenshot\s+(?:the\s+|my\s+)?screen)\b/i.test(t);
+}
+
+/**
+ * Detect self-referential inquiries about MAVE itself (capabilities, identity, improvements, help).
+ */
+function isSelfOrCapabilityQuestion(task = '') {
+  const t = String(task || '').trim();
+  if (!t) return false;
+  return /\b(?:who (?:are you|made you|built you|created you)|what (?:(?:all|else|other|kinds? of|sorts? of|things)\s+)?(?:you can|can you|you are able to|are you able to)\s*(?:do|help(?: with| me with)?|perform|handle|automate)?|what (?:are )?your (?:capabilities|features|tools|skills)|what capabilities|what features (?:do you|you)|how (?:can you|you can|do you) (?:work|help|be better|improve)|can you (?:be better|improve)|tell me (?:about yourself|what you can do|what can you do)|what are you capable of|what you(?:'re| are) capable of)\b/i.test(t);
+}
+
+const GREETING_OR_SMALLTALK = /^(?:hi|hello|hey|yo|howdy|greetings|good\s+(?:morning|afternoon|evening|night)|thanks|thank you|thx|ok|okay|sure|cool|nice|great|awesome|got it|bye|goodbye|how are you|how(?:'s| is) it going|what(?:'s| is) up|whats up|sup)(?:\s+(?:mave|big\s?foot|there|buddy|friend|again|so much|a lot))?[\s.!?,]*$/i;
+
+const INFORMATIONAL_QUESTIONS = /\b(?:what (?:(?:all|else|other|kinds? of|sorts? of|things)\s+)?(?:you can|can you|are you able to|you are able to|do you|you do|capabilities|features|tools|skills|is|are|should|would|could|does|did)|what's|how (?:can|you can|could|you could|are|do|does|did|to|would|should|much|many|long|far|often|well)|who (?:are|is|was|were|made|built|created|founded)|why (?:is|are|do|does|did|would|should|can't|won't)|when (?:is|are|was|were|do|does|did|will)|which (?:capabilities|features|tools|model|models|option|one|ones)|tell me (?:about|what|why|how|when|who|more|a joke|a story)|do you (?:know|think|understand|support|have|remember|recommend|suggest|mean)|are you (?:able|capable|sure|ready|okay|working|listening|local|real)|can you (?:be better|improve|help|give|explain|tell|describe|suggest|recommend|compare|teach|summarize|clarify|translate|answer|talk|chat|list)|could you (?:explain|tell|describe|help me understand|suggest|recommend|compare|summarize|clarify|translate)|explain|help me (?:understand|learn|brainstorm|think)|list (?:your|all)|describe|summarize|define|clarify|difference between|improve|be better|advice|feedback|opinion|thoughts on)\b/i;
 
 function isConversationalTask(task = '') {
   const t = String(task || '').trim();
   if (!t) return false;
-  if (INFORMATIONAL_QUESTIONS.test(t)) {
-    if (/^(?:open|launch|start|run|click|type|press|scroll|download|install|play|send|delete|write)\b/i.test(t)) {
-      return false;
-    }
+
+  if (GREETING_OR_SMALLTALK.test(t)) return true;
+
+  // Strip optional wake prefix ("Hey Mave, ...") before checking imperative vs conversational intent
+  const body = t.replace(/^(?:hey|hi|ok(?:ay)?)?\s*,?\s*(?:big\s?foot|bigfoot|mave)\s*[,.!]?\s*/i, '').trim();
+
+  // Imperative physical/computer commands must NOT be treated as pure conversation
+  if (/^(?:open|launch|start|run|execute|click|tap|press|type|enter|fill|scroll|drag|move|download|install|play|send|delete|remove|create|make\s+a\s+(?:note|file|folder)|write(?:\s+to)?\s+(?:a\s+|the\s+)?file|save|close|quit|kill|navigate|go\s+to|browse|search\s+for|find\s+(?:the|my)|inspect|take\s+a\s+screenshot|capture|draw|annotate|mute|unmute|lock|switch\s+to)\b/i.test(body)) {
+    return false;
+  }
+
+  // Polite imperative computer commands ("can you please open Chrome", "could you run npm test")
+  if (/^(?:please\s+|kindly\s+|(?:can|could|would|will)\s+you\s+(?:please\s+)?)(?:open|launch|start|run|execute|click|tap|press|type|enter|scroll|drag|download|install|play|send|delete|remove|create\s+(?:a\s+|the\s+)?file|write\s+(?:to\s+)?(?:a\s+|the\s+)?file|save|close|quit|kill|navigate|go\s+to|take\s+a\s+screenshot)\b/i.test(body)) {
+    return false;
+  }
+
+  if (isScreenInspectionQuery(t)) return false;
+
+  if (isSelfOrCapabilityQuestion(t) || INFORMATIONAL_QUESTIONS.test(t)) {
     return true;
   }
   return false;
+}
+
+/**
+ * Determine whether this task should expose desktop, terminal, browser-opening, and computer-control tools.
+ * Pure conversational prompts and explicit Chat mode keep computer/terminal tools turned off.
+ */
+function taskUsesDesktopTools(task = '', options = {}) {
+  const opts = (options && typeof options === 'object') ? options : {};
+  if (opts.region || opts.drawing) return true;
+  if (opts.mode === 'chat') return false;
+  if (isConversationalTask(task)) return false;
+  return true;
+}
+
+/**
+ * Determine whether headless read-only web lookup tools (web_search, read_webpage)
+ * are helpful during a chat-only turn (e.g., current real-world facts when online).
+ */
+function shouldOfferWebToolsInChat(task = '', options = {}) {
+  const opts = (options && typeof options === 'object') ? options : {};
+  if (opts.online === false) return false;
+  const t = String(task || '').trim();
+  if (!t || GREETING_OR_SMALLTALK.test(t) || isSelfOrCapabilityQuestion(t)) return false;
+  return /\b(?:who (?:is|was|founded)|what happened to|latest|current(?:ly)?|today(?:'s)?|news|weather|price|stock|release date|version of|search (?:the )?web|look up|what do you know about)\b/i.test(t);
 }
 
 function isPlanInsteadOfAction(text, task = '') {
@@ -96,6 +157,7 @@ class Agent {
     this.running = false;
     this.approvedWindows = new Set();
     this.conversationHistory = []; // Multi-turn dialogue history (like ChatGPT)
+    this.goalContract = null;
   }
 
   reset() {
@@ -103,6 +165,16 @@ class Agent {
     this.provider = null;
     this.approvedWindows.clear();
     this.conversationHistory = [];
+    this.goalContract = null;
+    return true;
+  }
+
+  resetConversation() {
+    this.conversationHistory = [];
+    if (this.provider && Array.isArray(this.provider.messages)) {
+      const sys = this.provider.messages[0] && this.provider.messages[0].role === 'system' ? this.provider.messages[0] : null;
+      this.provider.messages = sys ? [sys] : [];
+    }
     return true;
   }
 
@@ -119,20 +191,23 @@ class Agent {
   }
 
   /** Reuse the conversation unless the provider, model, name, effort, or tool list changed. */
-  ensureProvider({ online = this.isOnline() } = {}) {
+  ensureProvider({ online = this.isOnline(), computerEnabled = true, tools = null } = {}) {
     const s = this.settings;
     const id = llm.resolveProvider(s, { online });
     const key = [id, id && s.get(llm.PROVIDERS[id].modelSetting), s.get('assistantName'), s.get('effort'), this.plugins.version].join('|');
     if (this.provider && this.providerKey === key) return this.provider;
-    const tools = (id === 'local' || id === 'ollama')
-      ? this.plugins.definitionsForTask('', id)
-      : this.plugins.definitions();
+    const initialTools = Array.isArray(tools)
+      ? tools
+      : ((id === 'local' || id === 'ollama')
+        ? this.plugins.definitionsForTask('', id, { chatOnly: !computerEnabled })
+        : (computerEnabled ? this.plugins.definitions() : this.plugins.definitionsForTask('', id, { chatOnly: true })));
     this.provider = llm.createProvider(s, {
       system: systemPrompt(s.get('assistantName')),
-      tools,
+      tools: initialTools,
       screen: this.target.sent,
       runtime: this.runtime,
       online,
+      computerEnabled,
     });
     this.providerKey = key;
     if ('onText' in this.provider && this.hooks.stream) this.provider.onText = (text) => this.hooks.stream(text);
@@ -231,12 +306,16 @@ class Agent {
     this.visual = false;
     switch (cmd.kind) {
       case 'click': {
-        const snap = await this.ui.read(this.target);
-        const item = findElement(snap, cmd.what);
-        if (!item) return null;
-        this.ui.shown = new Map([[item.id, item]]);
-        const [result] = await this.runDirect([{ name: 'click_element', input: { id: item.id } }]);
-        return /Nothing on screen changed/.test(String(result)) ? `I clicked ${item.name}, but nothing seemed to happen.` : `Clicked ${item.name}.`;
+        try {
+          const snap = await this.ui.read(this.target);
+          const item = findElement(snap, cmd.what);
+          if (!item) return null;
+          this.ui.shown = new Map([[item.id, item]]);
+          const [result] = await this.runDirect([{ name: 'click_element', input: { id: item.id } }]);
+          return /Nothing on screen changed/.test(String(result)) ? `I clicked ${item.name}, but nothing seemed to happen.` : `Clicked ${item.name}.`;
+        } catch {
+          return null;
+        }
       }
       case 'scroll':
         await this.runDirect([{ name: 'scroll_screen', input: { direction: cmd.dir, amount: cmd.amount } }]);
@@ -253,7 +332,9 @@ class Agent {
   }
 
   /** Run one request from the user. Resolves to { status, text, point }. */
-  async run(task, { region = null, drawing = false, image = null, speaker = null, userId = null, deviceId = null } = {}) {
+  async run(task, options = {}) {
+    const opts = (options && typeof options === 'object') ? options : {};
+    const { region = null, drawing = false, image = null, speaker = null, userId = null, deviceId = null, think = false, history = [], mode = 'work' } = opts;
     if (drawing) task = `${task}\n\n(I drew on the screen; my drawing shows in your screenshots. Use edit_drawing to correct or improve it if I ask.)`;
     if (this.running) throw new AgentError('I’m already working on something. Press Esc to stop it first.', 'Still working');
     if (!this.target) throw new AgentError('No screen is selected.');
@@ -262,7 +343,58 @@ class Agent {
     this.costs.startTask();
     this.hooks.terminal('task', task);
     this.task = task;
+    this.currentMode = mode;
+    const desktopToolsAllowed = taskUsesDesktopTools(task, opts);
+    const allowReadOnlyWeb = !desktopToolsAllowed && shouldOfferWebToolsInChat(task, { ...opts, online: this.isOnline() });
+    this.desktopToolsAllowed = desktopToolsAllowed;
     this.visual = Boolean(region || drawing || image);
+    this.goalContract = new GoalContract({
+      originalRequest: task,
+      userId: userId || 'default',
+      sessionId: options.sessionId || `session_${Date.now()}`,
+      status: TaskStatus.ACTIVE,
+    });
+
+    // MAVE Execution Invariant: Route desktop/automation tasks to isolated Virtual Computer.
+    // Pure conversational turns & Chat mode skip Virtual Computer takeover cleanly.
+    const hostTarget = this.target;
+    let isGuestExecution = false;
+    let virtualSession = null;
+    if (desktopToolsAllowed) {
+      try {
+        const { getVirtualComputerSession, ExecutionTargetRouter } = require('./virtual_computer');
+        virtualSession = getVirtualComputerSession();
+        const router = virtualSession.targetRouter || new ExecutionTargetRouter();
+        const targetDecision = router.resolveTarget(task, options);
+
+        // If the caller explicitly passed a custom mock screen (without displayServer or real ScreenTarget)
+        // or passed preferHost: true, we preserve host execution.
+        const isCustomMockScreen = this.target && !this.target.isVirtual && !this.target.bounds;
+
+        if (targetDecision.isGuest && !options.preferHost && !isCustomMockScreen) {
+          isGuestExecution = true;
+          virtualSession.setActiveTask(task, targetDecision.environment);
+          this.target = virtualSession.getScreenTarget();
+          this.hooks.terminal('info', `[MAVE Virtual Computer] Routing task to isolated guest (${targetDecision.environment}). Host desktop remains untouched.`);
+        } else {
+          if (targetDecision.requiresConfirmation && !router.isHostAuthorized(virtualSession.sessionId) && !isCustomMockScreen) {
+            await this.confirm('always', {
+              title: 'Physical Desktop Control Request',
+              message: `MAVE was requested to operate directly on your physical computer screen:\n"${task}"\n\nAllow MAVE to control your host mouse and keyboard?`,
+              confirm: 'Authorize Host Control',
+            });
+            router.authorizeHostSession(virtualSession.sessionId);
+          }
+          this.hooks.terminal('info', '[Execution Target] Operating on physical host desktop.');
+        }
+      } catch (routeErr) {
+        if (routeErr instanceof StoppedError || (routeErr.message && routeErr.message.includes('declined'))) {
+          this.running = false;
+          this.abort = null;
+          throw routeErr;
+        }
+      }
+    }
 
     let effectiveUserId = userId;
     let effectiveDeviceId = deviceId || 'host_pc';
@@ -287,7 +419,9 @@ class Agent {
     } catch { /* no governance */ }
 
     try {
-      if (this.settings.get('autoModelRouting') !== false) {
+      const activeProv = this.settings.get('provider');
+      const isLocalSelection = !activeProv || ['local', 'colibri', 'airllm', 'ollama'].includes(activeProv);
+      if (isLocalSelection && this.settings.get('autoModelRouting') !== false) {
         try {
           const router = require('./local/router');
           const currentId = this.settings.get('localModel');
@@ -300,7 +434,7 @@ class Agent {
             colibriReady = await colibriService.isHealthy();
           } catch { /* colibri not loaded */ }
 
-          if (image || decision.tier3 === 'vision') {
+          if ((image || decision.tier3 === 'vision') && (desktopToolsAllowed || image)) {
             const visionModel = 'qwen3-vl-8b';
             if (this.settings.get('provider') !== 'local' || this.settings.get('localModel') !== visionModel) {
               this.hooks.terminal('info', `[Auto-Router: Tier 1 (Eyes)] Routing to ${visionModel} (VRAM Vision)`);
@@ -326,21 +460,27 @@ class Agent {
         } catch { /* routing fallback */ }
 
       }
-      let provider = this.ensureProvider();
-      if ((provider.id === 'local' || provider.id === 'ollama') && typeof provider.updateTools === 'function') {
-        const taskTools = this.plugins.definitionsForTask(task, provider.id);
-        provider.updateTools(taskTools);
+      const resolveToolsForProvider = (provId) => (
+        desktopToolsAllowed
+          ? this.plugins.definitionsForTask(task, provId, { chatOnly: false })
+          : (allowReadOnlyWeb ? this.plugins.definitionsForTask(task, provId, { chatOnly: true, readOnlyWeb: true }) : [])
+      );
+      let provider = this.ensureProvider({ computerEnabled: desktopToolsAllowed });
+      if (typeof provider.updateTools === 'function') {
+        provider.updateTools(resolveToolsForProvider(provider.id), { computer: desktopToolsAllowed });
       }
       this.hooks.terminal('info', `Using ${llm.describe(this.settings, provider.id)}`);
       let activeWindowNote = '';
-      try {
-        if (this.input && typeof this.input.windowTitle === 'function') {
-          const winTitle = await this.input.windowTitle();
-          if (winTitle && winTitle.trim()) {
-            activeWindowNote = `\n\n(Current active foreground window on user's PC: "${winTitle.trim()}")`;
+      if (desktopToolsAllowed) {
+        try {
+          if (this.input && typeof this.input.windowTitle === 'function') {
+            const winTitle = await this.input.windowTitle();
+            if (winTitle && winTitle.trim()) {
+              activeWindowNote = `\n\n(Current active foreground window on user's PC: "${winTitle.trim()}")`;
+            }
           }
-        }
-      } catch {}
+        } catch {}
+      }
 
       let request = null;
       if (region) {
@@ -376,8 +516,8 @@ class Agent {
         };
       } else {
         let screenNote = '';
-        const explicitScreenRef = /\b(?:screen|display|window|desktop|app|button|menu|cursor|icon|interface)\b/i.test(task);
-        const shouldReadScreen = ON_SCREEN.test(task) && (!isConversationalTask(task) || explicitScreenRef);
+        const explicitScreenRef = isScreenInspectionQuery(task) || /\b(?:screen|display|window|desktop|button|menu|cursor|icon)\b/i.test(task);
+        const shouldReadScreen = desktopToolsAllowed && ON_SCREEN.test(task) && (!isConversationalTask(task) || explicitScreenRef);
         if (this.ui && shouldReadScreen) {
           try {
             const snap = await this.ui.read(this.target);
@@ -387,10 +527,14 @@ class Agent {
           }
         }
         let groundingNote = '';
-        const entityMatch = task.match(/^(?:what do you know about|tell me about|who is|what is|do you know about|do you know|can you tell me about)\s+([^?.!]+)/i);
+        const entityMatch = (allowReadOnlyWeb || (desktopToolsAllowed && !isSelfOrCapabilityQuestion(task)))
+          ? task.match(/^(?:what do you know about|tell me about|who is|who was|who founded|what happened to|is .+ real|lookup|search for)\s+([^?.!]+)/i)
+          : null;
         if (entityMatch && entityMatch[1]) {
           const entityQuery = entityMatch[1].trim();
-          groundingNote = `\n\n[Mave Grounding Directive: The user is asking about "${entityQuery}". Do NOT guess, invent fake slang definitions, fake biographies, or hallucinated claims. If you do not have verified, ground-truth facts in your persistent memories or active window context, you MUST call web_search({ query: "${entityQuery}" }) to retrieve verified real-world facts before giving your answer. If search yields no verified records, state honestly that you do not have verified records.]`;
+          if (!/^(?:yourself|your capabilities|you|me|my\s+\w+)$/i.test(entityQuery)) {
+            groundingNote = `\n\n[Mave Grounding Directive: The user is asking about "${entityQuery}". Do NOT guess, invent fake slang definitions, fake biographies, or hallucinated claims. If you do not have verified, ground-truth facts in your persistent memories, you MUST call web_search({ query: "${entityQuery}" }) to retrieve verified real-world facts before giving your answer. If search yields no verified records, state honestly that you do not have verified records.]`;
+          }
         }
         let memoryNote = '';
         if (speaker && speaker.name) {
@@ -400,7 +544,7 @@ class Agent {
           const { getMemoryStore, getUserProfileSummary } = require('./memory');
           const summary = getMemoryStore().contextSummary(task);
           if (summary) memoryNote += `\n\n(Relevant persistent memories:\n${summary})`;
-          if (/\b(who am i|about me|know about me|know me|\bme\b)\b/i.test(task)) {
+          if (/\b(who am i|what is my name|my name|about me|know about me|know me|\bme\b)\b/i.test(task)) {
             memoryNote += `\n\n(User and system context: ${getUserProfileSummary()})`;
           }
         } catch { /* no memories */ }
@@ -439,9 +583,45 @@ class Agent {
         const govNote = governanceDirectives ? `\n${governanceDirectives}` : '';
         const now = new Date();
         const timeNote = `\n\n(Current system time: ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}, ${now.toLocaleTimeString('en-US')})`;
-        const anchorNote = `\n\n[Mave Task Anchor: "${task}"] Stick strictly to this user request. Do NOT divert to unrelated apps, websites, suggestions, or placeholders found on screen.`;
-        request = (p) => p.addUserMessage(task + activeWindowNote + groundingNote + screenNote + memoryNote + personaNote + personalizationNote + commonSenseNote + govNote + timeNote + anchorNote);
+        const thinkNote = opts.think ? '\n\n[Deep Thinking Mode Active: Reason thoroughly step-by-step, evaluate edge cases, and think through the solution before delivering your answer.]' : '';
+        const anchorNote = desktopToolsAllowed
+          ? `\n\n[Mave Task Anchor: "${task}"] Stick strictly to this user request. Do NOT divert to unrelated apps, websites, suggestions, or placeholders found on screen.`
+          : (mode === 'chat'
+            ? `\n\n[Chat Mode Active: Answer the user's message directly and helpfully in markdown. Desktop control, app launching, terminal commands, and file writes are disabled in Chat mode.]`
+            : `\n\n[Conversational Query: "${task}"] Answer the user directly in clear markdown prose. Do NOT open apps, launch terminals, read the screen, or operate the computer unless explicitly instructed to perform an action.`);
+        request = (p) => p.addUserMessage(task + activeWindowNote + groundingNote + screenNote + memoryNote + personaNote + personalizationNote + commonSenseNote + govNote + timeNote + thinkNote + anchorNote);
       }
+
+      // Rehydrate multi-turn context from current thread
+      if (Array.isArray(opts.history)) {
+        this.conversationHistory = opts.history.map((m) => ({ role: m.role, content: m.content }));
+        const cleanTurns = opts.history.filter((h) => (h.role === 'user' || h.role === 'assistant') && typeof h.content === 'string' && h.content.trim().length > 0);
+        const recentTurns = cleanTurns.slice(-16);
+
+        if (provider.id === 'anthropic') {
+          provider.messages = [];
+          for (const turn of recentTurns) {
+            if (turn.role === 'user') {
+              provider.messages.push({ role: 'user', content: [{ type: 'text', text: turn.content }] });
+            } else if (turn.role === 'assistant') {
+              provider.messages.push({ role: 'assistant', content: [{ type: 'text', text: turn.content }] });
+            }
+          }
+        } else if (Array.isArray(provider.messages)) {
+          const sys = (provider.messages[0] && provider.messages[0].role === 'system')
+            ? provider.messages[0]
+            : { role: 'system', content: systemPrompt(this.settings.get('assistantName')) };
+          provider.messages = [sys];
+          for (const turn of recentTurns) {
+            if (turn.role === 'user') {
+              provider.messages.push({ role: 'user', content: [{ type: 'text', text: turn.content }] });
+            } else if (turn.role === 'assistant') {
+              provider.messages.push({ role: 'assistant', content: turn.content });
+            }
+          }
+        }
+      }
+
       if (provider.startTask) provider.startTask(); // keep earlier turns lean (local model)
       request(provider);
       try {
@@ -452,7 +632,18 @@ class Agent {
           if (this.conversationHistory.length > 20) this.conversationHistory = this.conversationHistory.slice(-20);
           try {
             const { getMemoryStore } = require('./memory');
-            getMemoryStore().autoExtractTaste(task, result.text);
+            const extracted = getMemoryStore().autoExtractLearnings(task, result.text);
+            if (extracted && extracted.length > 0) {
+              try {
+                const { getChatGPTPersonalization } = require('./chatgpt/personalization');
+                for (const item of extracted) {
+                  getChatGPTPersonalization().addMemory(item.preference || item.fact, item.category || 'general');
+                }
+              } catch {}
+              if (this.hooks && this.hooks.notice) {
+                this.hooks.notice('Memory updated');
+              }
+            }
           } catch { /* ignore non-fatal memory update */ }
         }
         return result;
@@ -460,7 +651,13 @@ class Agent {
         if (!this.canFallBackOffline(provider, err) || this.abort.signal.aborted) throw err;
         this.hooks.notice('You’re offline, so I’m switching to the local AI.');
         this.provider = null;
-        provider = this.ensureProvider({ online: false });
+        provider = this.ensureProvider({ online: false, computerEnabled: desktopToolsAllowed });
+        if (typeof provider.updateTools === 'function') {
+          const offlineTools = desktopToolsAllowed
+            ? this.plugins.definitionsForTask(task, provider.id, { chatOnly: false })
+            : [];
+          provider.updateTools(offlineTools, { computer: desktopToolsAllowed });
+        }
         this.hooks.terminal('info', `Using ${llm.describe(this.settings, provider.id)}`);
         if (provider.startTask) provider.startTask();
         request(provider);
@@ -471,7 +668,18 @@ class Agent {
           if (this.conversationHistory.length > 20) this.conversationHistory = this.conversationHistory.slice(-20);
           try {
             const { getMemoryStore } = require('./memory');
-            getMemoryStore().autoExtractTaste(task, result.text);
+            const extracted = getMemoryStore().autoExtractLearnings(task, result.text);
+            if (extracted && extracted.length > 0) {
+              try {
+                const { getChatGPTPersonalization } = require('./chatgpt/personalization');
+                for (const item of extracted) {
+                  getChatGPTPersonalization().addMemory(item.preference || item.fact, item.category || 'general');
+                }
+              } catch {}
+              if (this.hooks && this.hooks.notice) {
+                this.hooks.notice('Memory updated');
+              }
+            }
           } catch { /* ignore non-fatal memory update */ }
         }
         return result;
@@ -482,6 +690,12 @@ class Agent {
     } finally {
       this.running = false;
       this.abort = null;
+      if (isGuestExecution && hostTarget) {
+        this.target = hostTarget;
+      }
+      if (virtualSession) {
+        virtualSession.updateProgress('Task Completed / Idle');
+      }
     }
   }
 
@@ -617,6 +831,12 @@ class Agent {
   }
 
   checkGoalDivert(call, task = '') {
+    if (this.goalContract) {
+      const evalRes = getGoalDriftDetector().evaluateCandidateAction(this.goalContract, call);
+      if (!evalRes.allowed) {
+        return evalRes.reason;
+      }
+    }
     const t = String(task || '').trim().toLowerCase();
     const name = call.name;
     const input = call.input || {};
@@ -648,11 +868,15 @@ class Agent {
       }
     }
 
-    // 2. Conversational inquiry protection: If the user asked a conversational question (e.g. "how can you be better"),
-    // prevent launching apps or browsing unrequested sites instead of answering.
-    if (isConversationalTask(task)) {
-      if (name === 'open_app' || name === 'open_url' || name.startsWith('use_')) {
-        return `The user asked a conversational question ("${task}"), not to open external apps or websites. Provide a thoughtful answer directly in chat.`;
+    // 2. Conversational inquiry / Chat mode protection: never launch apps, run terminal, or control desktop
+    if (this.currentMode === 'chat' || isConversationalTask(task)) {
+      if (name === 'open_app' || name === 'open_url' || name === 'terminal' || name === 'run_command'
+        || name === 'click_element' || name === 'type_into' || name === 'scroll_screen'
+        || name === 'drag_element' || name === 'read_screen' || name === 'write_file'
+        || name === 'delete_path' || name.startsWith('use_') || call.computer) {
+        return this.currentMode === 'chat'
+          ? `Chat mode is active: computer, terminal, and app control tools are disabled. Answer directly in chat or suggest switching to Work mode.`
+          : `The user asked a conversational question ("${task}"), not to open external apps, run terminal commands, or operate the desktop. Provide a helpful answer directly in chat.`;
       }
     }
 
@@ -731,10 +955,14 @@ class Agent {
       } catch { /* continue if governance check fails */ }
 
       this.hooks.action(call.name, call.input);
+      const toolVerifier = getToolRegistryAndVerifier();
+      const execRec = toolVerifier.recordExecutionStart(call.name, call.input, call.computer ? 'host' : 'guest_vm');
       try {
         let content = call.computer
           ? await this.runComputer(call.name, call.input, signal)
           : await this.plugins.run(call.name, call.input, this.pluginContext(signal));
+        const artifacts = (call.input && (call.input.path || call.input.filePath)) ? [call.input.path || call.input.filePath] : [];
+        execRec.complete(content, artifacts);
         if (typeof content === 'string') {
           // CDM Optimization: If tool output is bulky (> 1800 chars), compress it with CDM
           if (content.length > 1800) {
@@ -751,6 +979,7 @@ class Agent {
         }
         results.push({ call, content });
       } catch (err) {
+        execRec.fail(err.message);
         if (err instanceof StoppedError || signal.aborted) {
           results.push({ call, content: STOPPED_TEXT, isError: true });
           for (const rest of calls.slice(results.length)) results.push({ call: rest, content: STOPPED_TEXT, isError: true });
@@ -797,9 +1026,13 @@ class Agent {
   }
 
   async screenList(provider) {
-    const snap = await this.ui.read(this.target);
-    const list = this.ui.describe(snap, this.task, { limit: this.listLimit(provider), point: this.modelPoint(provider) });
-    return snap.items.length ? list : null;
+    try {
+      const snap = await this.ui.read(this.target);
+      const list = this.ui.describe(snap, this.task, { limit: this.listLimit(provider), point: this.modelPoint(provider) });
+      return snap && snap.items && snap.items.length ? list : null;
+    } catch {
+      return null;
+    }
   }
 
   async runComputer(name, input, signal) {
@@ -809,13 +1042,18 @@ class Agent {
       const list = await this.screenList(this.provider).catch(() => null);
       if (list) return `${list}\n(This is the screen as a list. To see actual pixels of an area, use the zoom action.)`;
     }
+    const isGuest = Boolean(this.target && (this.target.isVirtual || this.target.isGuest));
     if (!READ_ONLY.has(name)) {
-      await this.guardSensitiveWindow();
+      if (!isGuest) {
+        await this.guardSensitiveWindow();
+      }
       const mode = this.settings.get('approvalMode');
       if (mode === 'every' || (mode === 'risky' && isRisky(name, input))) {
         await this.confirm('always', { title: 'Allow this action?', message: describeAction(name, input), confirm: 'Allow' });
       }
-      await this.failSafe();
+      if (!isGuest) {
+        await this.failSafe();
+      }
     }
     if (signal.aborted) throw new StoppedError('Stopped');
     const out = await this.computer.run(this.target, name, input, signal);
@@ -882,4 +1120,4 @@ function toUserError(err) {
   return new AgentError(err && err.message ? err.message : String(err));
 }
 
-module.exports = { Agent, AgentError, extractPoint, toUserError, isPlanInsteadOfAction, isConversationalTask, isFalseCompletionHallucination };
+module.exports = { Agent, AgentError, extractPoint, toUserError, isPlanInsteadOfAction, isConversationalTask, isFalseCompletionHallucination, isSelfOrCapabilityQuestion, isScreenInspectionQuery, taskUsesDesktopTools };

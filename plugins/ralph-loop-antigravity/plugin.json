@@ -1,0 +1,5 @@
+{
+  "name": "ralph-loop-antigravity",
+  "version": "1.0.0",
+  "description": "Autonomous iterative development engine using persistent state files (PRD.md, progress.txt) for self-healing verification runs."
+}

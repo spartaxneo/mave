@@ -37,12 +37,12 @@
   --r-md: 8px;
   --r-lg: 12px;
   --r-xl: 16px;
-  --r-window: 16px;
+  --r-window: 0px;
 
-  --fast: 150ms;
-  --normal: 250ms;
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --fast: 140ms;
+  --normal: 180ms;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring: cubic-bezier(0.22, 1, 0.36, 1);
 
   --font: Söhne, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: "SF Mono", "Cascadia Code", Consolas, Menlo, monospace;
@@ -132,7 +132,7 @@ body.theme-light {
 html, body {
   margin: 0;
   height: 100%;
-  background: transparent;
+  background: var(--bg);
   color: var(--text-1);
   font-family: var(--font);
   font-size: 13px;
@@ -144,9 +144,9 @@ html, body {
   overflow: hidden;
 }
 input, textarea, select, button { font: inherit; color: inherit; }
-::selection { background: rgba(51, 128, 255, 0.4); }
+::selection { background: rgba(16, 163, 127, 0.35); }
 :focus { outline: none; }
-:focus-visible { outline: 2px solid rgba(51, 128, 255, 0.7); outline-offset: 2px; }
+:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.25); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
 /* window chrome */
@@ -154,9 +154,9 @@ input, textarea, select, button { font: inherit; color: inherit; }
   position: absolute;
   inset: 0;
   background: var(--bg);
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-window);
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.6), 0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -233,7 +233,7 @@ a:hover { text-decoration: underline; }
   font-size: 13px; transition: border-color var(--fast), box-shadow var(--fast); user-select: text;
 }
 .field::placeholder { color: var(--text-3); }
-.field:focus { border-color: var(--buddy); box-shadow: 0 0 0 3px rgba(51, 128, 255, 0.22); }
+.field:focus { border-color: rgba(255, 255, 255, 0.35); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15); }
 .field.mono { font-family: var(--mono); font-size: 12px; letter-spacing: 0.01em; }
 .field-wrap { position: relative; display: flex; align-items: center; }
 .field-wrap .field { padding-right: 34px; }
@@ -260,7 +260,7 @@ select.field option { background: var(--surface-2); }
 }
 .switch input:checked + .track { background: var(--accent); }
 .switch input:checked + .track::after { transform: translateX(16px); }
-.switch input:focus-visible + .track { box-shadow: 0 0 0 3px rgba(51, 128, 255, 0.4); }
+.switch input:focus-visible + .track { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25); }
 
 /* segmented control */
 .segmented {
@@ -338,7 +338,7 @@ input[type='range']::-webkit-slider-thumb {
   transition: border-color 160ms, background 160ms, box-shadow 160ms;
 }
 .voice-card:hover { background: var(--surface-3); }
-.voice-card:focus-visible { box-shadow: 0 0 0 3px rgba(51, 128, 255, 0.22); }
+.voice-card:focus-visible { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25); }
 .voice-card.selected { border-color: var(--buddy); background: var(--accent-subtle); }
 .voice-avatar { width: 40px; height: 40px; flex: none; border-radius: 50%; background: var(--surface-3); }
 .voice-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
@@ -382,8 +382,8 @@ input[type='range']::-webkit-slider-thumb {
 .recommendations-card {
   margin-top: 8px;
   padding: 10px 12px;
-  background: rgba(51, 128, 255, 0.08);
-  border: 1px solid rgba(51, 128, 255, 0.22);
+  background: rgba(16, 163, 127, 0.08);
+  border: 1px solid rgba(16, 163, 127, 0.22);
   border-radius: var(--r-md);
   display: flex;
   flex-direction: column;

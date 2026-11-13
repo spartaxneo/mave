@@ -204,17 +204,10 @@ window.LocalAI = (() => {
         ollamaSection.append(olList);
       }
 
-      // 3. Custom GGUF models
+      // 3. Certified Local Models on Disk
       const cOpts = info.customOptions || [];
       const cHead = h('div', 'lai-sec-head');
-      cHead.append(h('div', 'lai-sec-title', `Installed & Custom Models on This PC (${cOpts.length})`));
-      const pickBtn = h('button', 'btn secondary small', '+ Browse GGUF…');
-      pickBtn.type = 'button';
-      pickBtn.addEventListener('click', async () => {
-        const picked = await api.invoke('local:pick-file');
-        if (picked) load();
-      });
-      cHead.append(pickBtn);
+      cHead.append(h('div', 'lai-sec-title', `Certified Local Models on This PC (${cOpts.length})`));
       customSection.append(cHead);
 
       if (cOpts.length) {

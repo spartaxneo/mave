@@ -19,13 +19,18 @@ class OpenAIProvider {
     this.timeoutMs = 180000;
     this.messages = [{ role: 'system', content: system }];
     this.computer = computer;
-    this.rawTools = tools;
-    this.updateTools(tools);
+    this.computerEnabled = Boolean(computer);
+    this.rawTools = tools || [];
+    this.updateTools(this.rawTools, { computer: this.computerEnabled });
   }
 
-  updateTools(tools) {
-    this.rawTools = tools;
-    this.tools = [this.computer, ...tools.map((t) => ({ name: t.name, description: t.description, parameters: t.input_schema }))]
+  updateTools(tools = [], opts = {}) {
+    if (opts && typeof opts.computer === 'boolean') {
+      this.computerEnabled = opts.computer;
+    }
+    this.rawTools = Array.isArray(tools) ? tools : [];
+    const fnComputer = this.computerEnabled ? this.computer : null;
+    this.tools = [fnComputer, ...this.rawTools.map((t) => ({ name: t.name, description: t.description, parameters: t.input_schema }))]
       .filter(Boolean)
       .map((f) => ({ type: 'function', function: { ...f, parameters: portableSchema(f.parameters) } }));
   }
@@ -70,10 +75,15 @@ class OpenAIProvider {
 
   async request(signal) {
     const { url, key } = await this.endpoint();
+    const payload = { model: this.model, messages: this.messages, ...this.requestExtras() };
+    if (this.tools && this.tools.length > 0) {
+      payload.tools = this.tools;
+      payload.tool_choice = 'auto';
+    }
     return requestJson(`${url}/chat/completions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: this.model, messages: this.messages, tools: this.tools, tool_choice: 'auto', ...this.requestExtras() }),
+      body: JSON.stringify(payload),
     }, this.label, signal, this.timeoutMs);
   }
 

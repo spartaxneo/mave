@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vorssaint OS · Dynamic Island</title>
+  <title>Vorssaint · Dynamic Island & Companion</title>
+  <link rel="stylesheet" href="mascot_rig.css">
   <style>
     * {
       box-sizing: border-box;
@@ -17,1347 +18,784 @@
       overflow: hidden;
       width: 100vw;
       height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "SF Pro Display", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      padding-top: 2px;
+      padding: 0;
     }
 
-    /* System Dynamic Island Capsule (Authentic Vorssaint macOS Notch & Windows Island) */
-    .island-shell {
+    /* Outer Wrapper */
+    .island-container {
       position: relative;
-      background: #09090b;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 22px;
-      backdrop-filter: blur(36px) saturate(200%);
-      -webkit-backdrop-filter: blur(36px) saturate(200%);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.95);
-      color: #ffffff;
-      transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-      overflow: hidden;
-      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
       -webkit-app-region: no-drag;
     }
 
-    body.theme-light .island-shell {
-      background: #ffffff;
-      border: 1px solid rgba(0, 0, 0, 0.12);
-      color: #0f172a;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 0 0 1px rgba(0, 0, 0, 0.06);
-    }
-
-    /* Compact Pill Layout */
-    .island-compact {
+    /* Compact Top Notch Capsule (Mac Vorssaint Authentic) */
+    .island-notch {
+      position: relative;
+      width: 240px;
+      height: 34px;
+      background: #000000;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-top: none;
+      border-radius: 0 0 18px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
-      padding: 3px 14px 3px 6px;
-      height: 38px;
-    }
-
-    .island-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* Vorssaint Official Cute Dot Avatar */
-    .island-dot-avatar {
-      position: relative;
-      width: 30px;
-      height: 30px;
+      padding: 0 12px;
       cursor: pointer;
-      flex-shrink: 0;
-      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 50;
     }
-    .island-dot-avatar:hover {
-      transform: scale(1.14);
+    .island-notch:hover {
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.18);
     }
-    .island-dot-avatar:active {
-      transform: scale(0.92);
-    }
-    .dot-body {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, #38bdf8 0%, #2563eb 55%, #1d4ed8 100%);
-      box-shadow: 0 2px 12px rgba(37, 99, 235, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.75);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .dot-shine {
-      position: absolute;
-      top: 3px;
-      left: 6px;
-      width: 9px;
-      height: 5px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.65);
-      transform: rotate(-25deg);
-      pointer-events: none;
-    }
-    .dot-face {
-      position: relative;
+
+    /* Notch Mascot Rig Host */
+    .mascot-face-host {
       width: 22px;
-      height: 14px;
+      height: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
-      pointer-events: none;
-    }
-    .dot-eyes-svg {
-      width: 100%;
-      height: 100%;
-    }
-    .dot-eye {
-      fill: #0f172a;
-      transition: all 0.15s ease;
-    }
-    .island-dot-avatar.blinking .dot-eye {
-      d: path("M 25 30 L 41 30 M 59 30 L 75 30");
-      stroke: #0f172a;
-      stroke-width: 5;
-      stroke-linecap: round;
-      fill: none;
-    }
-    .island-dot-avatar.hopping .dot-body {
-      animation: dotHop 0.45s ease;
-    }
-    @keyframes dotHop {
-      0%, 100% { transform: translateY(0) scale(1, 1); }
-      30% { transform: translateY(-7px) scale(0.9, 1.12); }
-      60% { transform: translateY(2px) scale(1.12, 0.88); }
     }
 
-    .island-status-group {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-    .island-status-dot {
-      width: 7px;
-      height: 7px;
+    /* Central Camera Cutout */
+    .camera-cutout {
+      position: relative;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
-      animation: pulseGlow 2.4s infinite ease-in-out;
-    }
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.55; transform: scale(0.85); }
-    }
-    .island-title {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: -0.2px;
-      max-width: 170px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .island-right {
+      background: #09090b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.9);
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: center;
     }
+    .camera-lens-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #047857;
+      opacity: 0.8;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+      display: none;
+    }
+    .camera-lens-dot.active { display: block; }
 
-    /* Live Audio Bars */
-    .island-audio-bars {
+    /* Right Equalizer Waveform */
+    .notch-right-wave {
       display: flex;
       align-items: center;
       gap: 2.5px;
-      height: 14px;
+      height: 12px;
     }
-    .i-bar {
+    .wave-bar {
       width: 2.5px;
-      height: 4px;
       border-radius: 2px;
-      background: #60a5fa;
-      transition: height 0.15s ease;
+      background: #ffffff;
+      opacity: 0.85;
+      height: 3px;
+      transition: height 0.2s ease;
     }
-    .island-shell.speaking .i-bar:nth-child(1) { animation: barDance 0.5s infinite alternate ease-in-out 0.05s; }
-    .island-shell.speaking .i-bar:nth-child(2) { animation: barDance 0.65s infinite alternate ease-in-out 0.15s; }
-    .island-shell.speaking .i-bar:nth-child(3) { animation: barDance 0.45s infinite alternate ease-in-out 0.25s; }
-    .island-shell.speaking .i-bar:nth-child(4) { animation: barDance 0.6s infinite alternate ease-in-out 0.1s; }
-    @keyframes barDance {
+    .notch-right-wave.playing .wave-bar:nth-child(1) { animation: waveAnim 0.7s infinite alternate ease-in-out; }
+    .notch-right-wave.playing .wave-bar:nth-child(2) { animation: waveAnim 0.9s infinite alternate ease-in-out 0.15s; }
+    .notch-right-wave.playing .wave-bar:nth-child(3) { animation: waveAnim 0.6s infinite alternate ease-in-out 0.3s; }
+    @keyframes waveAnim {
       0% { height: 3px; }
-      100% { height: 13px; }
+      100% { height: 11px; }
     }
 
-    .island-node-pill {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 10px;
-      background: rgba(37, 99, 235, 0.22);
-      border: 1px solid rgba(96, 165, 250, 0.35);
-      color: #93c5fd;
-      letter-spacing: -0.1px;
-    }
-    body.theme-light .island-node-pill {
-      background: rgba(37, 99, 235, 0.1);
-      border: 1px solid rgba(37, 99, 235, 0.25);
-      color: #1d4ed8;
-    }
-
-    /* Expanded Vorssaint OS HUD Card */
-    .island-expanded {
+    /* Expanded Island HUD */
+    .expanded-wrapper {
       display: none;
-      padding: 12px 16px 14px;
-      flex-direction: column;
-      gap: 10px;
-      width: 560px;
-      height: 396px;
-      box-sizing: border-box;
-      animation: expandHUD 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      cursor: default;
+      position: relative;
+      align-items: center;
+      justify-content: center;
+      margin-top: 4px;
+      animation: expandSpring 140ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
-    @keyframes expandHUD {
-      from { opacity: 0; transform: scale(0.96); }
-      to { opacity: 1; transform: scale(1); }
+    @keyframes expandSpring {
+      0% { opacity: 0; transform: scale(0.97) translateY(-4px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
     }
 
-    .island-shell.is-expanded {
+    .controls-card {
+      position: relative;
+      width: 530px;
+      background: #09090b;
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 24px;
-    }
-    .island-shell.is-expanded .island-compact {
-      display: none;
-    }
-    .island-shell.is-expanded .island-expanded {
+      padding: 16px 20px 18px;
+      color: #ffffff;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.12);
       display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 40;
     }
 
-    /* HUD Header */
-    .island-exp-header {
+    /* Header with Sections Nav, Pin & Close */
+    .controls-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-bottom: 8px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      flex-shrink: 0;
     }
-    body.theme-light .island-exp-header {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    }
-    .island-exp-profile {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .island-dot-avatar.exp-size {
-      width: 34px;
-      height: 34px;
-    }
-    .island-exp-name {
+    .controls-title {
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 600;
       letter-spacing: -0.2px;
+      color: #f4f4f5;
       display: flex;
       align-items: center;
-      gap: 6px;
-    }
-    .island-exp-badge {
-      font-size: 10px;
-      padding: 1px 6px;
-      border-radius: 6px;
-      background: rgba(37, 99, 235, 0.25);
-      color: #93c5fd;
-      border: 1px solid rgba(96, 165, 250, 0.3);
-      font-weight: 600;
-    }
-    .island-exp-sub {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.6);
-    }
-    body.theme-light .island-exp-sub {
-      color: rgba(15, 23, 42, 0.6);
-    }
-
-    .island-exp-top-actions {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .island-action-btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 8px;
-      color: inherit;
-      font-size: 11.5px;
-      font-weight: 600;
-      padding: 4px 10px;
+      gap: 8px;
       cursor: pointer;
+    }
+    .nav-badge {
+      font-size: 10.5px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 2px 7px;
+      border-radius: 6px;
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+    .header-btns {
       display: flex;
       align-items: center;
-      gap: 4px;
-      transition: all 0.15s ease;
+      gap: 6px;
     }
-    .island-action-btn:hover {
-      background: rgba(255, 255, 255, 0.16);
-      transform: translateY(-1px);
-    }
-    .island-action-btn:active {
-      transform: translateY(1px);
-    }
-    body.theme-light .island-action-btn {
-      background: rgba(0, 0, 0, 0.05);
-      border: 1px solid rgba(0, 0, 0, 0.1);
-    }
-
-    /* Vorssaint Navigation Tabs Strip */
-    .hud-tabs {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 10px;
-      padding: 3px;
-      flex-shrink: 0;
-    }
-    body.theme-light .hud-tabs {
-      background: rgba(0, 0, 0, 0.03);
-      border: 1px solid rgba(0, 0, 0, 0.06);
-    }
-    .hud-tab-btn {
-      flex: 1;
-      padding: 5px 6px;
-      font-size: 11px;
-      font-weight: 600;
-      border: none;
+    .head-icon-btn {
       background: transparent;
-      color: rgba(255, 255, 255, 0.6);
-      border-radius: 7px;
+      border: none;
+      color: #71717a;
+      font-size: 13px;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
       transition: all 0.15s ease;
     }
-    body.theme-light .hud-tab-btn {
-      color: rgba(15, 23, 42, 0.6);
-    }
-    .hud-tab-btn:hover {
+    .head-icon-btn:hover {
       color: #ffffff;
       background: rgba(255, 255, 255, 0.08);
     }
-    body.theme-light .hud-tab-btn:hover {
-      color: #0f172a;
-      background: rgba(0, 0, 0, 0.06);
-    }
-    .hud-tab-btn.active {
-      background: #2563eb;
-      color: #ffffff;
-      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+    .head-icon-btn.pinned {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
     }
 
-    /* Panes Container */
-    .hud-pane-container {
-      flex: 1;
-      overflow-y: auto;
-      overflow-x: hidden;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-    .hud-pane {
-      display: none;
-      flex-direction: column;
-      gap: 10px;
-      animation: fadeInPane 0.18s ease;
-      height: 100%;
-    }
-    .hud-pane.active {
-      display: flex;
-    }
-    @keyframes fadeInPane {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Scrollbars */
-    .hud-pane-container::-webkit-scrollbar {
-      width: 4px;
-    }
-    .hud-pane-container::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-    }
-
-    /* TAB 1: TELEMETRY GRID */
-    .telemetry-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-    .tele-card {
-      background: rgba(255, 255, 255, 0.04);
+    /* Companion Stage Card in Expanded Island */
+    .mascot-stage-box {
+      background: #141418;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 8px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    body.theme-light .tele-card {
-      background: rgba(0, 0, 0, 0.03);
-      border-color: rgba(0, 0, 0, 0.07);
-    }
-    .tele-card-head {
+      border-radius: 16px;
+      padding: 10px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
     }
-    .tc-label {
-      font-size: 10px;
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.5);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    body.theme-light .tc-label {
-      color: rgba(15, 23, 42, 0.5);
-    }
-    .tc-icon {
-      font-size: 12px;
-    }
-    .tc-val {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-      color: #ffffff;
-    }
-    body.theme-light .tc-val {
-      color: #0f172a;
-    }
-    .tc-sub {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.55);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    body.theme-light .tc-sub {
-      color: rgba(15, 23, 42, 0.55);
-    }
-    .tc-meter {
-      height: 4px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 2px;
-    }
-    body.theme-light .tc-meter {
-      background: rgba(0, 0, 0, 0.08);
-    }
-    .tc-meter-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #3b82f6, #60a5fa);
-      width: 0%;
-      border-radius: 2px;
-      transition: width 0.3s ease;
-    }
-    .tc-meter-fill.warn {
-      background: linear-gradient(90deg, #f59e0b, #ef4444);
-    }
-
-    /* Sub telemetry row */
-    .tele-sub-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-    .sub-tele-pill {
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 10px;
-      padding: 6px 10px;
+    .mascot-stage-left {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
     }
-    body.theme-light .sub-tele-pill {
-      background: rgba(0, 0, 0, 0.02);
-      border-color: rgba(0, 0, 0, 0.05);
+    .stage-mascot-rig-host {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
-    .stp-icon { font-size: 14px; }
-    .stp-info { display: flex; flex-direction: column; min-width: 0; }
-    .stp-label { font-size: 9px; font-weight: 700; color: rgba(255, 255, 255, 0.45); }
-    body.theme-light .stp-label { color: rgba(15, 23, 42, 0.45); }
-    .stp-val { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    /* TAB 2: AGENTS MONITOR */
-    .agents-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-    }
-    .agent-card {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 10px;
+    .stage-mascot-info {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 2px;
     }
-    body.theme-light .agent-card {
-      background: rgba(0, 0, 0, 0.03);
-      border-color: rgba(0, 0, 0, 0.07);
-    }
-    .agent-card-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .agent-title-wrap {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .agent-icon { font-size: 14px; }
-    .agent-name { font-size: 12px; font-weight: 700; }
-    .agent-badge {
-      font-size: 9px;
-      padding: 1px 5px;
-      border-radius: 5px;
+    .stage-mascot-title {
+      font-size: 13px;
       font-weight: 600;
-      background: rgba(16, 185, 129, 0.2);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-    .agent-meta-row {
+      color: #ffffff;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      font-size: 10.5px;
-      color: rgba(255, 255, 255, 0.6);
+      gap: 6px;
     }
-    body.theme-light .agent-meta-row { color: rgba(15, 23, 42, 0.6); }
-
-    /* TAB 3: CLIPBOARD SHELF */
-    .clipboard-controls {
+    .stage-mascot-hint {
+      font-size: 11px;
+      color: #71717a;
+    }
+    .moment-chips-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 5px;
+      flex-wrap: wrap;
     }
-    .clip-search-input {
-      flex: 1;
+    .moment-chip {
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 5px 10px;
-      color: #ffffff;
-      font-size: 11.5px;
-      outline: none;
-    }
-    body.theme-light .clip-search-input {
-      background: rgba(0, 0, 0, 0.04);
-      border-color: rgba(0, 0, 0, 0.1);
-      color: #0f172a;
-    }
-    .clip-btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 8px;
-      color: inherit;
+      color: #d4d4d8;
       font-size: 11px;
-      font-weight: 600;
-      padding: 5px 9px;
+      padding: 4px 8px;
+      border-radius: 6px;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 4px;
       transition: all 0.15s ease;
     }
-    .clip-btn:hover { background: rgba(255, 255, 255, 0.15); }
-    .clipboard-list {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      overflow-y: auto;
-      max-height: 205px;
-    }
-    .clip-item {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
-      padding: 7px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 11px;
-      transition: all 0.15s ease;
-    }
-    body.theme-light .clip-item {
-      background: rgba(0, 0, 0, 0.02);
-      border-color: rgba(0, 0, 0, 0.06);
-    }
-    .clip-item:hover {
-      background: rgba(37, 99, 235, 0.15);
-      border-color: rgba(96, 165, 250, 0.3);
-    }
-    .clip-text-wrap {
-      flex: 1;
-      min-width: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: rgba(255, 255, 255, 0.9);
-      font-family: monospace;
-    }
-    body.theme-light .clip-text-wrap { color: rgba(15, 23, 42, 0.9); }
-    .clip-meta {
-      font-size: 9.5px;
-      color: rgba(255, 255, 255, 0.45);
-      flex-shrink: 0;
-    }
-    .clip-copy-btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 6px;
-      color: inherit;
-      padding: 2px 7px;
-      font-size: 10px;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    .clip-copy-btn:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
-
-    /* TAB 4: SCRATCHPAD */
-    .scratchpad-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      height: 100%;
-    }
-    .scratchpad-textarea {
-      flex: 1;
-      height: 180px;
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      padding: 8px 10px;
+    .moment-chip:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
       color: #ffffff;
-      font-family: "SF Mono", Menlo, Consolas, monospace;
-      font-size: 11.5px;
-      line-height: 1.45;
-      resize: none;
-      outline: none;
-    }
-    body.theme-light .scratchpad-textarea {
-      background: rgba(0, 0, 0, 0.03);
-      border-color: rgba(0, 0, 0, 0.1);
-      color: #0f172a;
-    }
-    .scratchpad-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-    body.theme-light .scratchpad-footer { color: rgba(15, 23, 42, 0.5); }
-    .scratchpad-actions {
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
 
-    /* TAB 5: TOOLS */
-    .tools-pane {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .tool-section-title {
-      font-size: 10px;
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.5);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    body.theme-light .tool-section-title { color: rgba(15, 23, 42, 0.5); }
-    .keep-awake-strip {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
-      padding: 6px 8px;
-    }
-    body.theme-light .keep-awake-strip {
-      background: rgba(0, 0, 0, 0.03);
-      border-color: rgba(0, 0, 0, 0.06);
-    }
-    .ka-btn {
-      flex: 1;
-      padding: 5px 6px;
-      font-size: 10.5px;
-      font-weight: 600;
-      border: 1px solid transparent;
-      background: transparent;
-      color: rgba(255, 255, 255, 0.65);
-      border-radius: 6px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s ease;
-    }
-    body.theme-light .ka-btn { color: rgba(15, 23, 42, 0.65); }
-    .ka-btn:hover { background: rgba(255, 255, 255, 0.08); }
-    .ka-btn.active {
-      background: #2563eb;
-      color: #ffffff;
-      box-shadow: 0 1px 4px rgba(37, 99, 235, 0.4);
-    }
-    .quick-actions-grid {
+    /* Middle Row: Music Player & System Sliders */
+    .controls-mid-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-    .qa-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 8px 6px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      cursor: pointer;
-      color: inherit;
-      transition: all 0.15s ease;
-    }
-    body.theme-light .qa-btn {
-      background: rgba(0, 0, 0, 0.03);
-      border-color: rgba(0, 0, 0, 0.06);
-    }
-    .qa-btn:hover {
-      background: rgba(37, 99, 235, 0.22);
-      border-color: rgba(96, 165, 250, 0.4);
-      transform: translateY(-1px);
-    }
-    .qa-icon { font-size: 17px; }
-    .qa-text { font-size: 10.5px; font-weight: 600; text-align: center; }
-
-    /* Media & Volume Mixer Pane */
-    .media-mixer-wrap {
-      display: flex;
-      flex-direction: column;
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
-    .now-playing-card {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-    }
-    body.theme-light .now-playing-card {
-      background: rgba(0, 0, 0, 0.03);
-      border-color: rgba(0, 0, 0, 0.08);
-    }
-    .np-art {
-      position: relative;
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
-    }
-    .np-art-icon {
-      font-size: 20px;
-    }
-    .np-wave-indicator {
-      position: absolute;
-      bottom: 4px;
-      right: 4px;
-      display: flex;
-      align-items: flex-end;
-      gap: 1.5px;
-      height: 10px;
-    }
-    .np-wave-indicator span {
-      width: 2px;
-      height: 4px;
-      background: #ffffff;
-      border-radius: 1px;
-      animation: npWave 0.8s infinite alternate ease-in-out;
-    }
-    .np-wave-indicator span:nth-child(2) { animation-delay: 0.2s; }
-    .np-wave-indicator span:nth-child(3) { animation-delay: 0.4s; }
-    .np-wave-indicator span:nth-child(4) { animation-delay: 0.1s; }
-    @keyframes npWave {
-      0% { height: 3px; }
-      100% { height: 9px; }
-    }
-    .np-info {
-      flex: 1;
-      min-width: 0;
+
+    /* Music Player Card */
+    .media-box {
+      background: #141417;
+      border-radius: 16px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
-    .np-title {
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .np-artist {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.6);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    body.theme-light .np-artist {
-      color: rgba(15, 23, 42, 0.6);
-    }
-    .np-progress-bar {
-      width: 100%;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 2px;
-      margin-top: 4px;
-      overflow: hidden;
-    }
-    body.theme-light .np-progress-bar {
-      background: rgba(0, 0, 0, 0.1);
-    }
-    .np-progress-fill {
-      height: 100%;
-      background: #38bdf8;
-      border-radius: 2px;
-    }
-    .np-controls {
+    .media-main-row {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
     }
-    .np-ctrl-btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 8px;
-      color: inherit;
-      width: 30px;
-      height: 30px;
+    .media-art-frame {
+      width: 42px;
+      height: 42px;
+      background: #000000;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
+      font-size: 18px;
+      color: #71717a;
+      flex-shrink: 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+    .media-art-frame.playing {
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+    .media-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+      flex: 1;
+    }
+    .media-track {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #f4f4f5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .media-sub {
+      font-size: 11px;
+      color: #71717a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Controls Scrubber & Buttons */
+    .media-controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .media-btn {
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
       font-size: 12px;
-      transition: all 0.15s ease;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
     }
-    .np-ctrl-btn:hover {
-      background: rgba(255, 255, 255, 0.18);
-      transform: scale(1.06);
-    }
-    .np-ctrl-btn:active {
-      transform: scale(0.94);
-    }
-    .np-play-btn {
-      background: rgba(37, 99, 235, 0.4);
-      border-color: rgba(96, 165, 250, 0.5);
-    }
-    .mixer-section-title {
+    .media-btn:hover { color: #ffffff; background: rgba(255,255,255,0.06); }
+    .lyrics-toggle-btn {
       font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      color: rgba(255, 255, 255, 0.5);
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      padding: 2px 6px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    /* 200% Volume Boost Row */
+    .boost-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10.5px;
+      color: #a1a1aa;
       margin-top: 2px;
     }
-    body.theme-light .mixer-section-title {
-      color: rgba(15, 23, 42, 0.5);
+    .boost-slider-wrap {
+      flex: 1;
+      height: 14px;
+      background: #27272a;
+      border-radius: 7px;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
     }
-    .volume-sliders-grid {
+    .boost-slider-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      background: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%);
+      border-radius: 7px;
+      width: 50%; /* 100% normal */
+    }
+    .boost-val {
+      font-weight: 700;
+      color: #38bdf8;
+      width: 38px;
+      text-align: right;
+    }
+
+    /* System Sliders Card */
+    .sliders-box {
+      background: #141417;
+      border-radius: 16px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
       gap: 8px;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
-    .vol-slider-row {
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .slider-icon {
+      font-size: 12px;
+      color: #a1a1aa;
+      width: 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .slider-track-wrap {
+      flex: 1;
+      position: relative;
+      height: 18px;
+      background: #27272a;
+      border-radius: 9px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .slider-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: #ffffff;
+      border-radius: 9px;
+      transition: width 0.08s ease;
+    }
+    .slider-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #a1a1aa;
+      width: 28px;
+      text-align: right;
+    }
+
+    /* Bottom Quick Action Tiles (6-grid) */
+    .controls-actions-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+    .action-tile {
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 4px;
-      padding: 6px 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 6px 2px;
       border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
     }
-    body.theme-light .vol-slider-row {
-      background: rgba(0, 0, 0, 0.02);
-      border-color: rgba(0, 0, 0, 0.06);
+    .action-tile:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #ffffff;
     }
-    .vol-slider-label {
+    .action-tile.active {
+      color: #38bdf8;
+    }
+    .tile-icon-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #18181b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.15s ease;
+    }
+    .action-tile:hover .tile-icon-circle {
+      background: #27272a;
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    .action-tile.active .tile-icon-circle {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+    .tile-text {
+      font-size: 10.5px;
+      font-weight: 500;
+    }
+
+    /* Drawers */
+    .slide-panel {
+      display: none;
+      background: #101014;
+      border-radius: 14px;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-top: 4px;
+      animation: panelSlide 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes panelSlide {
+      0% { opacity: 0; transform: translateY(-6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .panel-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 11.5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+    }
+    .panel-title {
+      font-size: 13px;
       font-weight: 600;
+      color: #f4f4f5;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .vol-val {
+    .panel-back-btn {
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .panel-back-btn:hover { color: #ffffff; }
+
+    /* Timer Ruler */
+    .timer-ruler {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 6px;
+    }
+    .preset-chip {
+      background: #18181b;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
       font-size: 11px;
-      color: #38bdf8;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-    .vol-range {
-      -webkit-appearance: none;
-      width: 100%;
-      height: 5px;
-      border-radius: 3px;
-      background: rgba(255, 255, 255, 0.12);
-      outline: none;
+      padding: 4px 10px;
+      border-radius: 6px;
       cursor: pointer;
     }
-    body.theme-light .vol-range {
-      background: rgba(0, 0, 0, 0.1);
-    }
-    .vol-range::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 13px;
-      height: 13px;
-      border-radius: 50%;
-      background: #38bdf8;
-      cursor: pointer;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-      transition: transform 0.1s ease;
-    }
-    .vol-range::-webkit-slider-thumb:hover {
-      transform: scale(1.25);
+    .preset-chip:hover { border-color: #38bdf8; color: #38bdf8; }
+
+    /* Agent Rows */
+    .agent-card-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      font-size: 12px;
     }
 
-    /* Cleaning Mode Overlay */
-    .cleaning-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.92);
-      backdrop-filter: blur(20px);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      z-index: 200;
-      border-radius: 24px;
+    /* Shelf Drop Zone */
+    .drop-shelf-zone {
+      border: 1.5px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 14px;
       text-align: center;
-      padding: 20px;
+      font-size: 12px;
+      color: #a1a1aa;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.02);
     }
-    .cleaning-title { font-size: 16px; font-weight: 700; color: #38bdf8; }
-    .cleaning-sub { font-size: 12px; color: rgba(255, 255, 255, 0.7); max-width: 320px; }
+    .drop-shelf-zone.dragover {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.08);
+      color: #ffffff;
+    }
+    .shelf-items-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      max-height: 90px;
+      overflow-y: auto;
+    }
+    .shelf-chip {
+      background: #18181b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
   </style>
 </head>
 <body>
-  <div class="island-shell" id="island-shell" tabindex="0">
-    <!-- Compact Dynamic Capsule -->
-    <div class="island-compact" id="island-compact">
-      <div class="island-left">
-        <div class="island-dot-avatar" id="island-dot-avatar" title="Vorssaint OS (Click to open HUD)">
-          <div class="dot-body" id="dot-body">
-            <div class="dot-shine"></div>
-            <div class="dot-face">
-              <svg class="dot-eyes-svg" viewBox="0 0 100 60">
-                <path class="dot-eye eye-left" id="dot-eye-left" d="M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z" />
-                <path class="dot-eye eye-right" id="dot-eye-right" d="M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-        <div class="island-status-group">
-          <span class="island-status-dot" id="island-status-dot"></span>
-          <span class="island-title" id="island-title">Vorssaint OS</span>
-        </div>
+
+  <div class="island-container" id="island-container">
+
+    <!-- Compact Top Notch Capsule (Mac Vorssaint Authentic) -->
+    <div class="island-notch" id="island-notch" title="Click or hover to expand Vorssaint Controls">
+      <!-- Companion Mascot Face Rig -->
+      <div class="mascot-face-host" id="mascot-face-host"></div>
+
+      <!-- Central Camera Cutout -->
+      <div class="camera-cutout">
+        <span class="camera-lens-dot" id="camera-lens-dot"></span>
       </div>
 
-      <div class="island-right">
-        <div class="island-audio-bars" id="island-audio-bars">
-          <span class="i-bar bar-1"></span>
-          <span class="i-bar bar-2"></span>
-          <span class="i-bar bar-3"></span>
-          <span class="i-bar bar-4"></span>
-        </div>
-        <span class="island-node-pill" id="island-node-pill">Vorssaint OS</span>
+      <!-- Right Audio Equalizer Waveform -->
+      <div class="notch-right-wave" id="notch-right-wave">
+        <span class="wave-bar"></span>
+        <span class="wave-bar"></span>
+        <span class="wave-bar"></span>
       </div>
     </div>
 
-    <!-- Expanded Vorssaint Modular HUD Card -->
-    <div class="island-expanded" id="island-expanded">
-      <!-- HUD Header -->
-      <div class="island-exp-header">
-        <div class="island-exp-profile">
-          <div class="island-dot-avatar exp-size" id="island-dot-avatar-exp">
-            <div class="dot-body">
-              <div class="dot-shine"></div>
-              <div class="dot-face">
-                <svg class="dot-eyes-svg" viewBox="0 0 100 60">
-                  <path class="dot-eye" d="M 33 20 C 37 20, 39 23, 39 30 C 39 37, 37 40, 33 40 C 29 40, 27 37, 27 30 C 27 23, 29 20, 33 20 Z" />
-                  <path class="dot-eye" d="M 67 20 C 71 20, 73 23, 73 30 C 73 37, 71 40, 67 40 C 63 40, 61 37, 61 30 C 61 23, 63 20, 67 20 Z" />
-                </svg>
-              </div>
-            </div>
+    <!-- Expanded Controls Island Card -->
+    <div class="expanded-wrapper" id="expanded-wrapper">
+      <div class="controls-card" id="controls-card">
+        <!-- Header -->
+        <div class="controls-header">
+          <div class="controls-title" id="header-nav-btn" title="Open Command Palette (Alt+K)">
+            <span>Vorssaint Controls</span>
+            <span class="nav-badge">Alt+K</span>
           </div>
-          <div>
-            <div class="island-exp-name">
-              <span>Vorssaint OS</span>
-              <span class="island-exp-badge">System Core</span>
-            </div>
-            <div class="island-exp-sub" id="island-exp-sub">Active • System Telemetry & Utilities</div>
+          <div class="header-btns">
+            <button type="button" class="head-icon-btn" id="btn-pin" title="Pin / Keep Island Open">📌</button>
+            <button type="button" class="head-icon-btn" id="btn-open-settings" title="Vorssaint Settings Hub">⚙️</button>
+            <button type="button" class="head-icon-btn" id="btn-collapse" title="Collapse Island (Esc)">✕</button>
           </div>
         </div>
-        <div class="island-exp-top-actions">
-          <button type="button" class="island-action-btn" id="island-pet-btn" title="Pet Mascot">🐾 Mascot</button>
-          <button type="button" class="island-action-btn" id="island-collapse-btn" title="Collapse (Esc)">✕</button>
+
+        <!-- Companion Mascot Stage Card -->
+        <div class="mascot-stage-box" id="mascot-stage-box">
+          <div class="mascot-stage-left">
+            <div class="stage-mascot-rig-host" id="stage-mascot-rig-host"></div>
+            <div class="stage-mascot-info">
+              <span class="stage-mascot-title">Vorssaint Companion <span style="font-size:10px; color:#38bdf8; font-weight:600;">ACTIVE</span></span>
+              <span class="stage-mascot-hint">Tracks focus &amp; live system telemetry</span>
+            </div>
+          </div>
+          <div class="moment-chips-row">
+            <button type="button" class="moment-chip" id="chip-hop">🐰 Hop</button>
+            <button type="button" class="moment-chip" id="chip-love">💖 Love</button>
+            <button type="button" class="moment-chip" id="chip-think">🧠 Think</button>
+            <button type="button" class="moment-chip" id="chip-groove">🎵 Groove</button>
+            <button type="button" class="moment-chip" id="chip-sleep">😴 Sleep</button>
+            <button type="button" class="moment-chip" id="chip-wink">😉 Wink</button>
+            <button type="button" class="moment-chip" id="chip-pet">🍓 Pet</button>
+          </div>
         </div>
-      </div>
 
-      <!-- Navigation Tabs Strip -->
-      <div class="hud-tabs">
-        <button type="button" class="hud-tab-btn active" data-tab="telemetry">
-          <span>📊</span>
-          <span>System</span>
-        </button>
-        <button type="button" class="hud-tab-btn" data-tab="agents">
-          <span>🤖</span>
-          <span>AI Monitor</span>
-        </button>
-        <button type="button" class="hud-tab-btn" data-tab="media">
-          <span>🎵</span>
-          <span>Media</span>
-        </button>
-        <button type="button" class="hud-tab-btn" data-tab="clipboard">
-          <span>📋</span>
-          <span>Clipboard</span>
-        </button>
-        <button type="button" class="hud-tab-btn" data-tab="scratchpad">
-          <span>📝</span>
-          <span>Notes</span>
-        </button>
-        <button type="button" class="hud-tab-btn" data-tab="tools">
-          <span>🛠️</span>
-          <span>Tools</span>
-        </button>
-      </div>
-
-      <!-- Panes Container -->
-      <div class="hud-pane-container">
-        <!-- 1. System Telemetry Pane -->
-        <div class="hud-pane active" id="pane-telemetry">
-          <div class="telemetry-grid">
-            <div class="tele-card">
-              <div class="tele-card-head">
-                <span class="tc-label">CPU LOAD</span>
-                <span class="tc-icon">⚡</span>
+        <!-- Middle Split: Live MAVE Status & Real Windows Volume/Brightness -->
+        <div class="controls-mid-grid">
+          <div class="media-box" id="media-box">
+            <div class="media-main-row">
+              <div class="media-art-frame" id="media-art">⚡</div>
+              <div class="media-info">
+                <span class="media-track" id="island-active-model">MAVE Runtime</span>
+                <span class="media-sub" id="island-live-telemetry">Loading system metrics…</span>
               </div>
-              <div class="tc-val" id="tc-cpu-val">0%</div>
-              <div class="tc-meter"><div class="tc-meter-fill" id="tc-cpu-fill" style="width: 0%"></div></div>
-              <div class="tc-sub" id="tc-cpu-sub">0 Cores • 0.0 GHz</div>
             </div>
-
-            <div class="tele-card">
-              <div class="tele-card-head">
-                <span class="tc-label">RAM USAGE</span>
-                <span class="tc-icon">💾</span>
-              </div>
-              <div class="tc-val" id="tc-ram-val">0%</div>
-              <div class="tc-meter"><div class="tc-meter-fill" id="tc-ram-fill" style="width: 0%"></div></div>
-              <div class="tc-sub" id="tc-ram-sub">0 / 0 GB</div>
-            </div>
-
-            <div class="tele-card">
-              <div class="tele-card-head">
-                <span class="tc-label">GPU & VRAM</span>
-                <span class="tc-icon">🎮</span>
-              </div>
-              <div class="tc-val" id="tc-gpu-val">Active</div>
-              <div class="tc-meter"><div class="tc-meter-fill" id="tc-gpu-fill" style="width: 0%"></div></div>
-              <div class="tc-sub" id="tc-gpu-sub">GPU Hardware</div>
-            </div>
-
-            <div class="tele-card">
-              <div class="tele-card-head">
-                <span class="tc-label">PRIMARY DISK</span>
-                <span class="tc-icon">💽</span>
-              </div>
-              <div class="tc-val" id="tc-disk-val">0%</div>
-              <div class="tc-meter"><div class="tc-meter-fill" id="tc-disk-fill" style="width: 0%"></div></div>
-              <div class="tc-sub" id="tc-disk-sub">0 GB Free</div>
+            <div class="media-controls-row">
+              <button type="button" class="lyrics-toggle-btn" id="btn-island-open-mave">Open MAVE</button>
+              <button type="button" class="lyrics-toggle-btn" id="btn-island-cmdbar">Command Bar</button>
+              <button type="button" class="lyrics-toggle-btn" id="btn-island-menu-top">More Tools</button>
             </div>
           </div>
 
-          <div class="tele-sub-row">
-            <div class="sub-tele-pill" id="stp-tunnel-pill" title="Click to toggle or copy Cloudflare Online Link" style="cursor: pointer;">
-              <span class="stp-icon">🌐</span>
-              <div class="stp-info">
-                <span class="stp-label">PUBLIC GATEWAY</span>
-                <span class="stp-val" id="tc-tunnel-val">Local Wi-Fi Only</span>
+          <!-- Levels Card -->
+          <div class="sliders-box">
+            <div class="slider-row">
+              <span class="slider-icon">🔊</span>
+              <div class="slider-track-wrap" id="vol-track">
+                <div class="slider-fill" id="vol-fill" style="width: 45%;"></div>
               </div>
+              <span class="slider-label" id="vol-label">45%</span>
             </div>
-            <div class="sub-tele-pill">
-              <span class="stp-icon">🔋</span>
-              <div class="stp-info">
-                <span class="stp-label">POWER / BATTERY</span>
-                <span class="stp-val" id="tc-power-val">AC Plugged (100%)</span>
+
+            <div class="slider-row">
+              <span class="slider-icon">🔆</span>
+              <div class="slider-track-wrap" id="bright-track">
+                <div class="slider-fill" id="bright-fill" style="width: 65%;"></div>
               </div>
-            </div>
-            <div class="sub-tele-pill">
-              <span class="stp-icon">☕</span>
-              <div class="stp-info">
-                <span class="stp-label">KEEP AWAKE</span>
-                <span class="stp-val" id="tc-awake-val">Disabled (System Sleep)</span>
-              </div>
+              <span class="slider-label" id="bright-label">65%</span>
             </div>
           </div>
         </div>
 
-        <!-- 2. AI Agents Monitor Pane -->
-        <div class="hud-pane" id="pane-agents">
-          <div class="agents-grid">
-            <div class="agent-card">
-              <div class="agent-card-head">
-                <div class="agent-title-wrap">
-                  <span class="agent-icon">💻</span>
-                  <span class="agent-name">Vorssaint Neural Core (Qwen 3-VL)</span>
-                </div>
-                <span class="agent-badge" id="ag-local-badge">Ready</span>
-              </div>
-              <div class="agent-meta-row">
-                <span>Model Architecture</span>
-                <span id="ag-local-arch">8B Vision-Language</span>
-              </div>
-              <div class="agent-meta-row">
-                <span>Context Utilization</span>
-                <span id="ag-local-ctx">Active (On-Device)</span>
-              </div>
-            </div>
+        <!-- Bottom Actions Row (6 Tools) -->
+        <div class="controls-actions-row">
+          <button type="button" class="action-tile" id="btn-action-mixer">
+            <div class="tile-icon-circle">📊</div>
+            <span class="tile-text">System</span>
+          </button>
 
-            <div class="agent-card">
-              <div class="agent-card-head">
-                <div class="agent-title-wrap">
-                  <span class="agent-icon">⚡</span>
-                  <span class="agent-name">Claude 3.7 Sonnet</span>
-                </div>
-                <span class="agent-badge" id="ag-claude-badge">Ready</span>
-              </div>
-              <div class="agent-meta-row">
-                <span>Hybrid Routing</span>
-                <span>Tier 1 Fallback</span>
-              </div>
-              <div class="agent-meta-row">
-                <span>Context Window</span>
-                <span>200,000 Tokens</span>
-              </div>
-            </div>
+          <button type="button" class="action-tile" id="btn-action-awake">
+            <div class="tile-icon-circle">☕</div>
+            <span class="tile-text">Awake</span>
+          </button>
 
-            <div class="agent-card">
-              <div class="agent-card-head">
-                <div class="agent-title-wrap">
-                  <span class="agent-icon">✨</span>
-                  <span class="agent-name">ChatGPT 4o</span>
-                </div>
-                <span class="agent-badge" id="ag-chatgpt-badge">Connected</span>
-              </div>
-              <div class="agent-meta-row">
-                <span>Rate Limits</span>
-                <span id="ag-chatgpt-limits">Healthy</span>
-              </div>
-              <div class="agent-meta-row">
-                <span>Reset Countdown</span>
-                <span id="ag-chatgpt-reset">100% Remaining</span>
-              </div>
-            </div>
+          <button type="button" class="action-tile" id="btn-action-timer">
+            <div class="tile-icon-circle">⏱</div>
+            <span class="tile-text">Timer</span>
+          </button>
 
-            <div class="agent-card">
-              <div class="agent-card-head">
-                <div class="agent-title-wrap">
-                  <span class="agent-icon">🦾</span>
-                  <span class="agent-name">GitHub Copilot</span>
-                </div>
-                <span class="agent-badge" id="ag-copilot-badge">Active</span>
-              </div>
-              <div class="agent-meta-row">
-                <span>Workspace Hook</span>
-                <span id="ag-copilot-hook">VSCode Bridge</span>
-              </div>
-              <div class="agent-meta-row">
-                <span>Completions</span>
-                <span id="ag-copilot-stats">Synced</span>
-              </div>
+          <button type="button" class="action-tile" id="btn-action-calendar">
+            <div class="tile-icon-circle">📅</div>
+            <span class="tile-text">Date</span>
+          </button>
+
+          <button type="button" class="action-tile" id="btn-action-agents">
+            <div class="tile-icon-circle">🤖</div>
+            <span class="tile-text">Models</span>
+          </button>
+
+          <button type="button" class="action-tile" id="btn-action-shelf">
+            <div class="tile-icon-circle">📥</div>
+            <span class="tile-text">Shelf</span>
+          </button>
+        </div>
+
+        <!-- DRAWERS -->
+        <!-- Drawer 1: Live System Snapshot -->
+        <div class="slide-panel" id="panel-mixer">
+          <div class="panel-head">
+            <span class="panel-title">📊 Live System Monitor</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <button type="button" id="btn-island-menu-panel" style="background:rgba(255,255,255,0.08); border:none; color:#38bdf8; font-size:11px; padding:2px 8px; border-radius:6px; cursor:pointer;" title="Open Menu Bar Panel">Panel ↗</button>
+              <button type="button" class="panel-back-btn" data-close="panel-mixer">✕ Close</button>
             </div>
+          </div>
+          <div id="island-sys-details" style="display:flex; flex-direction:column; gap:6px; font-size:12px; color:#d4d4d8;">
+            <div>Reading CPU, RAM &amp; GPU metrics…</div>
           </div>
         </div>
 
-        <!-- 3. Media & Volume Mixer Pane -->
-        <div class="hud-pane" id="pane-media">
-          <div class="media-mixer-wrap">
-            <!-- Now Playing Card -->
-            <div class="now-playing-card">
-              <div class="np-art">
-                <span class="np-art-icon">🎵</span>
-                <div class="np-wave-indicator">
-                  <span></span><span></span><span></span><span></span>
-                </div>
-              </div>
-              <div class="np-info">
-                <div class="np-title" id="np-track-title">Sovereign High-Fidelity Audio</div>
-                <div class="np-artist" id="np-track-artist">Vorssaint Dynamic Soundstage • 48 kHz</div>
-                <div class="np-progress-bar"><div class="np-progress-fill" id="np-progress-fill" style="width: 58%;"></div></div>
-              </div>
-              <div class="np-controls">
-                <button type="button" class="np-ctrl-btn" id="btn-media-prev" title="Previous Track">⏮️</button>
-                <button type="button" class="np-ctrl-btn np-play-btn" id="btn-media-play" title="Play / Pause">⏸️</button>
-                <button type="button" class="np-ctrl-btn" id="btn-media-next" title="Next Track">⏭️</button>
-              </div>
-            </div>
-
-            <!-- Volume Mixer Sliders -->
-            <div class="mixer-section-title">SYSTEM VOLUME MIXER (PER-APP)</div>
-            <div class="volume-sliders-grid">
-              <div class="vol-slider-row">
-                <div class="vol-slider-label">
-                  <div>
-                    <span class="vol-icon" id="btn-master-mute" title="Toggle Mute" style="cursor: pointer;">🔊</span>
-                    <span>Master Output</span>
-                  </div>
-                  <span class="vol-val" id="vol-master-val">85%</span>
-                </div>
-                <input type="range" class="vol-range" id="mixer-master-slider" min="0" max="100" value="85">
-              </div>
-
-              <div class="vol-slider-row">
-                <div class="vol-slider-label">
-                  <div>
-                    <span class="vol-icon">🎧</span>
-                    <span>Media &amp; Music</span>
-                  </div>
-                  <span class="vol-val" id="vol-media-val">90%</span>
-                </div>
-                <input type="range" class="vol-range" id="mixer-media-slider" min="0" max="100" value="90">
-              </div>
-
-              <div class="vol-slider-row">
-                <div class="vol-slider-label">
-                  <div>
-                    <span class="vol-icon">🎙️</span>
-                    <span>AI Voice &amp; Speech</span>
-                  </div>
-                  <span class="vol-val" id="vol-voice-val">80%</span>
-                </div>
-                <input type="range" class="vol-range" id="mixer-voice-slider" min="0" max="100" value="80">
-              </div>
-            </div>
+        <!-- Drawer 2: Timer with Ruler -->
+        <div class="slide-panel" id="panel-timer">
+          <div class="panel-head">
+            <span class="panel-title">⏱ Focus Timer</span>
+            <button type="button" class="panel-back-btn" data-close="panel-timer">✕ Close</button>
+          </div>
+          <div style="text-align:center; font-size:32px; font-weight:700; color:#38bdf8; margin:4px 0;" id="timer-display">25:00</div>
+          <div class="timer-ruler">
+            <button type="button" class="preset-chip" data-min="5">5m</button>
+            <button type="button" class="preset-chip" data-min="15">15m</button>
+            <button type="button" class="preset-chip" data-min="25">25m</button>
+            <button type="button" class="preset-chip" data-min="45">45m</button>
+          </div>
+          <div style="display:flex; justify-content:center; gap:8px; margin-top:8px;">
+            <button type="button" class="preset-chip" id="timer-toggle-btn" style="background:#0284c7; border-color:#38bdf8;">Start</button>
+            <button type="button" class="preset-chip" id="timer-reset-btn">Reset</button>
           </div>
         </div>
 
-        <!-- 3. Clipboard Shelf Pane -->
-        <div class="hud-pane" id="pane-clipboard">
-          <div class="clipboard-controls">
-            <input type="search" class="clip-search-input" id="clip-search-input" placeholder="Search clipboard history…">
-            <button type="button" class="clip-btn" id="btn-clip-clear" title="Clear History">🗑️ Clear</button>
+        <!-- Drawer 3: Today & Routines -->
+        <div class="slide-panel" id="panel-calendar">
+          <div class="panel-head">
+            <span class="panel-title">📅 Today &amp; Scheduled Routines</span>
+            <button type="button" class="panel-back-btn" data-close="panel-calendar">✕ Close</button>
           </div>
-          <div class="clipboard-list" id="clipboard-list">
-            <!-- Rendered dynamically -->
-          </div>
-        </div>
-
-        <!-- 4. Scratchpad Notes Pane -->
-        <div class="hud-pane" id="pane-scratchpad">
-          <div class="scratchpad-wrap">
-            <textarea class="scratchpad-textarea" id="scratchpad-textarea" placeholder="Type floating quick notes, thoughts, or scratch code here… (Autosaved to vorssaint_scratchpad.md)" spellcheck="false"></textarea>
-            <div class="scratchpad-footer">
-              <span id="scratchpad-count">0 chars • 0 words</span>
-              <div class="scratchpad-actions">
-                <button type="button" class="clip-btn" id="btn-scratchpad-copy">📋 Copy All</button>
-                <button type="button" class="clip-btn" id="btn-scratchpad-clear">Clear</button>
-              </div>
-            </div>
+          <div style="font-size:12px; color:#a1a1aa; text-align:center; padding:12px;">
+            <div style="font-weight:700; color:#fff; font-size:14px;" id="cal-today-text">Today</div>
+            <div style="margin-top:6px;">Manage scheduled routines inside MAVE.</div>
           </div>
         </div>
 
-        <!-- 5. Quick Tools Pane -->
-        <div class="hud-pane" id="pane-tools">
-          <div class="tools-pane">
-            <div class="tool-section-title">KEEP AWAKE (CAFFEINATE)</div>
-            <div class="keep-awake-strip" id="keep-awake-strip">
-              <button type="button" class="ka-btn active" data-ka="off">Off (Sleep)</button>
-              <button type="button" class="ka-btn" data-ka="15m">15 Min</button>
-              <button type="button" class="ka-btn" data-ka="1h">1 Hour</button>
-              <button type="button" class="ka-btn" data-ka="4h">4 Hours</button>
-              <button type="button" class="ka-btn" data-ka="indefinite">∞ Indefinite</button>
-            </div>
-
-            <div class="tool-section-title">QUICK SYSTEM UTILITIES</div>
-            <div class="quick-actions-grid">
-              <button type="button" class="qa-btn" id="tool-ocr">
-                <span class="qa-icon">🔍</span>
-                <span class="qa-text">Screen OCR</span>
-              </button>
-              <button type="button" class="qa-btn" id="tool-color-picker">
-                <span class="qa-icon">🎨</span>
-                <span class="qa-text">Color Picker</span>
-              </button>
-              <button type="button" class="qa-btn" id="tool-cleaning">
-                <span class="qa-icon">🧼</span>
-                <span class="qa-text">Clean Lock</span>
-              </button>
-              <button type="button" class="qa-btn" id="tool-terminal">
-                <span class="qa-icon">⚡</span>
-                <span class="qa-text">Terminal</span>
-              </button>
-              <button type="button" class="qa-btn" id="tool-voice">
-                <span class="qa-icon">🎙️</span>
-                <span class="qa-text">Voice Mode</span>
-              </button>
-              <button type="button" class="qa-btn" id="tool-chat">
-                <span class="qa-icon">💬</span>
-                <span class="qa-text">Open Chat</span>
-              </button>
-              <button type="button" class="qa-btn" id="tool-canvas">
-                <span class="qa-icon">◫</span>
-                <span class="qa-text">Canvas</span>
-              </button>
-              <button type="button" class="qa-btn" id="tool-tunnel" title="Toggle Cloudflare Internet Hosting">
-                <span class="qa-icon">🌐</span>
-                <span class="qa-text" id="tool-tunnel-text">Host Online</span>
-              </button>
-              <button type="button" class="qa-btn" id="tool-settings">
-                <span class="qa-icon">⚙️</span>
-                <span class="qa-text">Settings</span>
-              </button>
-            </div>
+        <!-- Drawer 4: Active AI Session -->
+        <div class="slide-panel" id="panel-agents">
+          <div class="panel-head">
+            <span class="panel-title">🤖 Active AI Session</span>
+            <button type="button" class="panel-back-btn" data-close="panel-agents">✕ Close</button>
+          </div>
+          <div id="island-agents-list" style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:140px;">
+            <div class="agent-card-row"><span>Loading active runtime…</span></div>
           </div>
         </div>
-      </div>
 
-      <!-- Cleaning Mode Overlay (Hidden by default) -->
-      <div class="cleaning-overlay" id="cleaning-overlay" hidden>
-        <span style="font-size: 32px">🧼</span>
-        <div class="cleaning-title">Keyboard Cleaning Mode Active</div>
-        <div class="cleaning-sub">All keyboard &amp; trackpad inputs are safely locked so you can wipe and sanitize your keyboard.</div>
-        <div style="font-size: 20px; font-weight: 700; color: #60a5fa" id="cleaning-timer">10s</div>
-        <button type="button" class="island-action-btn" id="btn-exit-cleaning">Exit Cleaning Mode (Esc)</button>
+        <!-- Drawer 5: File Shelf -->
+        <div class="slide-panel" id="panel-shelf">
+          <div class="panel-head">
+            <span class="panel-title">📥 Persistent Drop Shelf</span>
+            <button type="button" class="panel-back-btn" data-close="panel-shelf">✕ Close</button>
+          </div>
+          <div class="drop-shelf-zone" id="drop-shelf-zone">
+            Drag & drop files or snippets here to hold near the notch.
+          </div>
+          <div class="shelf-items-grid" id="shelf-items-grid"></div>
+        </div>
+
       </div>
     </div>
+
   </div>
 
+  <script src="mascot_rig.js"></script>
   <script src="island.js"></script>
 </body>
 </html>

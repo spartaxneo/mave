@@ -12,73 +12,98 @@
 </head>
 <body>
   <div class="window">
-    <aside class="sidebar">
+    <!-- 1. Unified Antigravity Left Navigation Sidebar -->
+    <aside class="sidebar" id="sidebar" aria-label="Workspace Navigation">
       <div class="sidebar-head">
-        <div class="brand">
-          <span class="brand-avatar"><img src="assets/tray@2x.png" width="18" height="18" alt=""></span>
-          <span class="brand-name">Mave</span>
+        <div class="sidebar-brand">
+          <img src="assets/icon.png" width="18" height="18" alt="MAVE" class="sidebar-brand-mark">
+          <span class="sidebar-brand-title" id="sidebar-app-title">MAVE</span>
         </div>
-        <button class="icon-btn sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
-        </button>
+        <div class="sidebar-head-actions">
+          <button type="button" class="icon-btn" id="sidebar-bell-btn" title="Notifications" style="position:relative;">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="sidebar-bell-dot" id="sidebar-bell-dot"></span>
+          </button>
+          <button type="button" class="icon-btn" id="sidebar-search-btn" title="Search conversations & files (Ctrl+K)">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <button type="button" class="icon-btn sidebar-toggle" id="sidebar-toggle" title="Collapse sidebar">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+          </button>
+        </div>
       </div>
 
-      <button class="new-chat-btn" id="sidebar-new-chat" title="New chat (Ctrl+N)">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        <span>New chat</span>
+      <button type="button" class="new-chat-btn" id="sidebar-new-chat" title="New conversation (Ctrl+N)">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span>New Conversation</span>
         <kbd class="shortcut">Ctrl+N</kbd>
       </button>
 
-      <nav id="nav">
-        <button data-section="home" class="nav-item active" id="nav-item-chat" title="Chat">
-          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span>Chat</span>
+      <nav id="nav" aria-label="Primary sections">
+        <button type="button" data-section="home" class="nav-item active" id="nav-item-chat" title="Conversations">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Conversations</span>
         </button>
-        <button data-action="images" class="nav-item" id="nav-item-images" title="Images">
-          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          <span>Images</span>
+        <button type="button" data-action="scheduled" class="nav-item" id="nav-item-scheduled" title="Automations &amp; Scheduled Tasks">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9.5"/><polyline points="12 6.5 12 12 15.5 14"/></svg>
+          <span>Automations</span>
         </button>
-        <button data-action="library" class="nav-item" id="nav-item-library" title="Library">
-          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          <span>Library</span>
+        <button type="button" data-action="plugins" class="nav-item" id="nav-item-plugins" title="Customizations, Skills &amp; MCP">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span>Customizations</span>
         </button>
-        <button data-action="scheduled" class="nav-item" id="nav-item-scheduled" title="Scheduled">
-          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span>Scheduled</span>
-        </button>
-        <button data-action="plugins" class="nav-item" id="nav-item-plugins" title="Plugins">
-          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-          <span>Plugins</span>
-        </button>
-        <button data-action="projects" class="nav-item" id="nav-item-projects" title="Projects">
-          <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          <span>Projects</span>
+        <button type="button" data-section="virtual-computer" class="nav-item" id="nav-item-vc" title="Isolated Virtual Computer">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>Virtual Computer</span>
+          <span class="nav-badge">VM</span>
         </button>
         <div class="nav-more-dropdown-wrap">
-          <button type="button" class="nav-item" id="nav-item-more" title="More">
-            <svg class="nav-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-            <span>More</span>
+          <button type="button" class="nav-item" id="nav-item-more" title="Workspace Studios &amp; Tools">
+            <svg class="nav-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            <span>More Tools</span>
           </button>
           <div class="nav-more-dropdown" id="nav-more-dropdown" hidden>
+            <button type="button" data-action="images" class="nmd-item" id="nav-item-images">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Images Studio</span>
+            </button>
+            <button type="button" data-action="library" class="nmd-item" id="nav-item-library">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              <span>Knowledge Vault</span>
+            </button>
+            <button type="button" data-action="projects" class="nmd-item" id="nav-item-projects">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span>Projects Manager</span>
+            </button>
+            <div class="nmd-divider"></div>
             <button type="button" data-section="terminal" class="nmd-item">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-              <span>Terminal</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+              <span>Terminal &amp; Activity</span>
             </button>
             <button type="button" data-section="data" class="nmd-item">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-              <span>Data Tab</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              <span>Tabular Data SQL</span>
             </button>
             <button type="button" data-section="channels" class="nmd-item">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-              <span>Channels</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              <span>Agent Channels</span>
             </button>
-            <button type="button" class="nmd-item" id="nav-item-vorssaint">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              <span>Vorssaint OS Toolkit</span>
+            <button type="button" data-section="mesh" class="nmd-item">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/></svg>
+              <span>Brain Mesh Fleet</span>
             </button>
-            <button type="button" class="nmd-item" id="nav-item-island">
-              <span style="font-size:13px;">🏝️</span>
-              <span>Dynamic Island Notch</span>
+            <div class="nmd-divider"></div>
+            <button type="button" id="nav-item-vorssaint" class="nmd-item" title="Open Vorssaint OS Menu Panel (Alt+V)">
+              <span style="font-weight:700; color:#2563eb; font-size:11px;">● ●</span>
+              <span>Vorssaint Menu Panel</span>
+            </button>
+            <button type="button" id="nav-item-vorssaint-hub" class="nmd-item" title="Open Vorssaint Companion Hub">
+              <span style="font-size:12px;">✦</span>
+              <span>Vorssaint Companion Hub</span>
+            </button>
+            <button type="button" id="nav-item-island" class="nmd-item" title="Toggle Dynamic Island HUD (Alt+I)">
+              <span style="font-size:12px;">◎</span>
+              <span>Dynamic Island</span>
             </button>
           </div>
         </div>
@@ -87,63 +112,72 @@
       <!-- Search Chats -->
       <div class="sidebar-search-wrap">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="search" id="chat-search" class="chat-search-input" placeholder="Search chats..." spellcheck="false">
+        <input type="search" id="chat-search" class="chat-search-input" placeholder="Search conversations…" spellcheck="false">
       </div>
 
-      <!-- ChatGPT-Style Projects Section -->
+      <!-- Antigravity-Style Workspaces & Projects Tree -->
       <div class="sidebar-projects-section" id="sidebar-projects-section">
         <div class="projects-header">
-          <span>PROJECTS</span>
+          <span>Projects</span>
           <button type="button" class="btn-new-project" id="btn-new-project" title="Create new project">
             <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
           </button>
         </div>
-        <div class="projects-list" id="projects-list">
-          <!-- Loaded dynamically via IPC -->
-        </div>
+        <div class="projects-list" id="projects-list"></div>
       </div>
 
-      <!-- ChatGPT-Style Recents Timeline Chats -->
-      <div class="sidebar-recents-header">RECENTS</div>
-      <div class="sidebar-chats scroll" id="sidebar-chats">
-        <!-- Rendered dynamically: Pinned, Today, Yesterday, Previous 7 Days, Previous 30 Days -->
-      </div>
+      <!-- Recents Conversations -->
+      <div class="sidebar-recents-header">Recents</div>
+      <div class="sidebar-chats scroll" id="sidebar-chats"></div>
 
       <div class="sidebar-footer">
-        <button type="button" class="sidebar-archived-btn" id="open-archived-btn" title="View archived chats">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="2"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>
-          <span>Archived chats</span>
-        </button>
+        <div class="sidebar-footer-bar">
+          <button type="button" class="user-profile-btn" id="user-profile-btn" title="Account &amp; Profile">
+            <div class="user-avatar-initials" id="user-avatar-initials">U</div>
+            <div class="user-meta">
+              <span class="user-name" id="user-profile-name">Local Owner</span>
+              <span class="user-plan-badge" id="user-plan-badge">Local Node</span>
+            </div>
+          </button>
+          <div class="sidebar-footer-icons">
+            <button type="button" class="sidebar-footer-icon-btn" id="open-archived-btn" title="Archived conversations">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="2" y="4" width="20" height="5" rx="2"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>
+            </button>
+            <button type="button" class="sidebar-footer-icon-btn" id="open-settings-btn" title="Settings (Ctrl+,)">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+          </div>
+        </div>
 
-        <!-- User Profile Popup Menu (Screenshot 2) -->
+        <!-- User Profile Popup Menu -->
         <div class="user-profile-menu" id="user-profile-menu" hidden>
           <div class="upm-header" id="upm-header">
-            <span class="upm-name" id="upm-user-name">Local User</span>
-            <span class="upm-plan" id="upm-user-plan">Free ›</span>
+            <span class="upm-name" id="upm-user-name">Local Owner</span>
+            <span class="upm-plan" id="upm-user-plan">Sovereign Node</span>
           </div>
-          <button type="button" class="upm-item" id="upm-try-plus">
-            <span class="upm-icon">✨</span>
-            <span>Try Plus free</span>
-          </button>
           <button type="button" class="upm-item" id="upm-personalization">
             <span class="upm-icon">🎨</span>
-            <span>Personalization</span>
+            <span>Customizations &amp; Memory</span>
           </button>
           <button type="button" class="upm-item" id="upm-profile">
             <span class="upm-icon">👤</span>
-            <span>Profile</span>
+            <span>Account &amp; Sync</span>
           </button>
           <button type="button" class="upm-item" id="upm-settings">
             <span class="upm-icon">⚙️</span>
             <span>Settings</span>
           </button>
-          <button type="button" class="upm-item" id="upm-vorssaint">
-            <span class="upm-icon">⚡</span>
-            <span>Vorssaint OS Toolkit</span>
+          <button type="button" class="upm-item" id="upm-vorssaint" title="Open Vorssaint OS Menu Panel">
+            <span class="upm-icon" style="color:#2563eb; font-weight:700; font-size:11px;">● ●</span>
+            <span>Vorssaint Menu Panel</span>
+          </button>
+          <button type="button" class="upm-item" id="upm-vorssaint-hub" title="Open Vorssaint Companion Hub">
+            <span class="upm-icon">✦</span>
+            <span>Vorssaint Companion Hub</span>
           </button>
           <button type="button" class="upm-item" id="upm-help">
             <span class="upm-icon">❓</span>
-            <span>Help</span>
+            <span>Capabilities &amp; Help</span>
           </button>
           <div class="upm-divider"></div>
           <button type="button" class="upm-item" id="upm-auth-btn">
@@ -156,121 +190,72 @@
           </button>
         </div>
 
-        <!-- User Profile Pill (Screenshot 1 & 2) -->
-        <button type="button" class="user-profile-btn" id="user-profile-btn" title="User profile & settings">
-          <div class="user-avatar-initials" id="user-avatar-initials">U</div>
-          <div class="user-meta">
-            <span class="user-name" id="user-profile-name">Local User</span>
-            <span class="user-plan-badge" id="user-plan-badge">Free</span>
-          </div>
-          <svg class="user-more-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 4l4 4-4 4"/></svg>
-        </button>
       </div>
     </aside>
     <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
 
     <main class="content">
       <div class="titlebar">
-        <button class="icon-btn sidebar-expand-btn" id="sidebar-expand-btn" title="Open sidebar">
+        <button type="button" class="icon-btn sidebar-expand-btn" id="sidebar-expand-btn" title="Open sidebar">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
         </button>
-        <div class="model-picker-wrap">
-          <button type="button" class="model-picker-btn" id="model-picker-btn" aria-haspopup="true" aria-expanded="false" title="Switch Intelligence Engine">
-            <span class="model-brand-icon">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/></svg>
-            </span>
-            <span class="model-picker-name" id="model-picker-name">ChatGPT 4o</span>
-            <svg class="chevron-down" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>
+
+        <!-- Antigravity Workspace Breadcrumb Header -->
+        <div class="chat-header-meta">
+          <span class="workspace-crumb-root">mave</span>
+          <span class="workspace-crumb-sep">/</span>
+          <div class="title" id="section-title" hidden>Home</div>
+          <span class="chat-header-title" id="chat-header-title">Conversation</span>
+          <button type="button" class="chat-rename-btn" id="chat-rename-btn" title="Rename conversation">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
           </button>
-          <div class="model-picker-dropdown" id="model-picker-dropdown" hidden>
-            <div class="mp-dropdown-title">Model & Intelligence</div>
-            <button type="button" class="mp-item" data-model-type="auto">
-              <div class="mp-item-head">
-                <span class="mp-badge smart">⚡ Smart</span>
-                <span class="mp-name">ChatGPT 4o (Auto Router)</span>
-              </div>
-              <div class="mp-desc">Dynamic multi-tier routing (local speed + cloud depth)</div>
-            </button>
-            <button type="button" class="mp-item" data-model-type="local">
-              <div class="mp-item-head">
-                <span class="mp-badge local">💻 Local AI</span>
-                <span class="mp-name">Qwen 3-VL (On-Device)</span>
-              </div>
-              <div class="mp-desc">100% Offline & Private on your local RTX 5060 GPU</div>
-            </button>
-            <button type="button" class="mp-item" data-model-type="anthropic">
-              <div class="mp-item-head">
-                <span class="mp-badge claude">🧠 Claude 3.7</span>
-                <span class="mp-name">Claude 3.7 Sonnet</span>
-              </div>
-              <div class="mp-desc">State-of-the-art coding, deep thinking & screen actions</div>
-            </button>
-            <button type="button" class="mp-item" data-model-type="openai">
-              <div class="mp-item-head">
-                <span class="mp-badge gpt">🌐 OpenAI</span>
-                <span class="mp-name">GPT-4o (ChatGPT Engine)</span>
-              </div>
-              <div class="mp-desc">ChatGPT multimodal intelligence & reasoning</div>
-            </button>
-            <button type="button" class="mp-item" data-model-type="airllm">
-              <div class="mp-item-head">
-                <span class="mp-badge airllm">🚀 AirLLM 70B</span>
-                <span class="mp-name">AirLLM 70B MoE</span>
-              </div>
-              <div class="mp-desc">Layer-wise streaming for massive frontier models</div>
-            </button>
-            <div class="mp-divider"></div>
-            <button type="button" class="mp-item mp-settings-action" id="mp-open-settings">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              <span>Manage Models & API Keys…</span>
-            </button>
+          <span class="project-tag-badge" id="chat-project-badge" hidden>Project</span>
+          <span class="header-active-model-tag" id="model-picker-name" title="Active AI Model">Auto Router</span>
+        </div>
+
+        <!-- Clean Mode Pill Switcher -->
+        <div class="titlebar-center">
+          <div class="segmented-mode-capsule" id="segmented-mode-capsule">
+            <button type="button" class="smc-btn" id="mode-btn-chat" title="Focused Conversation Mode">Chat</button>
+            <button type="button" class="smc-btn active" id="mode-btn-work" title="Autonomous Workspace & Agent Mode">Work</button>
           </div>
         </div>
 
-        <!-- ChatGPT Temporary Chat Mode Toggle -->
-        <button type="button" class="temporary-chat-pill-btn" id="temporary-chat-pill-btn" style="display: none !important;" title="Toggle Temporary Chat (Won't appear in history or use memories)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
-          <span class="temp-chat-label">Temporary</span>
-        </button>
-
-        <div class="chat-header-meta" style="display: none !important;">
-          <div class="title" id="section-title" hidden>Home</div>
-          <span class="chat-header-title" id="chat-header-title">Main Chat</span>
-          <button type="button" class="chat-rename-btn" id="chat-rename-btn" title="Rename conversation">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-          </button>
-          <span class="project-tag-badge" id="chat-project-badge" hidden>📁 Project</span>
-        </div>
-
-        <!-- Ghost Omnibox Trigger (Ctrl+K) -->
-        <div class="omnibox-trigger-wrap" style="display: none;">
-          <button type="button" class="omnibox-trigger-btn" id="omnibox-trigger-btn" title="Ghost Omnibox: Instant Sub-5ms RRF Hybrid Search (Ctrl+K)">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <span class="omnibox-trigger-text">Search files, MCP tools, actions…</span>
+        <div class="titlebar-actions">
+          <button type="button" class="omnibox-trigger-btn" id="omnibox-trigger-btn" title="Hybrid Search &amp; Command Palette (Ctrl+K)">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="omnibox-trigger-text">Search…</span>
             <kbd class="omnibox-trigger-kbd">Ctrl K</kbd>
           </button>
-        </div>
-
-        <div class="titlebar-actions">
-          <button class="icon-btn titlebar-icon-action" id="talk-btn" title="Voice Mode">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          <button type="button" class="workspace-toggle-btn" id="workspace-panel-toggle-btn" title="Toggle Workspace Inspector (Files, Preview, Canvas)">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg>
+            <span>Workspace</span>
+          </button>
+          <button type="button" class="icon-btn titlebar-icon-action" id="talk-btn" title="Voice Mode">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
             <span id="talk-btn-text" class="sr-only" style="display:none">Voice Mode</span>
           </button>
-          <button class="icon-btn titlebar-icon-action" id="new-chat" title="New chat (Ctrl+N)">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <button type="button" class="icon-btn titlebar-icon-action" id="titlebar-settings-btn" title="Settings (Ctrl+,)">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
-          <!-- Hidden fallback hooks to preserve IPC/DOM selectors -->
+          <button type="button" class="icon-btn titlebar-icon-action" id="new-chat" title="New conversation (Ctrl+N)">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
           <div style="display: none !important;">
             <span class="status" id="status"><span class="dot"></span><span id="status-text">Ready</span></span>
+            <button id="titlebar-vorssaint-btn"></button>
             <button id="island-toggle-btn"></button>
             <button id="chat-archive-btn"></button>
             <button id="canvas-trigger-btn"></button>
             <button id="jarvis-hud-trigger-btn"></button>
+            <span id="codex-session-head" hidden><span id="codex-session-title"></span></span>
+            <button id="header-search-btn"></button>
           </div>
         </div>
       </div>
 
       <div id="lai-banner" class="banner-slot"></div>
+      <div class="workspace-split-body" id="workspace-split-body">
       <div class="pane scroll" id="pane">
 
         <!-- Home -->
@@ -288,50 +273,41 @@
           </div>
 
           <div class="temporary-chat-banner" id="temporary-chat-banner" hidden>
-            <span>🕵️ Temporary Chat is on. Messages will not be saved in your chat history or used for memory personalization.</span>
+            <span>🕵️ Temporary Conversation active — messages are not written to history or memory.</span>
             <button type="button" class="btn-clear-temp" id="btn-clear-temp">Turn Off</button>
           </div>
 
           <div class="log scroll" id="log" aria-live="polite">
             <div class="empty" id="empty">
-              <div class="empty-mark-wrap">
-                <img src="assets/tray@2x.png" width="36" height="36" alt="Mave">
+              <div class="empty-mark-wrap" title="MAVE">
+                <img src="assets/icon.png" width="28" height="28" alt="MAVE">
               </div>
-              <h1 class="empty-title" id="empty-greeting">What can I help with today?</h1>
-              <div class="empty-chips">
-                <button type="button" class="empty-chip" id="empty-chip-code" data-prompt="Help me write a Python script or debug code.">
-                  <span class="chip-icon">💻</span>
-                  <div class="chip-text">
-                    <strong>Write or debug code</strong>
-                    <span>Python, JavaScript, scripting &amp; web</span>
-                  </div>
+              <h1 class="empty-ready-title" id="empty-greeting">Ready when you are.</h1>
+              <p class="empty-subtitle">Ask a question, type <code>/</code> for workspace actions, or <code>@</code> to attach files.</p>
+
+              <div class="empty-starter-grid">
+                <button type="button" class="empty-chip" id="empty-chip-code" data-prompt="What can you help me with in MAVE?">
+                  <span class="ec-title">Capabilities overview</span>
+                  <span class="ec-sub">See active models, workspace &amp; tools</span>
                 </button>
-                <button type="button" class="empty-chip" id="empty-chip-canvas" data-prompt="Create an illustration of a scenic mountain lake at sunrise.">
-                  <span class="chip-icon">🎨</span>
-                  <div class="chip-text">
-                    <strong>Create an image</strong>
-                    <span>Generate concept visuals and art</span>
-                  </div>
+                <button type="button" class="empty-chip" id="empty-chip-canvas" data-prompt="Create a clean Python script in Canvas and run it locally.">
+                  <span class="ec-title">Open Canvas &amp; sandbox</span>
+                  <span class="ec-sub">Side-by-side code editing &amp; execution</span>
                 </button>
-                <button type="button" class="empty-chip" id="empty-chip-jarvis" data-prompt="Summarize my notes or text into structured bullet points.">
-                  <span class="chip-icon">📋</span>
-                  <div class="chip-text">
-                    <strong>Summarize text</strong>
-                    <span>Extract key takeaways and action items</span>
-                  </div>
+                <button type="button" class="empty-chip" id="empty-chip-jarvis" data-prompt="Inspect my live CPU, GPU, RAM, and connected Brain Mesh status.">
+                  <span class="ec-title">System &amp; hardware telemetry</span>
+                  <span class="ec-sub">Live CPU, GPU, RAM &amp; node status</span>
                 </button>
-                <button type="button" class="empty-chip" id="empty-chip-search" data-prompt="Brainstorm creative ideas, names, and strategies for a new project.">
-                  <span class="chip-icon">💡</span>
-                  <div class="chip-text">
-                    <strong>Brainstorm ideas</strong>
-                    <span>Explore concepts, naming, and solutions</span>
-                  </div>
+                <button type="button" class="empty-chip" id="empty-chip-search" data-prompt="Open the Virtual Computer workspace and show active guest status.">
+                  <span class="ec-title">Virtual Computer</span>
+                  <span class="ec-sub">Isolated execution without touching host</span>
                 </button>
               </div>
             </div>
           </div>
 
           <div class="composer-wrap" id="composer-wrap">
+            <div class="composer-suggest-popover" id="composer-suggest-popover" hidden role="listbox" aria-label="Mentions and slash commands"></div>
             <div class="attachments-preview-bar" id="attachments-preview-bar" hidden></div>
             <div class="region-chip" id="region-chip" hidden>
               <span class="rc-icon"></span><span id="region-text">Area selected</span>
@@ -340,57 +316,145 @@
               </button>
             </div>
             <form class="composer" id="composer">
-              <div class="composer-attach-wrap">
-                <button type="button" class="composer-plus-btn" id="composer-attach-btn" title="Add attachments, create images or videos">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                </button>
-                <div class="composer-actions-dropdown" id="composer-actions-dropdown" hidden>
-                  <button type="button" class="cad-item" id="cad-upload-file">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    <span>Upload Image, Video, Audio or PDF</span>
+              <div class="composer-input-row">
+                <div class="composer-attach-wrap">
+                  <button type="button" class="composer-plus-btn" id="composer-attach-btn" title="Attach files, run Python, open Canvas, or capture screen">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                   </button>
-                  <button type="button" class="cad-item" id="cad-python-sandbox">
-                    <span style="font-size:14px;">🐍</span>
-                    <span>Run Python Sandbox (Code Interpreter)</span>
+                  <div class="composer-actions-dropdown" id="composer-actions-dropdown" hidden>
+                    <button type="button" class="cad-item" id="cad-upload-file">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      <span>Upload Image, Video, Audio or PDF</span>
+                    </button>
+                    <button type="button" class="cad-item" id="cad-python-sandbox">
+                      <span style="font-size:14px;">🐍</span>
+                      <span>Run Python Sandbox</span>
+                    </button>
+                    <button type="button" class="cad-item" id="cad-open-canvas">
+                      <span style="font-size:14px;">◫</span>
+                      <span>Open Workspace Canvas</span>
+                    </button>
+                    <button type="button" class="cad-item" id="cad-create-image">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                      <span>Generate Image</span>
+                    </button>
+                    <button type="button" class="cad-item" id="cad-create-video">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                      <span>Generate Video</span>
+                    </button>
+                    <button type="button" class="cad-item" id="cad-select-region">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4,4"/></svg>
+                      <span>Select Screen Area</span>
+                    </button>
+                  </div>
+                </div>
+                <textarea id="prompt" rows="1" placeholder="Ask anything, @ to mention, / for actions" spellcheck="true" aria-label="Message Mave"></textarea>
+              </div>
+
+              <!-- Bottom Antigravity Control Strip -->
+              <div class="composer-bottom-bar">
+                <div class="composer-left-actions">
+                  <!-- Real Model Selector (dynamically populated from local + cloud catalog) -->
+                  <div class="capsule-model-picker-wrap">
+                    <button type="button" class="capsule-model-picker-btn" id="capsule-model-picker-btn" title="Select Active Model Engine">
+                      <span class="cmp-icon">⚡</span>
+                      <span class="cmp-label" id="capsule-model-label">Auto Router</span>
+                      <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+                    </button>
+                    <div class="capsule-model-dropdown" id="capsule-model-dropdown" hidden>
+                      <div class="cmd-section-title">Available Models &amp; Engines</div>
+                      <div id="capsule-model-options-list">
+                        <div class="cmd-loading">Loading available engines…</div>
+                      </div>
+                      <div class="mp-divider"></div>
+                      <button type="button" class="mp-item mp-settings-action" id="mp-open-settings">
+                        <span>Configure Models &amp; API Keys…</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="button" class="full-access-pill-btn" id="full-access-pill-btn" title="Toggle Workspace vs. Full System Access">
+                    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8"/><line x1="8" y1="11" x2="8.01" y2="11"/></svg>
+                    <span id="full-access-pill-text">Full access</span>
                   </button>
-                  <button type="button" class="cad-item" id="cad-open-canvas">
-                    <span style="font-size:14px;">◫</span>
-                    <span>Open Canvas Split-Screen Editor</span>
+
+                  <button type="button" class="temporary-chat-pill-btn" id="temporary-chat-pill-btn" title="Toggle Temporary Chat (not saved to history)">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/></svg>
+                    <span class="temp-chat-label">Temporary</span>
                   </button>
-                  <button type="button" class="cad-item" id="cad-create-image">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    <span>Generate Image (like DALL-E)</span>
+                </div>
+                <div class="composer-right-actions">
+                  <button type="button" class="think-pill-btn" id="think-btn" title="Deep reasoning mode">
+                    <span>Deep Think</span>
                   </button>
-                  <button type="button" class="cad-item" id="cad-create-video">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                    <span>Generate Video (like Sora)</span>
+                  <button type="button" class="dictation-icon-btn" id="dictation-btn" title="Dictation (Voice typing)">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                   </button>
-                  <button type="button" class="cad-item" id="cad-select-region">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4,4"/></svg>
-                    <span>Select Screen Area</span>
+                  <button type="button" class="voice-mode-circle-btn" id="voice-btn" title="Real-Time Voice Conversation">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 3a1.5 1.5 0 0 1 1.5 1.5v15a1.5 1.5 0 0 1-3 0v-15A1.5 1.5 0 0 1 12 3zm-6 4a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-3 0v-7A1.5 1.5 0 0 1 6 7zm12 0a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-3 0v-7A1.5 1.5 0 0 1 18 7z"/></svg>
+                  </button>
+                  <button type="submit" class="send" id="send" aria-label="Send" title="Send (Enter)">
+                    <svg class="i-send" viewBox="0 0 16 16"><path d="M8 12.5V3.8M4.2 7.4L8 3.6l3.8 3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg class="i-stop" viewBox="0 0 16 16"><rect x="4.5" y="4.5" width="7" height="7" rx="1.5" fill="currentColor"/></svg>
                   </button>
                 </div>
               </div>
-              <textarea id="prompt" rows="1" placeholder="Ask anything" spellcheck="true" aria-label="Ask anything"></textarea>
-              <div class="composer-right-actions">
-                <button type="button" class="think-pill-btn" id="think-btn" title="Think with deep reasoning">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/></svg>
-                  <span>Think</span>
-                </button>
-                <button type="button" class="dictation-icon-btn" id="dictation-btn" title="Dictation (Voice typing)">
-                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                </button>
-                <button type="button" class="voice-mode-circle-btn" id="voice-btn" title="ChatGPT-Style Hands-Free Voice Mode">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 9v6M10 6v12M14 4v16M17 7v10M20 10v4"/></svg>
-                </button>
-                <button type="submit" class="send" id="send" aria-label="Send" title="Send (Enter)">
-                  <svg class="i-send" viewBox="0 0 16 16"><path d="M8 12.5V3.8M4.2 7.4L8 3.6l3.8 3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  <svg class="i-stop" viewBox="0 0 16 16"><rect x="4.5" y="4.5" width="7" height="7" rx="1.5" fill="currentColor"/></svg>
-                </button>
-              </div>
             </form>
-            <div class="composer-footnote">Mave can make mistakes. Verify important info.</div>
+            <div class="composer-footnote" id="composer-top-hint">MAVE runs locally first and asks before risky actions.</div>
           </div>
+        </section>
+
+        <!-- MAVE Virtual Computer (Isolated Guest Desktop Viewer) -->
+        <section data-pane="virtual-computer" class="vc-pane" hidden>
+          <header class="vc-header">
+            <div class="vc-title-group">
+              <span class="vc-title">MAVE Virtual Computer</span>
+              <span class="vc-badge-isolated">
+                <span class="vc-pulse-dot"></span>
+                <span>Isolated Guest</span>
+              </span>
+            </div>
+            <div class="vc-task-banner" id="vc-task-banner">
+              <span class="vc-task-label">Mission:</span>
+              <span id="vc-task-text" class="vc-task-text">Ready</span>
+              <span style="opacity:0.4;">|</span>
+              <span id="vc-step-text" class="vc-task-step">Awaiting instructions...</span>
+            </div>
+            <div class="vc-actions">
+              <button type="button" class="vc-btn" id="vc-btn-takeover" title="Directly interact with the virtual computer without disturbing your physical mouse">Take Control</button>
+              <button type="button" class="vc-btn" id="vc-btn-export" title="Export files created inside the guest sandbox to your host computer">Export Files</button>
+            </div>
+          </header>
+
+          <div class="vc-viewport-container">
+            <div class="vc-screen-wrapper" id="vc-screen-wrapper">
+              <canvas id="vc-canvas" width="1280" height="800"></canvas>
+              <div id="vc-cursor" class="vc-cursor-overlay">
+                <svg class="vc-cursor-icon" viewBox="0 0 24 24" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5">
+                  <path d="M3 3l7 18 3-7 7-3L3 3z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <footer class="vc-telemetry-bar">
+            <div class="vc-telemetry-item">
+              <span>Engine:</span>
+              <strong>Native Isolated Guest Sandbox</strong>
+            </div>
+            <div class="vc-telemetry-item">
+              <span>Display Buffer:</span>
+              <strong>1280 &times; 800 @ 30 FPS</strong>
+            </div>
+            <div class="vc-telemetry-item">
+              <span>Host Cursor:</span>
+              <strong style="color:#10b981;">Undisturbed (0&Delta;)</strong>
+            </div>
+            <div class="vc-telemetry-item">
+              <span>Storage Root:</span>
+              <strong>%APPDATA%/mave/guest_fs/</strong>
+            </div>
+          </footer>
         </section>
 
         <!-- Terminal -->
@@ -423,12 +487,12 @@
           <div id="term-shells"></div>
         </section>
 
-        <!-- Bot Data Tab (OpenMausBot Parity) -->
+        <!-- Bot Data Tab -->
         <section data-pane="data" class="data-pane" hidden>
           <div class="data-tab-header">
             <div class="data-tab-title-wrap">
-              <h2>Bot Analytical Data Tab</h2>
-              <p>Zero-hallucination local tabular engine. Import spreadsheets & run deterministic SQL.</p>
+              <h2>Tabular Data SQL Console</h2>
+              <p>Deterministic local table analysis. Import CSV, TSV, or JSON datasets and inspect rows locally.</p>
             </div>
             <div class="data-tab-actions">
               <button type="button" class="btn small primary" id="data-tab-import-btn">Import CSV / JSON</button>
@@ -439,32 +503,29 @@
             <div class="sql-box-header">
               <span class="sql-badge">SQL Console</span>
               <span class="sql-presets">
-                Presets: 
-                <button type="button" class="sql-chip" data-sql="SELECT * FROM payroll_test LIMIT 10">All Rows</button>
-                <button type="button" class="sql-chip" data-sql="SELECT department, SUM(salary) FROM payroll_test GROUP BY department">Sum Salary</button>
-                <button type="button" class="sql-chip" data-sql="SELECT * FROM payroll_test WHERE salary > 100000">High Earners</button>
+                Queries: 
+                <button type="button" class="sql-chip" data-sql="SELECT * FROM dataset LIMIT 25">Preview Rows</button>
+                <button type="button" class="sql-chip" data-sql="SELECT COUNT(*) AS total_rows FROM dataset">Count Rows</button>
               </span>
             </div>
             <div class="sql-input-row">
-              <input type="text" id="data-sql-input" class="field" placeholder="SELECT department, SUM(salary) FROM payroll_test GROUP BY department" value="SELECT department, SUM(salary) FROM payroll_test GROUP BY department">
-              <button type="button" class="btn small primary" id="data-sql-run-btn">Execute SQL</button>
+              <input type="text" id="data-sql-input" class="field" placeholder="Import a CSV or JSON file first, then run SELECT * FROM dataset LIMIT 25" value="SELECT * FROM dataset LIMIT 25">
+              <button type="button" class="btn small primary" id="data-sql-run-btn">Execute</button>
             </div>
           </div>
 
           <div class="data-tab-results-card">
             <div class="results-header">
-              <span class="results-title" id="data-results-title">Query Results</span>
-              <span class="results-count" id="data-results-count">3 records</span>
+              <span class="results-title" id="data-results-title">Dataset Inspector</span>
+              <span class="results-count" id="data-results-count">No dataset loaded</span>
             </div>
             <div class="data-table-scroll" id="data-table-container">
               <table class="data-table" id="data-results-table">
                 <thead>
-                  <tr><th>department</th><th>sum_salary</th></tr>
+                  <tr><th>Status</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td>Engineering</td><td>250,000</td></tr>
-                  <tr><td>Marketing</td><td>180,000</td></tr>
-                  <tr><td>Sales</td><td>110,000</td></tr>
+                  <tr><td style="color:var(--text-3);">No local CSV/JSON file loaded yet. Click "Import CSV / JSON" above to analyze real data.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -530,169 +591,178 @@
             </div>
           </div>
         </section>
+
+        <!-- MAVE Brain Mesh & Distributed Compute Ecosystem -->
+        <section data-pane="mesh" class="pane-mesh" hidden>
+          <div id="mesh-dashboard-container" class="mesh-dashboard"></div>
+        </section>
+      </div>
+
+      <!-- Antigravity Collapsible Right Workspace Inspector (Canvas, Artifacts, Files) -->
+      <aside class="workspace-inspector" id="workspace-inspector" hidden aria-label="Workspace Inspector">
+        <div class="wi-header">
+          <div class="wi-tabs" role="tablist">
+            <button type="button" class="wi-tab-btn active" id="wi-tab-canvas" data-wi-tab="canvas">Canvas</button>
+            <button type="button" class="wi-tab-btn" id="wi-tab-artifacts" data-wi-tab="artifacts">Preview</button>
+            <button type="button" class="wi-tab-btn" id="wi-tab-files" data-wi-tab="files">Workspace</button>
+          </div>
+          <div class="wi-actions">
+            <button type="button" class="wi-icon-btn" id="wi-refresh-files-btn" title="Refresh Workspace Files">↻</button>
+            <button type="button" class="wi-icon-btn" id="wi-close-btn" title="Close Workspace Panel">✕</button>
+          </div>
+        </div>
+        <div class="wi-body">
+          <!-- Canvas Editor Slot -->
+          <div class="wi-slot chatgpt-canvas-pane" id="chatgpt-canvas-pane" hidden>
+            <div class="canvas-header">
+              <div class="canvas-title-wrap">
+                <span class="canvas-icon">◫</span>
+                <span class="canvas-file-title" id="canvas-file-title">script.py</span>
+                <span class="canvas-lang-badge" id="canvas-lang-badge">PYTHON</span>
+              </div>
+              <div class="canvas-header-actions">
+                <button type="button" class="btn plain small" id="canvas-btn-external" title="Open in system editor" hidden>Open Externally</button>
+                <button type="button" class="btn plain small canvas-back-btn" id="canvas-back-btn" title="Back to Chat">Hide</button>
+                <button type="button" class="btn primary small" id="canvas-btn-run" title="Execute in Sandbox">▶ Run</button>
+                <button type="button" class="btn plain small" id="canvas-btn-copy" title="Copy code">Copy</button>
+                <button type="button" class="icon-btn canvas-close-btn" id="canvas-close-btn" title="Close Canvas">✕</button>
+              </div>
+            </div>
+            <div class="canvas-quick-chips">
+              <button type="button" class="canvas-chip" id="canvas-chip-review">Review &amp; Fix</button>
+              <button type="button" class="canvas-chip" id="canvas-chip-optimize">Optimize</button>
+            </div>
+            <div class="canvas-editor-wrap">
+              <textarea class="canvas-code-editor" id="canvas-code-editor" spellcheck="false" placeholder="# Type or paste code here..."></textarea>
+            </div>
+            <div class="canvas-output-box" id="canvas-output-box" hidden>
+              <div class="canvas-output-head">
+                <span>Sandbox Output</span>
+              </div>
+              <pre class="canvas-stdout" id="canvas-stdout"></pre>
+              <div class="canvas-plots" id="canvas-plots"></div>
+            </div>
+          </div>
+
+          <!-- Artifacts Live Preview Slot -->
+          <div class="wi-slot claude-artifacts-pane" id="claude-artifacts-pane" hidden>
+            <div class="cap-header">
+              <div class="cap-title-wrap">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                <span class="cap-title" id="cap-title">Artifact Preview</span>
+              </div>
+              <div class="cap-actions">
+                <button type="button" class="cap-tab-btn active" id="cap-tab-preview" title="Live Preview">Preview</button>
+                <button type="button" class="cap-tab-btn" id="cap-tab-code" title="View Source Code">Raw</button>
+                <button type="button" class="cap-tab-btn" id="cap-btn-external" title="Open in external app" hidden>External</button>
+                <button type="button" class="cap-icon-btn" id="cap-copy-btn" title="Copy Content">
+                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="8.5" height="8.5" rx="1.8"/><path d="M11 5V3.8c0-1-.8-1.8-1.8-1.8H3.8C2.8 2 2 2.8 2 3.8v5.4C2 10.2 2.8 11 3.8 11H5"/></svg>
+                </button>
+                <button type="button" class="cap-icon-btn close" id="cap-close-btn" title="Close Preview">✕</button>
+              </div>
+            </div>
+            <div class="cap-body">
+              <iframe class="cap-preview-frame" id="cap-preview-frame" sandbox="allow-scripts allow-modals"></iframe>
+              <pre class="cap-code-view" id="cap-code-view" hidden><code id="cap-code-content"></code></pre>
+            </div>
+          </div>
+
+          <!-- Live Workspace File Explorer Slot -->
+          <div class="wi-slot wi-files-pane" id="workspace-files-pane" hidden>
+            <div class="wi-files-path" id="wi-files-path">Workspace root</div>
+            <div class="wi-files-tree scroll" id="wi-files-tree">
+              <div class="wi-files-empty">Loading workspace files…</div>
+            </div>
+          </div>
+        </div>
+      </aside>
       </div>
     </main>
 
-    <!-- Claude Interactive Artifacts Slide-Out Panel -->
-    <aside class="claude-artifacts-pane" id="claude-artifacts-pane" hidden>
-      <div class="cap-header">
-        <div class="cap-title-wrap">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-          <span class="cap-title" id="cap-title">Artifact Preview</span>
-        </div>
-        <div class="cap-actions">
-          <button type="button" class="cap-tab-btn active" id="cap-tab-preview" title="Live Preview">Preview</button>
-          <button type="button" class="cap-tab-btn" id="cap-tab-code" title="View Source Code">Code</button>
-          <button type="button" class="cap-icon-btn" id="cap-copy-btn" title="Copy Content">
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="8.5" height="8.5" rx="1.8"/><path d="M11 5V3.8c0-1-.8-1.8-1.8-1.8H3.8C2.8 2 2 2.8 2 3.8v5.4C2 10.2 2.8 11 3.8 11H5"/></svg>
-          </button>
-          <button type="button" class="cap-icon-btn close" id="cap-close-btn" title="Close Artifacts (Esc)">
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="cap-body">
-        <iframe class="cap-preview-frame" id="cap-preview-frame" sandbox="allow-scripts allow-modals"></iframe>
-        <pre class="cap-code-view" id="cap-code-view" hidden><code id="cap-code-content"></code></pre>
-      </div>
-    </aside>
-
-    <!-- ChatGPT Canvas Split-Screen Side Panel -->
-    <aside class="chatgpt-canvas-pane" id="chatgpt-canvas-pane" hidden>
-      <div class="canvas-header">
-        <div class="canvas-title-wrap">
-          <span class="canvas-icon">◫</span>
-          <span class="canvas-file-title" id="canvas-file-title">analysis.py</span>
-          <span class="canvas-lang-badge" id="canvas-lang-badge">PYTHON</span>
-        </div>
-        <div class="canvas-header-actions">
-          <button type="button" class="btn plain small canvas-back-btn" id="canvas-back-btn" title="Back to Chat">← Back to Chat</button>
-          <button type="button" class="btn primary small" id="canvas-btn-run" title="Execute in Sandbox (ChatGPT Code Interpreter)">▶ Run Code</button>
-          <button type="button" class="btn plain small" id="canvas-btn-copy" title="Copy code">📋 Copy</button>
-          <button type="button" class="icon-btn canvas-close-btn" id="canvas-close-btn" title="Close Canvas">✕</button>
-        </div>
-      </div>
-      <div class="canvas-quick-chips">
-        <button type="button" class="canvas-chip" id="canvas-chip-review">🪄 Review & Fix</button>
-        <button type="button" class="canvas-chip" id="canvas-chip-optimize">⚡ Optimize</button>
-      </div>
-      <div class="canvas-editor-wrap">
-        <textarea class="canvas-code-editor" id="canvas-code-editor" spellcheck="false" placeholder="# Type or paste code here..."></textarea>
-      </div>
-      <div class="canvas-output-box" id="canvas-output-box" hidden>
-        <div class="canvas-output-head">
-          <span>Terminal Output</span>
-        </div>
-        <pre class="canvas-stdout" id="canvas-stdout"></pre>
-        <div class="canvas-plots" id="canvas-plots"></div>
-      </div>
-    </aside>
-
-    <!-- ChatGPT Settings Modal Dialog -->
-    <div class="settings-modal-backdrop" id="settings-modal" hidden>
-      <div class="settings-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title">
+        <!-- ChatGPT Manage Memories Modal Dialog -->
+    <div class="settings-modal-backdrop" id="manage-memories-modal" hidden style="z-index: 10005;">
+      <div class="settings-modal-dialog" style="max-width: 620px; height: 500px;" role="dialog" aria-modal="true">
         <div class="settings-modal-head">
-          <div class="settings-modal-title" id="settings-dialog-title">Settings</div>
-          <button class="settings-modal-close" id="settings-modal-close" title="Close Settings (Esc)" aria-label="Close">
+          <div class="settings-modal-title">Memory</div>
+          <button class="settings-modal-close" id="manage-memories-close" title="Close" aria-label="Close">
             <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
           </button>
         </div>
-        <div class="settings-modal-body">
-          <aside class="settings-tabs" id="settings-tabs">
+        <div style="padding: 14px 20px; font-size: 13px; color: var(--text-2); border-bottom: 1px solid var(--hairline);">
+          Memories help Mave tailor its responses to your preferences, projects, and workflow. You can review or delete individual memories at any time.
+        </div>
+        <div class="scroll" id="memories-list-container" style="flex: 1; padding: 14px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <!-- Loaded dynamically -->
+        </div>
+        <div style="padding: 12px 20px; border-top: 1px solid var(--hairline); display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn plain small danger" id="btn-clear-all-memories" style="color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25);">Clear all memories</button>
+          <button type="button" class="btn secondary small" id="btn-memories-done">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Authentic ChatGPT & Codex Settings Modal Dialog (Image 3 & Image 5) -->
+    <div class="settings-modal-backdrop" id="settings-modal" hidden>
+      <div class="settings-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title">
+        <!-- Left Settings Sidebar Column (Image 5) -->
+        <aside class="settings-sidebar-col" id="settings-tabs">
+          <button type="button" class="settings-back-btn" id="settings-back-to-app-btn" title="Back to workspace (Esc)">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 12l-4-4 4-4"/></svg>
+            <span>Back to workspace</span>
+          </button>
+          <div class="settings-main-title" id="settings-dialog-title">Settings</div>
+          <div class="settings-search-wrap">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="14" y1="14" x2="10.5" y2="10.5"/></svg>
+            <input type="search" class="settings-search-input" id="settings-search-input" placeholder="Search settings…" spellcheck="false">
+          </div>
+
+          <div class="settings-category-header">Workspace &amp; AI</div>
+          <div class="settings-tab-list">
             <button class="settings-tab-btn active" data-tab="general">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               <span>General</span>
             </button>
-            <button class="settings-tab-btn" data-tab="notifications">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-              <span>Notifications</span>
+            <button class="settings-tab-btn" data-tab="models" id="tab-btn-models">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/><path d="M8 15h8"/></svg>
+              <span>AI Models</span>
             </button>
-            <button class="settings-tab-btn" data-tab="customization">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              <span>Personalization</span>
+            <button class="settings-tab-btn" data-tab="workspace">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span>Workspace &amp; Agents</span>
             </button>
-            <button class="settings-tab-btn" data-tab="plugins">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-              <span>Plugins</span>
+            <button class="settings-tab-btn" data-tab="virtual-computer" id="tab-btn-vc">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              <span>Virtual PC &amp; Mesh</span>
             </button>
+          </div>
+
+          <div class="settings-category-header">Experience &amp; Security</div>
+          <div class="settings-tab-list">
             <button class="settings-tab-btn" data-tab="voice">
               <svg class="tab-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6.5v3M5.5 4.5v7M8 2.5v11M10.5 5v6M13 7v2"/></svg>
-              <span>Voice</span>
+              <span>Voice &amp; Companion</span>
             </button>
             <button class="settings-tab-btn" data-tab="billing">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-              <span>Billing</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="usage">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-              <span>Usage</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="analytics">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-              <span>Analytics</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="data-controls">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-              <span>Data controls</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="storage">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-              <span>Storage</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="safety">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span>Safety</span>
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>Account &amp; Sync</span>
             </button>
             <button class="settings-tab-btn" data-tab="security">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span>Security and login</span>
+              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Privacy &amp; Security</span>
             </button>
-            <button class="settings-tab-btn" data-tab="governance">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              <span>Parental controls</span>
+          </div>
+          <div class="settings-search-subresults" id="settings-search-subresults" hidden></div>
+        </aside>
+
+        <!-- Right Settings Content Pane -->
+        <div class="settings-content-col">
+          <div class="settings-sub-header" id="settings-sub-header" hidden>
+            <button type="button" class="settings-sub-back" id="settings-sub-back-btn">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 12l-4-4 4-4"/></svg>
+              <span id="settings-sub-back-label">Back</span>
             </button>
-            <button class="settings-tab-btn" data-tab="trusted-contact">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-              <span>Trusted contact</span>
-            </button>
-            <div class="settings-tabs-divider"></div>
-            <button class="settings-tab-btn" data-tab="account">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/></svg>
-              <span>Models & AI</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="superpowers">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              <span>Superpowers</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="assistant">
-              <svg class="tab-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5.6" r="2.6"/><path d="M3 13.5c.7-2.4 2.7-3.7 5-3.7s4.3 1.3 5 3.7"/></svg>
-              <span>Assistant</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="nodes" id="tab-btn-nodes">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-              <span>Core & Mesh Nodes</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="companion" id="tab-btn-companion">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/></svg>
-              <span>Face & Dynamic Island</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="firebase" id="tab-btn-firebase">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <span>Firebase & Cloud DB</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="workspace" id="tab-btn-workspace">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              <span>Team & Workspace</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="sentinel" id="tab-btn-sentinel">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/></svg>
-              <span>Sentinel & Privacy</span>
-            </button>
-            <button class="settings-tab-btn" data-tab="vorssaint" id="tab-btn-vorssaint">
-              <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-              <span>Vorssaint OS Toolkit</span>
-            </button>
-          </aside>
+            <span class="settings-sub-crumb" id="settings-sub-crumb"></span>
+          </div>
           <div class="settings-content scroll" id="settings-content">
 
         <!-- Assistant -->
@@ -725,29 +795,34 @@
           </div>
         </section>
 
-        <!-- Models -->
-        <section data-pane="account" hidden>
+        <!-- Unified Canonical AI Models & Neural Providers -->
+        <section data-pane="models" data-tab="models" hidden>
           <div class="hero">
-            <div class="row-icon big" style="background:linear-gradient(135deg,#d97757,#8f46eb 55%,#2563eb)"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/><path d="M19 15.5c.2 1.8 1.1 2.7 2.9 2.9-1.8.2-2.7 1.1-2.9 2.9-.2-1.8-1.1-2.7-2.9-2.9 1.8-.2 2.7-1.1 2.9-2.9z" opacity=".85"/></svg></div>
-            <div><div class="title-2">Models</div></div>
+            <div class="row-icon big" style="background:linear-gradient(135deg,#2563eb,#4f46e5)"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/></svg></div>
+            <div>
+              <div class="title-2">AI Models &amp; Providers</div>
+              <div class="caption">Configure local GPU/CPU weights, Smart Model Router, and optional cloud API keys.</div>
+            </div>
           </div>
-          <div class="section-label first">On this PC</div>
+          <div class="section-label first">On this PC (Local Inference)</div>
           <div id="local-ai"></div>
           <div class="group keep-group">
-            <div class="row"><div class="label">Keep the AI loaded<div class="hint">Instant replies. The model stays in memory while Mave runs; turn off to free it after 10 idle minutes.</div></div>
+            <div class="row"><div class="label">Keep the AI loaded<div class="hint">Instant replies. Keeps local model resident while Mave runs; turn off to free after 10 idle minutes.</div></div>
               <div class="control"><label class="switch"><input type="checkbox" id="keep-loaded"><span class="track"></span></label></div></div>
-            <div class="row"><div class="label">Auto-Update Models & Weights<div class="hint">Automatically checks Hugging Face and hardware capabilities for newer model revisions and higher tiers, downloading and installing them in the background.</div></div>
+            <div class="row"><div class="label">Dedicated VRAM Quota<div class="hint">Target GPU video memory reserved for weights &amp; KV prompt cache.</div></div>
+              <div class="control" style="display:flex; align-items:center; gap:8px;"><input type="range" id="models-settings-vram" min="2" max="24" value="7" style="width:110px;"><span id="models-settings-vram-val" style="font-size:12px; font-family:var(--mono); min-width:44px;">7.0 GB</span></div></div>
+            <div class="row"><div class="label">Auto-Update Models &amp; Weights<div class="hint">Checks for newer quantized weights matching detected GPU/RAM tiers.</div></div>
               <div class="control"><label class="switch"><input type="checkbox" id="auto-update-models"><span class="track"></span></label></div></div>
-            <div class="row"><div class="label"><span class="headline" id="model-update-status-label">Model Updates</span><div class="hint" id="model-update-status-hint">Background checks run every 6 hours and at application startup.</div></div>
+            <div class="row"><div class="label"><span class="headline" id="model-update-status-label">Model Updates</span><div class="hint" id="model-update-status-hint">Background checks run every 6 hours and at startup.</div></div>
               <div class="control"><button class="btn secondary small" id="check-model-updates-btn">Check for Updates</button></div></div>
           </div>
           <div class="local-foot"><a data-link="qwen">About Qwen3-VL</a></div>
 
-          <div class="section-label">Cloud models <span class="optional">Optional</span></div>
-          <div class="cloud-note"><span class="warn-icon"></span><span>Cloud models need an internet connection and your own API key. Whenever you’re offline, Mave uses the model on this PC.</span></div>
+          <div class="section-label">Active Provider &amp; Cloud APIs <span class="optional">Optional</span></div>
+          <div class="cloud-note"><span class="warn-icon"></span><span>Cloud models require internet and your API key. Mave automatically falls back to local AI whenever offline.</span></div>
           <div class="group">
             <div class="row"><div class="label">Use for requests<div class="hint" id="provider-hint"></div></div>
-              <div class="control"><div class="segmented" id="provider" data-options='[["local","On this PC"],["anthropic","Claude"],["openai","OpenAI (ChatGPT)"]]'></div></div></div>
+              <div class="control"><div class="segmented" id="provider" data-options='[["local","Local GPU"],["ollama","Ollama"],["colibri","Colibri"],["anthropic","Claude"],["openai","OpenAI"]]'></div></div></div>
             <div class="row stack cloud-only">
               <div class="row-head"><span class="headline" id="llm-key-label">Anthropic API key</span><span class="status" id="llm-key-status"><span class="dot"></span><span class="text">Not set</span></span></div>
               <div class="field-wrap">
@@ -756,15 +831,15 @@
               </div>
               <div class="row-foot"><a id="llm-key-link">Get an API key</a><span class="spacer"></span><button class="btn plain small" id="llm-remove" hidden>Remove</button><button class="btn secondary small" id="llm-test">Test Connection</button></div>
             </div>
-            <div class="row cloud-only" id="endpoint-row"><div class="label">API Base URL<div class="hint">Leave empty for official OpenAI. Or use OpenRouter (https://openrouter.ai/api/v1), DeepSeek, Groq.</div></div>
+            <div class="row cloud-only" id="endpoint-row"><div class="label">API Base URL<div class="hint">Leave empty for official OpenAI, or point to OpenRouter / DeepSeek / custom v1 endpoint.</div></div>
               <div class="control"><input class="field mono" id="openai-endpoint" placeholder="https://api.openai.com/v1" style="width: 220px;" spellcheck="false"></div></div>
             <div class="row cloud-only"><div class="label">Model<div class="hint" id="model-note"></div></div><div class="control"><select class="field" id="model"></select></div></div>
-            <div class="row" id="effort-row"><div class="label">Effort</div>
+            <div class="row" id="effort-row"><div class="label">Reasoning Effort</div>
               <div class="control"><div class="segmented" id="effort" data-options='[["low","Low"],["medium","Medium"],["high","High"],["xhigh","Higher"],["max","Max"]]'></div></div></div>
-            <div class="row" id="detail-row"><div class="label">Screen detail</div>
+            <div class="row" id="detail-row"><div class="label">Screen Detail</div>
               <div class="control"><div class="segmented" id="screen-detail" data-options='[["high","High"],["standard","Standard"]]'></div></div></div>
           </div>
-          <div class="section-label">In use</div>
+          <div class="section-label">Currently Active</div>
           <div class="group">
             <div class="row"><div class="label"><span class="headline" id="active-model">…</span><div class="hint" id="active-note"></div></div><span class="status" id="active-status"><span class="dot"></span><span class="text"></span></span></div>
           </div>
@@ -928,94 +1003,188 @@
           </div>
         </section>
 
-        <!-- General (Screenshot 3) -->
-        <section data-pane="general" hidden>
-          <!-- 2FA Secure Account Banner (Screenshot 3) -->
-          <div class="secure-account-banner" id="secure-account-banner">
-            <div class="sab-left">
-              <div class="sab-title">Secure your account</div>
-              <div class="sab-sub">Set up 2FA to keep your account safe.</div>
-            </div>
-            <button type="button" class="btn small plain sab-btn" id="btn-enable-2fa">Enable 2FA</button>
-          </div>
+        <!-- General & Workspace Permissions -->
+        <section data-pane="general" data-tab="general" hidden>
+          <div class="settings-pane-wrap">
+            <h1 class="settings-pane-title">General &amp; Permissions</h1>
 
-          <div class="section-label first">Appearance</div>
-          <div class="group">
-            <div class="row">
-              <div class="label">Appearance<div class="hint">Switch between Dark, Light, or follow System appearance</div></div>
-              <div class="control">
-                <select class="field" id="appearance-select" style="min-width:140px;">
-                  <option value="system">System</option>
-                  <option value="dark">Dark</option>
-                  <option value="light">Light</option>
-                </select>
-                <div class="segmented" id="theme-mode" data-options='[["dark","🌙 Dark"],["light","☀️ Light"],["system","💻 System"]]' hidden></div>
+            <div class="settings-section-subtitle">Execution Permissions</div>
+            <div class="settings-card">
+              <div class="settings-card-row">
+                <div class="settings-card-info">
+                  <div class="settings-card-label">Workspace Permissions</div>
+                  <div class="settings-card-desc">By default, MAVE can read and edit files inside the active project or guest sandbox and requests approval for elevated actions.</div>
+                </div>
+                <div class="settings-card-ctrl">
+                  <label class="ios-switch">
+                    <input type="checkbox" id="settings-perm-default" checked>
+                    <span class="ios-slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="settings-card-divider"></div>
+              <div class="settings-card-row">
+                <div class="settings-card-info">
+                  <div class="settings-card-label">Full System Access (Turbo)</div>
+                  <div class="settings-card-desc">Allows MAVE to execute terminal commands and file edits directly on host paths without per-step prompts. Keep off for strictly supervised execution.</div>
+                </div>
+                <div class="settings-card-ctrl">
+                  <label class="ios-switch">
+                    <input type="checkbox" id="settings-perm-full-access" checked>
+                    <span class="ios-slider"></span>
+                  </label>
+                </div>
               </div>
             </div>
-            <div class="row">
-              <div class="label">Contrast<div class="hint">Increase interface boundary clarity</div></div>
-              <div class="control">
-                <select class="field" id="contrast-select" style="min-width:140px;">
-                  <option value="default">Default</option>
-                  <option value="high">High contrast</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="label">Accent color<div class="hint">Theme highlights and focus outlines</div></div>
-              <div class="control">
-                <select class="field" id="accent-select" style="min-width:140px;">
-                  <option value="emerald">Emerald (ChatGPT Default)</option>
-                  <option value="blue">Electric Blue</option>
-                  <option value="indigo">Deep Indigo</option>
-                  <option value="violet">Violet</option>
-                  <option value="amber">Warm Amber</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="label">Language<div class="hint">Preferred language for display and responses</div></div>
-              <div class="control">
-                <select class="field" id="general-language-select" style="min-width:140px;">
-                  <option value="auto">Auto-detect</option>
-                  <option value="en">English (US)</option>
-                  <option value="es">Español</option>
-                  <option value="fr">Français</option>
-                  <option value="de">Deutsch</option>
-                  <option value="hi">हिंदी (Hindi)</option>
-                  <option value="ja">日本語</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="label">Enable Dictation<div class="hint">Allows voice typing into the composer</div></div>
-              <div class="control">
-                <label class="switch"><input type="checkbox" id="enable-dictation-toggle" checked><span class="track"></span></label>
-              </div>
-            </div>
-          </div>
 
-          <div class="section-label">Preferences</div>
-          <div class="group">
-            <div class="row"><div class="label">Sound effects</div><div class="control"><label class="switch"><input type="checkbox" id="sounds"><span class="track"></span></label></div></div>
-            <div class="row"><div class="label">Open at login</div><div class="control"><label class="switch"><input type="checkbox" id="login"><span class="track"></span></label></div></div>
-            <div class="row"><div class="label">Tool tray<div class="hint">Double-click an empty spot on the desktop to pick a tool</div></div><div class="control"><label class="switch"><input type="checkbox" id="tool-tray"><span class="track"></span></label></div></div>
-          </div>
+            <div class="settings-section-subtitle">Environment &amp; Editor Defaults</div>
+            <div class="settings-card">
+              <div class="settings-card-row">
+                <div class="settings-card-info">
+                  <div class="settings-card-label">Default Workspace Folder</div>
+                  <div class="settings-card-desc">Folder used when starting conversations outside a named Project.</div>
+                </div>
+                <div class="settings-card-ctrl settings-ctrl-end">
+                  <span class="settings-path-label" id="settings-chat-folder-path">Default user workspace</span>
+                  <button type="button" class="settings-action-btn" id="settings-btn-change-folder">Change</button>
+                </div>
+              </div>
+              <div class="settings-card-divider"></div>
+              <div class="settings-card-row">
+                <div class="settings-card-info">
+                  <div class="settings-card-label">External File Editor</div>
+                  <div class="settings-card-desc">Where workspace files open when launched externally.</div>
+                </div>
+                <div class="settings-card-ctrl">
+                  <div class="settings-select-wrap">
+                    <select class="settings-select" id="settings-file-open-dest">
+                      <option value="vscode" selected>VS Code</option>
+                      <option value="cursor">Cursor</option>
+                      <option value="system">System Default</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-card-divider"></div>
+              <div class="settings-card-row">
+                <div class="settings-card-info">
+                  <div class="settings-card-label">Integrated Terminal Shell</div>
+                  <div class="settings-card-desc">Default interactive shell launched inside Terminal.</div>
+                </div>
+                <div class="settings-card-ctrl">
+                  <div class="settings-select-wrap">
+                    <select class="settings-select" id="settings-terminal-shell">
+                      <option value="powershell" selected>PowerShell</option>
+                      <option value="cmd">Command Prompt</option>
+                      <option value="git-bash">Git Bash</option>
+                      <option value="wsl">WSL (Ubuntu)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-card-divider"></div>
+              <div class="settings-card-row">
+                <div class="settings-card-info">
+                  <div class="settings-card-label">Interface Language</div>
+                  <div class="settings-card-desc">Primary language for UI &amp; voice transcription hints.</div>
+                </div>
+                <div class="settings-card-ctrl">
+                  <div class="settings-select-wrap">
+                    <select class="settings-select" id="general-language-select">
+                      <option value="auto" selected>Auto detect</option>
+                      <option value="en">English (US)</option>
+                      <option value="hi">Hindi</option>
+                      <option value="es">Español</option>
+                      <option value="fr">Français</option>
+                      <option value="de">Deutsch</option>
+                      <option value="ja">日本語</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-card-divider"></div>
+              <div class="settings-card-row">
+                <div class="settings-card-info">
+                  <div class="settings-card-label">Confirm Window Close</div>
+                  <div class="settings-card-desc">Warn when a keyboard shortcut would close the main window.</div>
+                </div>
+                <div class="settings-card-ctrl">
+                  <div class="settings-select-wrap">
+                    <select class="settings-select" id="settings-confirm-close-window">
+                      <option value="shortcut-only" selected>Close shortcut only</option>
+                      <option value="always">Always warn</option>
+                      <option value="never">Never warn</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          <div class="section-label">Plugins</div>
-          <div class="group" id="plugin-list"></div>
-          <div class="plugin-actions">
-            <a id="open-plugins">Open plugins folder</a>
-            <span class="spacer"></span>
-            <button class="btn secondary small" id="plugin-add">Add Plugin…</button>
-          </div>
-          <div class="plugin-review" id="plugin-review" hidden></div>
+            <div class="secure-account-banner" id="secure-account-banner" style="margin-top:16px;">
+              <div class="sab-left">
+                <div class="sab-title">Protect administrative controls</div>
+                <div class="sab-sub">Enable TOTP Two-Factor Authentication for sensitive settings and remote access.</div>
+              </div>
+              <button type="button" class="btn small plain sab-btn" id="btn-enable-2fa">Configure 2FA</button>
+            </div>
 
-          <div class="section-label">Activity</div>
-          <div class="group">
-            <div class="row"><div class="label">Activity log</div><div class="control"><button class="btn secondary small" id="open-logs">Show Logs</button></div></div>
+            <div class="section-label">Desktop Behavior &amp; Diagnostics</div>
+            <div class="group">
+              <div class="row"><div class="label">Sound effects</div><div class="control"><label class="switch"><input type="checkbox" id="sounds"><span class="track"></span></label></div></div>
+              <div class="row"><div class="label">Launch MAVE at OS login</div><div class="control"><label class="switch"><input type="checkbox" id="login"><span class="track"></span></label></div></div>
+              <div class="row"><div class="label">Desktop Tool Tray<div class="hint">Double-click an empty spot on the desktop to open quick tools.</div></div><div class="control"><label class="switch"><input type="checkbox" id="tool-tray"><span class="track"></span></label></div></div>
+              <div class="row"><div class="label">Voice Dictation in Composer</div><div class="control"><label class="switch"><input type="checkbox" id="enable-dictation-toggle" checked><span class="track"></span></label></div></div>
+              <div class="row"><div class="label">Archived Conversations<div class="hint">View, restore, or export archived threads</div></div><div class="control"><button type="button" class="btn secondary small" id="btn-general-archived">Manage</button></div></div>
+              <div class="row"><div class="label">Clear Chat History<div class="hint">Delete all unarchived conversations and activity entries</div></div><div class="control"><button type="button" class="btn plain small danger" id="btn-general-delete-chats" style="color:#ef4444; border:1px solid rgba(239,68,68,0.25);">Delete all</button></div></div>
+              <div class="row"><div class="label">Activity Log File</div><div class="control"><button class="btn secondary small" id="open-logs">Show Logs</button></div></div>
+            </div>
+            <div class="about"><img src="assets/icon.png" width="36" height="36" alt=""><div><div class="headline">MAVE</div><div class="caption" id="version"></div></div></div>
           </div>
-          <div class="about"><img src="assets/icon.png" width="40" height="40" alt=""><div><div class="headline">Mave</div><div class="caption" id="version"></div></div></div>
+        </section>
+
+        <!-- Appearance & Keyboard Shortcuts -->
+        <section data-pane="appearance" data-tab="appearance" hidden>
+          <div class="settings-pane-wrap">
+            <h1 class="settings-pane-title">Appearance &amp; Keyboard Shortcuts</h1>
+
+            <div class="settings-section-subtitle">Theme &amp; Accent</div>
+            <div class="group">
+              <div class="row">
+                <div class="label">Appearance Mode<div class="hint">Switch cleanly between Light Studio, Dark Studio, or follow Windows System appearance.</div></div>
+                <div class="control">
+                  <select class="field" id="appearance-select" style="min-width:150px;">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="system">System</option>
+                  </select>
+                  <div class="segmented" id="theme-mode" data-options='[["light","Light"],["dark","Dark"],["system","System"]]' hidden></div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="label">Accent Color<div class="hint">Primary focus outline, buttons, and active badge accent.</div></div>
+                <div class="control">
+                  <select class="field" id="accent-select" style="min-width:150px;">
+                    <option value="blue">Antigravity Blue</option>
+                    <option value="emerald">Emerald</option>
+                    <option value="indigo">Indigo</option>
+                    <option value="violet">Violet</option>
+                    <option value="amber">Amber</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section-subtitle">Keyboard Shortcuts</div>
+            <div class="group">
+              <div class="row"><div class="label">New Conversation</div><div class="control"><kbd>Ctrl</kbd> + <kbd>N</kbd></div></div>
+              <div class="row"><div class="label">Ghost Hybrid Search / Command Palette</div><div class="control"><kbd>Ctrl</kbd> + <kbd>K</kbd></div></div>
+              <div class="row"><div class="label">Toggle Workspace Split Panel</div><div class="control"><kbd>Ctrl</kbd> + <kbd>\</kbd></div></div>
+              <div class="row"><div class="label">System Hardware Telemetry HUD</div><div class="control"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>H</kbd></div></div>
+              <div class="row"><div class="label">Hold to Talk (Push-to-Voice)</div><div class="control"><kbd>Ctrl</kbd> + <kbd>Alt</kbd></div></div>
+              <div class="row"><div class="label">Select Screen Region</div><div class="control"><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + Drag</div></div>
+              <div class="row"><div class="label">Stop Task or Close Modal</div><div class="control"><kbd>Esc</kbd></div></div>
+            </div>
+          </div>
         </section>
 
         <!-- User Freedom & Customization -->
@@ -1050,9 +1219,31 @@
                 <span class="headline">What should Mave remember about you to provide better responses?</span>
               </div>
               <div class="hint" style="margin-bottom:8px;">Share your profession, study topics, style preferences, goals, or hobbies. Mave dynamically adheres to these instructions whenever you chat.</div>
-              <textarea class="field mono" id="custom-instructions-text" rows="4" style="width:100%; resize:vertical; font-family:var(--font-sans);" placeholder="e.g. I am Alex, 10 years old. I like space, coding games in Python, and building robots. Explain things with fun analogies!"></textarea>
+              <textarea class="field mono" id="custom-instructions-text" rows="3" style="width:100%; resize:vertical; font-family:var(--font-sans);" placeholder="e.g. Software engineer building web & backend apps. Prefer concise, idiomatic solutions."></textarea>
+            </div>
+            <div class="row stack" style="border-top:1px solid var(--hairline); padding-top:12px; margin-top:8px;">
+              <div class="row-head">
+                <span class="headline">How would you like Mave to respond?</span>
+              </div>
+              <div class="hint" style="margin-bottom:8px;">Specify tone, format, level of detail, or guidelines.</div>
+              <textarea class="field mono" id="custom-response-style-text" rows="3" style="width:100%; resize:vertical; font-family:var(--font-sans);" placeholder="e.g. Be direct, concise, and highly competent. Provide complete working code without placeholders. Never hallucinate completion."></textarea>
             </div>
           </div>
+
+          <div class="section-label">Memory</div>
+          <div class="group">
+            <div class="row">
+              <div class="label">
+                <span class="headline">Memory</span>
+                <span class="hint">Mave will become more helpful as you chat, picking up details and preferences to tailor its responses.</span>
+              </div>
+              <div class="control" style="display:flex; align-items:center; gap:10px;">
+                <label class="switch"><input type="checkbox" id="pref-memory-enabled" checked><span class="track"></span></label>
+                <button type="button" class="btn secondary small" id="btn-manage-memories">Manage</button>
+              </div>
+            </div>
+          </div>
+
 
           <div class="section-label">Voice & Multilingual Presence</div>
           <div class="group">
@@ -1511,24 +1702,24 @@
               </div>
             </div>
 
-            <!-- Firebase Cloud Configuration -->
+            <!-- Firebase Cloud Configuration (Loaded dynamically from firebase:get-config) -->
             <div class="section-label">Cloud Project Details</div>
             <div class="group">
               <div class="row">
                 <div class="label"><span class="headline">Firebase Project ID</span></div>
-                <div class="control"><span class="caption" style="font-family:monospace;" id="fb-info-project-id">studio-6464285995-59fdf</span></div>
+                <div class="control"><span class="caption" style="font-family:monospace;" id="fb-info-project-id">Loading…</span></div>
               </div>
               <div class="row">
                 <div class="label"><span class="headline">Dedicated AI Project</span></div>
-                <div class="control"><span class="caption" style="font-family:monospace;">mave-assistant-9026</span></div>
+                <div class="control"><span class="caption" style="font-family:monospace;" id="fb-info-ai-project">Loading…</span></div>
               </div>
               <div class="row">
                 <div class="label"><span class="headline">Registered Web App ID</span></div>
-                <div class="control"><span class="caption" style="font-family:monospace; font-size:11px;">1:283058635167:web:323f98745e7d1c06ca3daa</span></div>
+                <div class="control"><span class="caption" style="font-family:monospace; font-size:11px;" id="fb-info-app-id">Loading…</span></div>
               </div>
               <div class="row">
                 <div class="label"><span class="headline">Auth Domain</span></div>
-                <div class="control"><span class="caption" style="font-family:monospace;">studio-6464285995-59fdf.firebaseapp.com</span></div>
+                <div class="control"><span class="caption" style="font-family:monospace;" id="fb-info-auth-domain">Loading…</span></div>
               </div>
             </div>
 
@@ -2071,6 +2262,15 @@
             </div>
           </div>
 
+          <div class="section-label">Installed Community &amp; Local Plugins</div>
+          <div class="group" id="plugin-list"></div>
+          <div class="plugin-actions" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+            <a id="open-plugins" class="settings-link">Open plugins folder</a>
+            <span class="spacer"></span>
+            <button type="button" class="btn secondary small" id="plugin-add">Add Plugin…</button>
+          </div>
+          <div class="plugin-review" id="plugin-review" hidden></div>
+
           <div class="section-label">Plugin Management</div>
           <div class="group">
             <div class="row">
@@ -2227,13 +2427,13 @@
             </div>
             <div class="row">
               <div class="label">Active Engine Model</div>
-              <div class="control" style="font-weight:600; color:#60a5fa;" id="usage-val-model">Loading...</div>
+              <div class="control" style="font-weight:600; color:#60a5fa;" id="usage-val-model">Loading…</div>
             </div>
             <div class="row">
               <div class="label">Prompt Cache Efficiency
-                <div class="hint">Instant offline KV-cache reuse with zero latency overhead.</div>
+                <div class="hint">Real KV-cache reuse hits across active slots.</div>
               </div>
-              <div class="control" style="font-weight:600; color:#10b981;" id="usage-val-cache">98.4% Hit Rate</div>
+              <div class="control" style="font-weight:600; color:#10b981;" id="usage-val-cache">0.0% (0 hits)</div>
             </div>
           </div>
 
@@ -2278,23 +2478,23 @@
             <div style="display:flex; align-items:center; justify-content:space-between; padding:14px; background:rgba(255,255,255,0.02); border-bottom:1px solid var(--hairline);">
               <div>
                 <div style="font-size:11px; text-transform:uppercase; color:var(--text-3); font-weight:700;">Daily Focus Score</div>
-                <div style="font-size:26px; font-weight:800; color:#10b981; margin-top:2px;" id="analytics-focus-score">88/100</div>
+                <div style="font-size:26px; font-weight:800; color:#10b981; margin-top:2px;" id="analytics-focus-score">0/100</div>
               </div>
               <div style="text-align:right;">
-                <div style="font-size:11px; text-transform:uppercase; color:var(--text-3); font-weight:700;">Productive Time</div>
-                <div style="font-size:20px; font-weight:700; color:var(--text-1); margin-top:2px;" id="analytics-active-hours">4.2h</div>
+                <div style="font-size:11px; text-transform:uppercase; color:var(--text-3); font-weight:700;">Tracked Time</div>
+                <div style="font-size:20px; font-weight:700; color:var(--text-1); margin-top:2px;" id="analytics-active-hours">0.0h</div>
               </div>
             </div>
             <div class="row">
-              <div class="label">Top Productivity Categories Today</div>
+              <div class="label">Activity Breakdown</div>
               <div class="control" style="font-size:12px; color:var(--text-2); text-align:right;" id="analytics-categories-summary">
-                💻 Coding 45% · 🌐 Research 25% · ⚡ System 18% · 💬 Comms 12%
+                No activity recorded yet
               </div>
             </div>
             <div class="row">
               <div class="label">Most Used Autonomous Tools</div>
               <div class="control" style="font-size:12px; color:var(--text-2); text-align:right;" id="analytics-top-tools">
-                PowerShell, Headless Chromium, Multi-File Patching
+                No autonomous tool runs recorded yet
               </div>
             </div>
           </div>
@@ -2624,199 +2824,149 @@
           </div>
         </section>
 
-        <!-- Vorssaint OS Modular Toolkit & System Dynamic Island -->
-        <section data-pane="vorssaint" data-tab="vorssaint" hidden>
-          <div class="hero">
-            <div class="row-icon big" style="background:linear-gradient(135deg,#0284c7,#2563eb 60%,#4f46e5); font-size:26px;">⚡</div>
-            <div>
-              <div class="hero-title">Vorssaint OS Toolkit</div>
-              <div class="hero-sub">One menu bar icon doing the job of a dozen paid Mac apps. Install and run only what you use.</div>
-            </div>
-          </div>
+        <!-- Virtual Computer & Isolated Sandbox -->
+        <section data-pane="virtual-computer" data-tab="virtual-computer" hidden>
+          <div class="title-2">Virtual Computer &amp; Isolated Workspaces</div>
+          <div class="caption" style="margin-bottom:16px;">MAVE executes browsing, terminal commands, research, and file automation inside its isolated guest environment without disturbing your host cursor or desktop.</div>
 
-          <div class="section-label first">Modular Toolkit Architecture</div>
           <div class="group">
             <div class="row">
-              <div class="label">
-                <span class="headline">Enable Vorssaint System Integration</span>
-                <span class="hint">Global system tray resident, OS Dynamic Island notch HUD, and background telemetry daemons</span>
+              <div class="label">Isolation Backend
+                <div class="hint">Active isolation backend reported by VirtualComputerSession.</div>
               </div>
               <div class="control">
-                <label class="switch"><input type="checkbox" id="vs-toggle-master" checked><span class="track"></span></label>
+                <span class="nom-badge-pill" id="vc-settings-backend-badge" style="background:rgba(16,185,129,0.12); color:#059669; border:1px solid rgba(16,185,129,0.28); padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600;">Checking status…</span>
               </div>
             </div>
             <div class="row">
-              <div class="label">
-                <span class="headline">System & Hardware Monitor</span>
-                <span class="hint">Real-time CPU, GPU, RAM, VRAM, SSD storage, temperatures, and network bandwidth graphs</span>
+              <div class="label">Windows Hyper-V &amp; WSL2 Provisioning
+                <div class="hint">Inspect elevation script for hardware-backed Linux VM execution.</div>
               </div>
               <div class="control">
-                <label class="switch"><input type="checkbox" id="vs-mod-telemetry" checked><span class="track"></span></label>
+                <button type="button" class="btn secondary small" id="vc-settings-hyperv-btn">View Provisioning Script</button>
               </div>
             </div>
             <div class="row">
-              <div class="label">
-                <span class="headline">AI Agents & Copilot Monitor Strip</span>
-                <span class="hint">Follow Claude 3.7, Codex, Copilot, and Mave: live token counts, context limits, reset timers</span>
+              <div class="label">Virtual Display Framebuffer
+                <div class="hint">Resolution and capture rate for the offscreen virtual display.</div>
               </div>
               <div class="control">
-                <label class="switch"><input type="checkbox" id="vs-mod-agents" checked><span class="track"></span></label>
+                <span style="font-size:13px; font-family:var(--font-mono); color:var(--text-2);">1280 × 800 @ 30 FPS</span>
               </div>
             </div>
             <div class="row">
-              <div class="label">
-                <span class="headline">Floating Dynamic Island Extension</span>
-                <span class="hint">Mounts the OLED dynamic notch HUD at the top of your display with Mave's cute mascot</span>
-              </div>
-              <div class="control">
-                <label class="switch"><input type="checkbox" id="vs-mod-island" checked><span class="track"></span></label>
-              </div>
-            </div>
-            <div class="row">
-              <div class="label">
-                <span class="headline">Clipboard History Shelf & Snippets</span>
-                <span class="hint">Autosaves copied items, masks secrets, enables instant 1-click clipboard re-paste</span>
-              </div>
-              <div class="control">
-                <label class="switch"><input type="checkbox" id="vs-mod-clipboard" checked><span class="track"></span></label>
-              </div>
-            </div>
-            <div class="row">
-              <div class="label">
-                <span class="headline">Floating Quick Scratchpad</span>
-                <span class="hint">Markdown notes scratchpad autosaved locally in userData with instant copy & export</span>
-              </div>
-              <div class="control">
-                <label class="switch"><input type="checkbox" id="vs-mod-scratchpad" checked><span class="track"></span></label>
-              </div>
-            </div>
-            <div class="row">
-              <div class="label">
-                <span class="headline">Keep Awake (Caffeinate)</span>
-                <span class="hint">Prevents display sleep and system idle timeouts with preset timer durations</span>
-              </div>
-              <div class="control">
-                <label class="switch"><input type="checkbox" id="vs-mod-caffeinate" checked><span class="track"></span></label>
-              </div>
-            </div>
-            <div class="row">
-              <div class="label">
-                <span class="headline">Screen OCR & Color Picker</span>
-                <span class="hint">Offline text grabber from screen area, pixel magnifier and HEX/RGB/HSL color sampler</span>
-              </div>
-              <div class="control">
-                <label class="switch"><input type="checkbox" id="vs-mod-screen" checked><span class="track"></span></label>
-              </div>
-            </div>
-            <div class="row">
-              <div class="label">
-                <span class="headline">Keyboard Cleaning Mode</span>
-                <span class="hint">Safely locks keyboard input for 30s while wiping keys without triggering phantom keystrokes</span>
-              </div>
-              <div class="control">
-                <label class="switch"><input type="checkbox" id="vs-mod-cleaning" checked><span class="track"></span></label>
-              </div>
-            </div>
-          </div>
-
-          <div class="section-label">Dynamic Island Notch Customization</div>
-          <div class="group">
-            <div class="row">
-              <div class="label">
-                <span class="headline">Expand Island on Hover</span>
-                <span class="hint">Expands into full Vorssaint HUD when hovering cursor over the top camera notch</span>
-              </div>
-              <div class="control">
-                <label class="switch"><input type="checkbox" id="vs-island-hover-expand" checked><span class="track"></span></label>
-              </div>
-            </div>
-            <div class="row">
-              <div class="label">
-                <span class="headline">Mascot Face Stroll & Peeking Frequency</span>
-                <span class="hint">Controls how often Mave's dot mascot hops across the notch or blinks playfully</span>
-              </div>
-              <div class="control">
-                <select class="field" id="vs-mascot-freq" style="width:180px;">
-                  <option value="playful">✨ Playful (Every 1-2 mins)</option>
-                  <option value="normal" selected>Normal (Every 3-5 mins)</option>
-                  <option value="calm">Calm (Every 10-15 mins)</option>
-                  <option value="disabled">Quiet (Notch Only)</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="label">
-                <span class="headline">Island Horizontal Width</span>
-                <span class="hint">Compact capsule width in pixels (Default: 360px)</span>
+              <div class="label">Worker CPU Core Quota
+                <div class="hint">CPU core budget allocated to background guest processes.</div>
               </div>
               <div class="control" style="display:flex; align-items:center; gap:8px;">
-                <input type="range" id="vs-island-width" min="280" max="460" value="360" style="width:120px;">
-                <span class="caption mono" id="vs-island-width-val">360px</span>
+                <input type="range" id="vc-settings-cpu" min="1" max="16" value="4" style="width:110px;">
+                <span id="vc-settings-cpu-val" style="font-size:12px; font-family:var(--font-mono); min-width:56px;">4 Cores</span>
               </div>
             </div>
-          </div>
-
-          <div class="section-label">System Telemetry & Alert Thresholds</div>
-          <div class="group">
             <div class="row">
-              <div class="label">
-                <span class="headline">Sustained High CPU Load Alert</span>
-                <span class="hint">Pop a notification if total CPU load exceeds threshold for > 30 seconds</span>
+              <div class="label">Worker RAM Quota
+                <div class="hint">RAM limit allocated for guest browser and script tasks.</div>
               </div>
               <div class="control" style="display:flex; align-items:center; gap:8px;">
-                <input type="number" class="field mono" id="vs-alert-cpu" value="85" min="50" max="100" style="width:70px;">
-                <span class="caption">%</span>
+                <input type="range" id="vc-settings-ram" min="1" max="32" value="4" style="width:110px;">
+                <span id="vc-settings-ram-val" style="font-size:12px; font-family:var(--font-mono); min-width:50px;">4.0 GB</span>
               </div>
             </div>
             <div class="row">
-              <div class="label">
-                <span class="headline">High Temperature Threshold</span>
-                <span class="hint">Alert when CPU / GPU junction temperatures exceed thermal threshold</span>
-              </div>
-              <div class="control" style="display:flex; align-items:center; gap:8px;">
-                <input type="number" class="field mono" id="vs-alert-temp" value="80" min="60" max="105" style="width:70px;">
-                <span class="caption">°C</span>
-              </div>
-            </div>
-            <div class="row">
-              <div class="label">
-                <span class="headline">Hardware Polling Interval</span>
-                <span class="hint">Frequency of background sensor and network bandwidth sampling</span>
+              <div class="label">Guest Sandboxed Storage
+                <div class="hint">Inspect isolated guest workspace and generated artifacts.</div>
               </div>
               <div class="control">
-                <select class="field" id="vs-telemetry-rate" style="width:140px;">
-                  <option value="1000">1 second (Realtime)</option>
-                  <option value="2000" selected>2 seconds (Balanced)</option>
-                  <option value="5000">5 seconds (Eco)</option>
-                </select>
+                <button type="button" class="btn secondary small" id="vc-settings-open-guest-dir">Explore Guest FS</button>
               </div>
             </div>
           </div>
 
-          <div class="section-label">Global Shortcuts & System Hotkeys</div>
-          <div class="group">
-            <div class="row">
-              <div class="label">Open Mave Assistant</div>
-              <div class="control"><kbd class="mono" style="padding:3px 8px; border-radius:6px; background:var(--surface-3); border:1px solid var(--border-subtle);">Alt + Space</kbd></div>
-            </div>
-            <div class="row">
-              <div class="label">Toggle Dynamic Island HUD</div>
-              <div class="control"><kbd class="mono" style="padding:3px 8px; border-radius:6px; background:var(--surface-3); border:1px solid var(--border-subtle);">Alt + I</kbd></div>
-            </div>
-            <div class="row">
-              <div class="label">Hands-Free Advanced Voice Talk</div>
-              <div class="control"><kbd class="mono" style="padding:3px 8px; border-radius:6px; background:var(--surface-3); border:1px solid var(--border-subtle);">Alt + Shift + V</kbd></div>
-            </div>
-            <div class="row">
-              <div class="label">Ask Mave About Active Screen (OCR Vision)</div>
-              <div class="control"><kbd class="mono" style="padding:3px 8px; border-radius:6px; background:var(--surface-3); border:1px solid var(--border-subtle);">Alt + Shift + S</kbd></div>
-            </div>
-          </div>
-
-          <div style="margin-top:16px; display:flex; justify-content:flex-end;">
-            <button type="button" class="btn primary small" id="btn-save-vorssaint">Save Vorssaint Settings</button>
+          <div style="margin-top:16px; display:flex; justify-content:space-between; align-items:center;">
+            <button type="button" class="btn secondary small" id="vc-settings-reset-guest" style="color:#ef4444;">Reset Guest Sandbox</button>
+            <span class="status" id="vc-settings-save-status"><span class="dot"></span><span class="text">Auto-saved</span></span>
           </div>
         </section>
+
+        <!-- Agents & Workers Swarm -->
+        <section data-pane="agents" data-tab="agents" hidden>
+          <div class="title-2">Autonomous Agents &amp; Swarm Policies</div>
+          <div class="caption" style="margin-bottom:16px;">Configure autonomous task routing, execution target safety, and verification strictness. Changes persist immediately.</div>
+
+          <div class="group">
+            <div class="row">
+              <div class="label">Default Execution Target
+                <div class="hint">Where autonomous agent workflows run unless explicitly requested otherwise.</div>
+              </div>
+              <div class="control">
+                <select class="field" id="agents-exec-env-select" style="width:210px;">
+                  <option value="virtual_computer">Virtual Computer (Isolated)</option>
+                  <option value="sandbox">Local Sandbox</option>
+                  <option value="host">Physical Host (Supervised)</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Host Action Approval Policy
+                <div class="hint">Controls when MAVE prompts before executing terminal or desktop actions.</div>
+              </div>
+              <div class="control">
+                <select class="field" id="agents-approval-mode-select" style="width:210px;">
+                  <option value="risky">Ask on risky commands</option>
+                  <option value="every">Ask before every action</option>
+                  <option value="auto">Automatic (Full Access)</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Verification Level
+                <div class="hint">Strictness of verification checks before declaring autonomous tasks complete.</div>
+              </div>
+              <div class="control">
+                <select class="field" id="agents-verification-select" style="width:210px;">
+                  <option value="strict">Strict (Compile + Test Proof)</option>
+                  <option value="standard">Standard</option>
+                  <option value="minimal">Fast / Minimal</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Multi-Worker MissionController
+                <div class="hint">Orchestrates parallel research and coding DAG workers inside Virtual PC.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="agents-settings-mission-ctrl" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Deep Research Engine
+                <div class="hint">Executes background web research and extracts grounded citations.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="agents-settings-deep-research" checked><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Autonomous Skill Forge
+                <div class="hint">Synthesizes and tests reusable JavaScript skills inside guest sandbox.</div>
+              </div>
+              <div class="control">
+                <label class="switch"><input type="checkbox" id="agents-settings-skill-forge" checked><span class="track"></span></label>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px; display:flex; justify-content:flex-end;">
+            <span class="status ok" id="agents-settings-save-status"><span class="dot"></span><span class="text">Synced to runtime settings</span></span>
+          </div>
+        </section>
+
+        <!-- Brain Mesh & Distributed Compute Resource Policies -->
+        <section data-pane="mesh-settings" data-tab="mesh-settings" hidden>
+          <div id="mesh-settings-container"></div>
+        </section>
+
+        <div class="settings-subnav-wrap" id="settings-subnav-wrap" hidden></div>
       </div>
     </div>
   </div>
@@ -3143,9 +3293,8 @@
         </div>
 
         <div style="display:flex; background:rgba(255,255,255,0.06); border-radius:10px; padding:3px; margin:0 0 16px;">
-          <button type="button" class="nom-tab-btn active" id="nom-auth-tab-signin" style="flex:1; border:none; background:rgba(59,130,246,0.3); color:#fff; border-radius:8px; padding:7px; font-size:12px; font-weight:600; cursor:pointer;">Sign In</button>
-          <button type="button" class="nom-tab-btn" id="nom-auth-tab-signup" style="flex:1; border:none; background:transparent; color:var(--text-3); border-radius:8px; padding:7px; font-size:12px; font-weight:600; cursor:pointer;">Create Account</button>
-          <button type="button" class="nom-tab-btn" id="nom-auth-tab-guest" style="flex:1; border:none; background:transparent; color:var(--text-3); border-radius:8px; padding:7px; font-size:12px; font-weight:600; cursor:pointer;">Guest / Offline</button>
+          <button type="button" class="nom-tab-btn active" id="nom-auth-tab-signin" style="flex:1; border:none; background:rgba(59,130,246,0.3); color:#fff; border-radius:8px; padding:7px; font-size:12px; font-weight:600; cursor:pointer;">Gmail Sign In</button>
+          <button type="button" class="nom-tab-btn" id="nom-auth-tab-signup" style="flex:1; border:none; background:transparent; color:var(--text-3); border-radius:8px; padding:7px; font-size:12px; font-weight:600; cursor:pointer;">Create Gmail Account</button>
         </div>
 
         <div id="nom-fb-fields">
@@ -3154,8 +3303,8 @@
             <input type="text" class="nom-input" id="nom-fb-name" placeholder="Your full name">
           </div>
           <div class="nom-form-group" id="nom-group-email">
-            <label>Firebase Email Address</label>
-            <input type="email" class="nom-input" id="nom-fb-email" placeholder="name@domain.com">
+            <label>Gmail Address</label>
+            <input type="email" class="nom-input" id="nom-fb-email" placeholder="yourname@gmail.com">
           </div>
           <div class="nom-form-group" id="nom-group-pass">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -3169,8 +3318,7 @@
         <div id="nom-fb-status" style="font-size:12px; color:#94a3b8; margin:6px 0 12px; min-height:18px;"></div>
 
         <div class="nom-actions">
-          <button type="button" class="nom-btn primary" id="nom-auth-submit-btn">Sign In to Account →</button>
-          <button type="button" class="nom-btn text" id="nom-auth-guest-btn">Skip & Use Offline Local Mode</button>
+          <button type="button" class="nom-btn primary" id="nom-auth-submit-btn">Sign In with Gmail →</button>
         </div>
       </div>
 
@@ -3292,17 +3440,17 @@
               <span class="jhud-val" id="jhud-cpu-val">--%</span>
             </div>
             <div class="jhud-bar-track"><div class="jhud-bar-fill" id="jhud-cpu-bar"></div></div>
-            <div class="jhud-card-meta" id="jhud-cpu-model">AMD Ryzen 5 3600 (12 threads)</div>
+            <div class="jhud-card-meta" id="jhud-cpu-model">Detecting processor…</div>
           </div>
 
-          <!-- GPU / RTX 5060 -->
+          <!-- GPU -->
           <div class="jhud-gauge-card">
             <div class="jhud-card-head">
               <span>NEURAL ACCELERATOR (GPU)</span>
               <span class="jhud-val" id="jhud-gpu-val">--%</span>
             </div>
             <div class="jhud-bar-track"><div class="jhud-bar-fill green" id="jhud-gpu-bar"></div></div>
-            <div class="jhud-card-meta" id="jhud-gpu-meta">NVIDIA GeForce RTX 5060 • 8.0 GB VRAM</div>
+            <div class="jhud-card-meta" id="jhud-gpu-meta">Detecting GPU telemetry…</div>
           </div>
 
           <!-- RAM -->
@@ -3321,13 +3469,13 @@
               <span>TACTICAL PERIMETER & MESH</span>
               <span class="jhud-val" id="jhud-net-ping">-- ms</span>
             </div>
-            <div class="jhud-card-meta">UDP Mesh Discovery: Port 4045 • Zero Leaks</div>
+            <div class="jhud-card-meta">UDP Mesh Discovery: Port 4045</div>
           </div>
         </div>
 
         <div class="jhud-briefing-box">
-          <div class="jhud-briefing-title">🎙️ TACTICAL STATUS REPORT</div>
-          <div class="jhud-briefing-text" id="jhud-status-text">Sir, all tactical systems are nominal. RTX 5060 GPU standing by. Zero perimeter intrusions.</div>
+          <div class="jhud-briefing-title">🎙️ HARDWARE TELEMETRY SUMMARY</div>
+          <div class="jhud-briefing-text" id="jhud-status-text">Reading live workstation telemetry…</div>
         </div>
 
         <div class="jhud-actions-row">
@@ -3347,6 +3495,9 @@
   <script src="canvas.js"></script>
   <script src="jarvis-hud.js"></script>
   <script src="terminal-pane.js"></script>
+  <script src="virtual_computer_view.js"></script>
+  <script src="chat_artifacts.js"></script>
+  <script src="mesh_dashboard.js"></script>
   <script src="../../node_modules/@xterm/xterm/lib/xterm.js"></script>
   <script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
   <script src="../../node_modules/@xterm/addon-web-links/lib/addon-web-links.js"></script>

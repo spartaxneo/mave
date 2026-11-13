@@ -117,8 +117,23 @@ class InputHelper extends EventEmitter {
     await this.start();
     const id = String(this.nextId++);
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
-      this.proc.stdin.write([id, ...parts].join('|') + '\n');
+      const timeout = setTimeout(() => {
+        if (this.pending.has(id)) {
+          this.pending.delete(id);
+          reject(new Error(`Input helper timed out on command "${parts[0]}"`));
+        }
+      }, 10000);
+      this.pending.set(id, {
+        resolve: (val) => { clearTimeout(timeout); resolve(val); },
+        reject: (err) => { clearTimeout(timeout); reject(err); },
+      });
+      try {
+        this.proc.stdin.write([id, ...parts].join('|') + '\n');
+      } catch (err) {
+        clearTimeout(timeout);
+        this.pending.delete(id);
+        reject(err);
+      }
     });
   }
 
@@ -177,8 +192,14 @@ class InputHelper extends EventEmitter {
 }
 
 function defaultHelperPath() {
-  // Packaged builds unpack native/ out of the asar archive so the exe can run.
-  return path.join(__dirname, 'native', 'input-helper.exe').replace('app.asar', 'app.asar.unpacked');
+  // Packaged builds unpack native/ out of the asar archive so the binary can run.
+  let binName = 'input-helper.exe';
+  if (process.platform === 'darwin') {
+    binName = 'mac-input-helper';
+  } else if (process.platform === 'linux') {
+    binName = 'linux-input-helper';
+  }
+  return path.join(__dirname, 'native', binName).replace('app.asar', 'app.asar.unpacked');
 }
 
 module.exports = { InputHelper, keyToVk, comboToVks, splitCombo };

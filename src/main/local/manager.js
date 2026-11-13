@@ -47,14 +47,23 @@ class LocalModelManager extends EventEmitter {
     return found ? found.id : '';
   }
 
+  /** Every complete installed model on disk (supports downloading multiple models for task routing). */
+  installedIds() {
+    return catalog.allModels().filter((m) => this.complete(m.id)).map((m) => m.id);
+  }
+
+  serverBinaryName() {
+    return process.platform === 'win32' ? 'llama-server.exe' : 'llama-server';
+  }
+
   /** Every file of a model, at its exact size, and the runtime to run it. */
   complete(id) {
     const m = catalog.modelById(id);
-    if (!m || !fs.existsSync(path.join(this.runtimeDir(), 'llama-server.exe'))) return false;
-    if (m.custom) {
-      return fs.existsSync(m.modelPath);
+    if (!m || m.airllmOnly || m.engine === 'airllm' || !fs.existsSync(path.join(this.runtimeDir(), this.serverBinaryName()))) return false;
+    if (m.custom && (!Array.isArray(m.files) || !m.files.length)) {
+      return Boolean(m.modelPath && fs.existsSync(m.modelPath));
     }
-    return (m.files || []).every((f) => {
+    return Array.isArray(m.files) && m.files.length > 0 && m.files.every((f) => {
       try { return fs.statSync(path.join(this.modelDir(id), f.name)).size === f.size; } catch { return false; }
     });
   }
@@ -62,16 +71,17 @@ class LocalModelManager extends EventEmitter {
   paths(id = this.installedId()) {
     const m = catalog.modelById(id);
     if (!m) return null;
-    const server = path.join(this.runtimeDir(), 'llama-server.exe');
+    const server = path.join(this.runtimeDir(), this.serverBinaryName());
     if (!fs.existsSync(server)) return null;
-    if (m.custom) {
-      if (!fs.existsSync(m.modelPath)) return null;
+    if (m.custom && (!Array.isArray(m.files) || !m.files.length)) {
+      if (!m.modelPath || !fs.existsSync(m.modelPath)) return null;
       const mmproj = m.mmprojPath && fs.existsSync(m.mmprojPath) ? m.mmprojPath : null;
       return { id, label: m.label, server, cwd: this.runtimeDir(), model: m.modelPath, mmproj, custom: true };
     }
     const [model, mmproj] = (m.files || []).map((f) => path.join(this.modelDir(id), f.name));
-    if (![server, model, mmproj].every((p) => p && fs.existsSync(p))) return null;
-    return { id, label: m.label, server, cwd: this.runtimeDir(), model, mmproj };
+    if (![server, model].every((p) => p && fs.existsSync(p))) return null;
+    if ((m.files || []).length > 1 && (!mmproj || !fs.existsSync(mmproj))) return null;
+    return { id, label: m.label, server, cwd: this.runtimeDir(), model, mmproj: mmproj || null };
   }
 
   loadState() {
@@ -161,11 +171,14 @@ class LocalModelManager extends EventEmitter {
     return this.snapshot();
   }
 
-  async remove() {
-    const id = this.installedId();
+  async remove(targetId = null) {
+    const id = targetId || this.installedId();
     if (!id) return this.snapshot();
     this.emit('removing', id);
-    this.settings.update({ localModel: '' });
+    if (this.settings.get('localModel') === id) {
+      const remaining = this.installedIds().filter((x) => x !== id);
+      this.settings.update({ localModel: remaining[0] || '' });
+    }
     await fs.promises.rm(this.modelDir(id), { recursive: true, force: true }).catch(() => {});
     this.emitProgress(true);
     return this.snapshot();
@@ -182,8 +195,9 @@ class LocalModelManager extends EventEmitter {
 
   snapshot() {
     const installed = this.installedId();
+    const installedModels = this.installedIds();
     const installedModel = catalog.modelById(installed);
-    const base = { installed, installedLabel: installedModel ? installedModel.label : '', runtime: catalog.RUNTIME_TAG };
+    const base = { installed, installedModels, installedLabel: installedModel ? installedModel.label : '', runtime: catalog.RUNTIME_TAG };
     if (!this.job) return { ...base, status: installed ? 'ready' : 'none' };
     const m = catalog.modelById(this.job.modelId);
     const { bytesDone = 0, bytesTotal = catalog.downloadBytes(m.id, this.arch) } = this.job;
@@ -266,7 +280,7 @@ class LocalModelManager extends EventEmitter {
         job.file = f.runtime ? 'AI runtime' : f.name;
         await this.fetchVerified(job, f, doneBefore, signal);
         if (signal.aborted) return;
-        if (f.runtime) await this.installRuntime(job, f, signal, this.runtimeDir(), 'llama-server.exe');
+        if (f.runtime) await this.installRuntime(job, f, signal, this.runtimeDir(), this.serverBinaryName());
       }
       if (signal.aborted) return;
       await this.finish(job);
@@ -289,7 +303,7 @@ class LocalModelManager extends EventEmitter {
   }
 
   async isInstalled(f, modelId) {
-    if (f.runtime) return fs.existsSync(path.join(this.runtimeDir(), 'llama-server.exe'));
+    if (f.runtime) return fs.existsSync(path.join(this.runtimeDir(), this.serverBinaryName()));
     try { return (await fs.promises.stat(this.fileTarget(f, modelId))).size === f.size; } catch { return false; }
   }
 
@@ -320,12 +334,17 @@ class LocalModelManager extends EventEmitter {
       await this.downloadWithRetries(job, f, part, doneBefore, signal);
       if (signal.aborted) return;
       this.set({ status: 'verifying', verifyFraction: 0, message: '' });
-      let read = 0;
-      const hash = await sha256File(part, {
-        signal,
-        onBytes: (n) => { read += n; job.verifyFraction = read / f.size; this.emitProgress(); },
-      });
-      if (hash === f.sha256) break;
+      if (f.sha256) {
+        let read = 0;
+        const hash = await sha256File(part, {
+          signal,
+          onBytes: (n) => { read += n; job.verifyFraction = read / f.size; this.emitProgress(); },
+        });
+        if (hash === f.sha256) break;
+      } else {
+        const st = await fs.promises.stat(part).catch(() => null);
+        if (st && st.size === f.size) { job.verifyFraction = 1; break; }
+      }
       await fs.promises.rm(part, { force: true });
       if (this.logger) this.logger.error(`Checksum mismatch for ${f.name}: got ${hash}`);
       if (hashAttempt >= 1) throw new DownloadError(`${f.name} was corrupted twice in a row. Check your connection, then retry.`, { retryable: false, code: 'hash' });
@@ -390,22 +409,7 @@ class LocalModelManager extends EventEmitter {
 
   async finish(job) {
     this.set({ status: 'installing', message: '' });
-    const previous = this.installedId();
     this.settings.update({ localModel: job.modelId });
-    if (previous && previous !== job.modelId) {
-      this.emit('removing', previous); // the runtime stops the old model: Windows can't delete files in use
-      const prevM = catalog.modelById(previous);
-      if (prevM && !prevM.custom) {
-        for (let attempt = 0; attempt < 10; attempt++) {
-          try {
-            await fs.promises.rm(this.modelDir(previous), { recursive: true, force: true });
-            break;
-          } catch {
-            await new Promise((r) => setTimeout(r, 500));
-          }
-        }
-      }
-    }
     for (const entry of await fs.promises.readdir(path.join(this.dir, 'runtime')).catch(() => [])) {
       if (entry !== catalog.RUNTIME_TAG) await fs.promises.rm(path.join(this.dir, 'runtime', entry), { recursive: true, force: true }).catch(() => {});
     }

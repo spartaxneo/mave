@@ -22,7 +22,7 @@ function defaultProjectsPath() {
 function cleanTitle(text) {
   if (!text) return 'New Chat';
   let t = String(text).trim().replace(/\s+/g, ' ');
-  t = t.replace(/^(?:please|can you|could you|hey mave|mave|hello|hi)\s+/i, '');
+  t = t.replace(/^(?:how (?:do|can|to) (?:i|we)?|please|can you|could you|tell me|explain|what is|hey mave|mave|hello|hi)\s+/i, '');
   if (t.length > 36) t = t.slice(0, 36) + '…';
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
@@ -353,6 +353,24 @@ class ThreadManager {
       return true;
     }
     return false;
+  }
+
+  exportThread(threadId, format = 'markdown') {
+    const thread = this.getThread(threadId);
+    if (!thread) return null;
+    if (format === 'json') {
+      return JSON.stringify(thread, null, 2);
+    }
+    let md = `# ${thread.title || 'Chat Export'}\n\n`;
+    md += `*Exported from Mave on ${new Date().toLocaleString()}*\n\n---\n\n`;
+    if (Array.isArray(thread.messages)) {
+      for (const msg of thread.messages) {
+        const role = msg.role === 'user' ? '**User**' : '**Mave**';
+        const time = msg.timestamp ? ` *(${new Date(msg.timestamp).toLocaleTimeString()})*` : '';
+        md += `### ${role}${time}\n\n${msg.content || ''}\n\n---\n\n`;
+      }
+    }
+    return md;
   }
 
   /**

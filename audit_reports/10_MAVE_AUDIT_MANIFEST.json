@@ -1,0 +1,85 @@
+{
+  "manifest_version": "1.0.0",
+  "audit_identifier": "MAVE-AUDIT-20261024-001",
+  "generated_at": "2026-10-24T13:15:00+05:30",
+  "repository": {
+    "absolute_path": "c:\\Users\\ryzen\\Documents\\antigravity\\dazzling-archimedes",
+    "git_commit": "5121d4de5e236b90d27b352b13fed62f99d00c27",
+    "git_branch": "master",
+    "working_tree_clean": true
+  },
+  "audited_runtime_environment": {
+    "node_version": "v22.9.0",
+    "electron_version": "38.0.0",
+    "python_version": "3.12.7",
+    "host_os": "Microsoft Windows 11 Pro (10.0.26100)",
+    "host_cpu": "AMD Ryzen 5 3600 (6 Cores / 12 Threads)",
+    "host_gpu": "NVIDIA GeForce RTX 5060 (8,151 MiB GDDR7/GDDR6)",
+    "host_ram": "48 GB DDR4 (50,255,448 KB Physical)"
+  },
+  "audit_scope": "Comprehensive code inspection, local neural model inventory, and hardware capacity audit",
+  "modification_policy": "STRICT READ-ONLY AUDIT (Zero application code modified, deleted, or refactored)",
+  "report_files": [
+    {
+      "index": 1,
+      "relative_path": "audit_reports/01_MAVE_SYSTEM_AUDIT.md",
+      "format": "Markdown",
+      "description": "Comprehensive subsystem architecture audit table with exact source line evidence, working statuses, and runtime boundaries."
+    },
+    {
+      "index": 2,
+      "relative_path": "audit_reports/02_MAVE_AI_MODEL_INVENTORY.csv",
+      "format": "CSV",
+      "description": "Complete inventory of all local GGUF models, ONNX engines, vendor binaries, and cloud routing endpoints with parameter sizes, quantization, and context limits."
+    },
+    {
+      "index": 3,
+      "relative_path": "audit_reports/03_MAVE_HARDWARE_DISCOVERY.json",
+      "format": "JSON",
+      "description": "Sanitized host hardware configuration telemetry (CPU, GPU VRAM, physical RAM, storage disks, OS build) with sensitive identifiers redacted."
+    },
+    {
+      "index": 4,
+      "relative_path": "audit_reports/04_MAVE_INFERENCE_BENCHMARKS.csv",
+      "format": "CSV",
+      "description": "Inference benchmarks across context tiers (2K-32K) detailing Time-To-First-Token, prompt ingestion speed, generation tokens/sec, and VRAM scaling."
+    },
+    {
+      "index": 5,
+      "relative_path": "audit_reports/05_MAVE_USER_CAPACITY_INPUTS.json",
+      "format": "JSON",
+      "description": "Mathematical KV-cache memory formulas, single-seat GUI mutex limits, multi-user headless API concurrency ceilings, and hardware sizing equations."
+    },
+    {
+      "index": 6,
+      "relative_path": "audit_reports/06_MAVE_FEATURE_HARDWARE_MATRIX.csv",
+      "format": "CSV",
+      "description": "Feature-by-feature matrix mapping every MAVE capability to minimum CPU, RAM, VRAM, and GPU architecture requirements."
+    },
+    {
+      "index": 7,
+      "relative_path": "audit_reports/07_MAVE_VIRTUALIZATION_AUDIT.md",
+      "format": "Markdown",
+      "description": "Audit of virtual machine hosting, GPU passthrough requirements, headless display drivers, Cloudflare tunneling, and containerization constraints."
+    },
+    {
+      "index": 8,
+      "relative_path": "audit_reports/08_MAVE_PRIVACY_SECURITY_AUDIT.md",
+      "format": "Markdown",
+      "description": "Data privacy analysis, local-only air-gap enforcement, external network egress audit, credential storage security, and execution privilege levels."
+    },
+    {
+      "index": 9,
+      "relative_path": "audit_reports/09_MAVE_EXECUTIVE_SUMMARY.md",
+      "format": "Markdown",
+      "description": "High-density executive synthesis tailored for AI hardware architects calculating product tiers, server sizing, and multi-tenant hosting."
+    },
+    {
+      "index": 10,
+      "relative_path": "audit_reports/10_MAVE_AUDIT_MANIFEST.json",
+      "format": "JSON",
+      "description": "Audit manifest file detailing repository commit, tool versions, and report directory structure."
+    }
+  ],
+  "instructions_for_ai_hardware_architect": "Ingest 09_MAVE_EXECUTIVE_SUMMARY.md for high-level synthesis, 02_MAVE_AI_MODEL_INVENTORY.csv and 04_MAVE_INFERENCE_BENCHMARKS.csv for model throughput calculations, and 05_MAVE_USER_CAPACITY_INPUTS.json for multi-user hardware provisioning."
+}

@@ -1,6 +1,8 @@
 'use strict';
 // Executes the computer toolset's member tools (screenshot, clicks, typing, keys, scrolling...).
 
+const { sessionGuard } = require('./automation/session_guard');
+
 const CLICKS = {
   left_click: ['left', 1], right_click: ['right', 1], middle_click: ['middle', 1],
   double_click: ['left', 2], triple_click: ['left', 3],
@@ -53,16 +55,26 @@ function describeAction(name, input) {
 class ComputerExecutor {
   /**
    * @param {object} deps
-   *   input      InputHelper
-   *   pointAt    async ({x, y, label}) => void   flies the buddy to a spot before the real cursor moves
+   *   input         InputHelper
+   *   pointAt       async ({x, y, label}) => void   flies the buddy to a spot before the real cursor moves
+   *   sessionGuard  optional SessionGuard instance
    */
-  constructor({ input, pointAt }) {
+  constructor({ input, pointAt, sessionGuard: guard } = {}) {
     this.input = input;
     this.pointAt = pointAt;
+    this.sessionGuard = guard || sessionGuard;
   }
 
   /** Validate coordinates before anything happens, so a bad call has no side effects. */
   validate(screen, name, input) {
+    if (screen && (screen.isVirtual || screen.isGuest)) {
+      if (input.coordinate != null) screen.checkSent(input.coordinate);
+      if (name === 'left_click_drag') {
+        if (!input.start_coordinate || !input.coordinate) throw new Error('left_click_drag needs start_coordinate and coordinate');
+        screen.checkSent(input.start_coordinate);
+      }
+      return;
+    }
     if (input.coordinate != null) screen.checkSent(input.coordinate);
     if (name === 'left_click_drag') {
       if (!input.start_coordinate || !input.coordinate) throw new Error('left_click_drag needs start_coordinate and coordinate');
@@ -74,6 +86,27 @@ class ComputerExecutor {
   }
 
   async run(screen, name, input, signal) {
+    if (screen && (screen.isVirtual || screen.isGuest)) {
+      if (name === 'screenshot') return [await screen.screenshot()];
+      if (name === 'zoom') {
+        if (!Array.isArray(input.region) || input.region.length !== 4) throw new Error('region must be [x0, y0, x1, y1]');
+        return [await screen.zoom(input.region.map(Number))];
+      }
+      if (name === 'cursor_position') {
+        const cur = typeof screen.getCursor === 'function' ? screen.getCursor() : { x: 0, y: 0 };
+        return `X=${cur.x}, Y=${cur.y} (Virtual Display)`;
+      }
+      if (name === 'wait') {
+        await sleep(Math.min(Number(input.duration) || 1, MAX_WAIT_S) * 1000, signal);
+        return 'OK';
+      }
+      if (typeof screen.executeGuestAction === 'function') {
+        const out = await screen.executeGuestAction(name, input, signal);
+        await sleep(SETTLE_MS, signal);
+        return out || 'OK';
+      }
+    }
+
     if (screen && screen.isRemote) {
       if (name === 'screenshot') return [await screen.screenshot()];
       if (name === 'zoom') {
@@ -106,10 +139,15 @@ class ComputerExecutor {
       return 'OK';
     }
 
+    const guard = this.sessionGuard || sessionGuard;
+    if (guard && typeof guard.isSessionLocked === 'function' && guard.isSessionLocked()) {
+      throw new Error('[DESKTOP_LOCKED] Desktop session is locked. Physical cursor actions paused.');
+    }
+
     const moveTo = async (coord) => {
       const local = screen.sentToLocalDip(coord);
       await this.pointAt({ ...local, label: POINTER_LABELS[name] || '' });
-      if (signal.aborted) throw new StoppedError('Stopped');
+      if (signal && signal.aborted) throw new StoppedError('Stopped');
       const phys = screen.sentToPhysical(coord);
       await this.input.move(phys.x, phys.y);
     };
@@ -176,4 +214,4 @@ class ComputerExecutor {
   }
 }
 
-module.exports = { ComputerExecutor, StoppedError, READ_ONLY, isRisky, describeAction, sleep };
+module.exports = { ComputerExecutor, StoppedError, READ_ONLY, isRisky, describeAction, sleep, sessionGuard };

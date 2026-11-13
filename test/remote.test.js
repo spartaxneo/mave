@@ -341,4 +341,59 @@ test('MobileWebServer renders Light Theme support and handles theme switching vi
   }
 });
 
+test('MobileWebServer provides autonomous self-provisioning and permission endpoints', async () => {
+  const mockController = {
+    local: {
+      installedId: () => '',
+      complete: () => false,
+      start: async () => {},
+    },
+    settings: {
+      get: () => 'local',
+      update: () => ({}),
+    },
+  };
+
+  const webServer = new MobileWebServer({
+    controller: mockController,
+    logger: null,
+    port: 48945,
+  });
+
+  try {
+    const url = await webServer.start();
+
+    // 1. Check GET /api/provision/status
+    const statusRes = await fetch(`${url}/api/provision/status`);
+    assert.equal(statusRes.status, 200);
+    const statusData = await statusRes.json();
+    assert.equal(statusData.ok, true);
+    assert.ok(statusData.status);
+    assert.ok(typeof statusData.status.percent === 'number');
+
+    // 2. Check POST /api/provision/permissions
+    const permRes = await fetch(`${url}/api/provision/permissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    assert.equal(permRes.status, 200);
+    const permData = await permRes.json();
+    assert.equal(permData.ok, true);
+    assert.ok('allGranted' in permData);
+
+    // 3. Check POST /api/provision/start
+    const startRes = await fetch(`${url}/api/provision/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    assert.equal(startRes.status, 200);
+    const startData = await startRes.json();
+    assert.equal(startData.ok, true);
+    assert.equal(startData.message, 'Autonomous bootstrap started');
+  } finally {
+    webServer.stop();
+  }
+});
+
+
 

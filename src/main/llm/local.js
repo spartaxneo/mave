@@ -31,16 +31,32 @@ function localComputerFunction() {
 
 const scale = (v, from, to) => Math.round(((Number(v) / from) * to) * 10) / 10;
 
+const CHAT_ONLY_NOTE = `
+
+Conversational mode: answer the user directly, clearly, and helpfully using markdown when useful. No desktop, terminal, browser-opening, or GUI tools are active for this turn — respond with text only.`;
+
 class LocalProvider extends OpenAIProvider {
-  constructor({ runtime, model, label, system, tools, screen }) {
-    super({ apiKey: '', model, system: system + ACTION_NOTE + GRID_NOTE, tools, screen, computer: localComputerFunction() });
+  constructor({ runtime, model, label, system, tools, screen, computerEnabled = true }) {
+    const initialTools = Array.isArray(tools) ? tools : [];
+    const useActionNotes = Boolean(computerEnabled || initialTools.some((t) => !['web_search', 'read_webpage'].includes(t.name)));
+    super({ apiKey: '', model, system: system + (useActionNotes ? ACTION_NOTE + GRID_NOTE : CHAT_ONLY_NOTE), tools: initialTools, screen, computer: localComputerFunction() });
     this.id = 'local';
+    this.baseSystem = system;
     this.label = label || 'Local AI';
     this.runtime = runtime;
     this.screen = screen;
     this.keepImages = 4;
     this.timeoutMs = LOCAL_TIMEOUT_MS;
     this.onText = null; // (textSoFar) => void, for showing the reply as it's written
+    this.updateTools(initialTools, { computer: computerEnabled });
+  }
+
+  updateTools(tools = [], opts = {}) {
+    super.updateTools(tools, opts);
+    if (this.baseSystem && Array.isArray(this.messages) && this.messages[0] && this.messages[0].role === 'system') {
+      const hasDesktop = Boolean(this.computerEnabled) || (Array.isArray(tools) && tools.some((t) => !['web_search', 'read_webpage'].includes(t.name)));
+      this.messages[0].content = this.baseSystem + (hasDesktop ? ACTION_NOTE + GRID_NOTE : CHAT_ONLY_NOTE);
+    }
   }
 
   /**
@@ -134,10 +150,12 @@ class LocalProvider extends OpenAIProvider {
     return this.queue(async ({ baseUrl, apiKey }) => {
       const file = this.prefixFile();
       const restored = await this.restorePrefix();
+      const warmBody = { model: this.model, messages: [this.messages[0], { role: 'user', content: 'hi' }], max_tokens: 1, stream: true, return_progress: true };
+      if (this.tools && this.tools.length > 0) warmBody.tools = this.tools;
       const res = await localPost(`${baseUrl}/v1/chat/completions`, {
         key: apiKey,
         waiting: () => true, // never cut off: this reading has to happen once, however slow the PC
-        body: { model: this.model, messages: [this.messages[0], { role: 'user', content: 'hi' }], tools: this.tools, max_tokens: 1, stream: true, return_progress: true },
+        body: warmBody,
       });
       if (!res.ok) throw new ProviderError(`${this.label} couldn’t prepare (${res.status}).`, 'Local AI problem');
       const body = await readStream(res, () => {}, onProgress);
@@ -161,14 +179,19 @@ class LocalProvider extends OpenAIProvider {
     const { url, key } = await this.endpoint();
     let res;
     try {
+      const reqBody = {
+        model: this.model, messages: this.messages,
+        ...this.requestExtras(), stream: true, stream_options: { include_usage: true }, return_progress: true,
+      };
+      if (this.tools && this.tools.length > 0) {
+        reqBody.tools = this.tools;
+        reqBody.tool_choice = 'auto';
+      }
       res = await localPost(`${url}/chat/completions`, {
         key,
         signal,
         waiting: () => Boolean(this.runtime.preparing), // queued behind the one-time preparation
-        body: {
-          model: this.model, messages: this.messages, tools: this.tools, tool_choice: 'auto',
-          ...this.requestExtras(), stream: true, stream_options: { include_usage: true }, return_progress: true,
-        },
+        body: reqBody,
       });
     } catch (err) {
       if (signal && signal.aborted) throw err;

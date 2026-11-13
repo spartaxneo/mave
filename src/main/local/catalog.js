@@ -42,10 +42,20 @@ const MODELS = [
   },
 ];
 
-// The Vulkan build covers NVIDIA, AMD and Intel GPUs and includes CPU backends.
+// Platform-specific llama.cpp runtimes (Windows Vulkan, macOS Metal, Linux Vulkan/CUDA).
 const RUNTIMES = {
-  x64: { name: `llama-${RUNTIME_TAG}-bin-win-vulkan-x64.zip`, size: 33095885, sha256: '33072ec329923a168dcef9a9e76d8578a9bcedda47dff70410e2de5b1ae112cd' },
-  arm64: { name: `llama-${RUNTIME_TAG}-bin-win-cpu-arm64.zip`, size: 12052486, sha256: '431bcdc65d588256eb47d9de5bd00db07bede5b1f2c4680969317bf32474bf11' },
+  win32: {
+    x64: { name: `llama-${RUNTIME_TAG}-bin-win-vulkan-x64.zip`, size: 33095885, sha256: '33072ec329923a168dcef9a9e76d8578a9bcedda47dff70410e2de5b1ae112cd', backend: 'vulkan' },
+    arm64: { name: `llama-${RUNTIME_TAG}-bin-win-cpu-arm64.zip`, size: 12052486, sha256: '431bcdc65d588256eb47d9de5bd00db07bede5b1f2c4680969317bf32474bf11', backend: 'cpu' },
+  },
+  darwin: {
+    arm64: { name: `llama-${RUNTIME_TAG}-bin-macos-arm64.zip`, size: 28410290, backend: 'metal' },
+    x64: { name: `llama-${RUNTIME_TAG}-bin-macos-x64.zip`, size: 29501830, backend: 'cpu' },
+  },
+  linux: {
+    x64: { name: `llama-${RUNTIME_TAG}-bin-ubuntu-x64.zip`, size: 31204810, backend: 'vulkan' },
+    arm64: { name: `llama-${RUNTIME_TAG}-bin-ubuntu-arm64.zip`, size: 27801940, backend: 'cpu' },
+  },
 };
 
 // Offline speech recognition, bundled with the installer (scripts/fetch-speech.js): whisper.cpp with
@@ -82,14 +92,60 @@ const VOICE = [
   ].map(([id, sha]) => ({ ...hf(VOICE_REPO, VOICE_REV, `voices/${id}.bin`, 522240, sha), file: `${id}.bin` })),
 ];
 
-function runtimeFor(arch = process.arch) {
-  const r = RUNTIMES[arch === 'arm64' ? 'arm64' : 'x64'];
-  return { ...r, url: `${GH}/${r.name}`, tag: RUNTIME_TAG, runtime: true };
+function runtimeFor(arch = process.arch, platform = process.platform) {
+  const platKey = RUNTIMES[platform] ? platform : 'win32';
+  const archKey = arch === 'arm64' ? 'arm64' : 'x64';
+  const r = (RUNTIMES[platKey] && RUNTIMES[platKey][archKey]) || RUNTIMES.win32.x64;
+  return { ...r, url: `${GH}/${r.name}`, tag: RUNTIME_TAG, runtime: true, platform: platKey };
 }
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+
+const COMPATIBLE_SPEC = (() => {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, 'compatible_models.json'), 'utf8'));
+  } catch {
+    return [];
+  }
+})();
+
+const CERTIFIED_EXTRA_MODELS = COMPATIBLE_SPEC
+  .filter((entry) => entry && !entry.default && !entry.airllmOnly && Array.isArray(entry.files) && entry.files.length)
+  .map((entry) => ({
+    id: entry.id,
+    size: entry.size,
+    label: entry.name,
+    engine: entry.engine || 'local',
+    memoryGB: entry.memoryGB,
+    airllmVramGB: entry.airllmVramGB,
+    diskNeedGB: entry.diskNeedGB,
+    repo: entry.repo,
+    rev: entry.rev,
+    capabilities: entry.capabilities,
+    certified: true,
+    files: entry.files.map((f) => hf(entry.repo, entry.rev, f.file, f.size, f.sha256)),
+  }));
+
+const AIRLLM_CERTIFIED_MODELS = COMPATIBLE_SPEC
+  .filter((entry) => entry && entry.airllmOnly)
+  .map((entry) => ({
+    id: entry.id,
+    size: entry.size,
+    label: entry.name,
+    engine: 'airllm',
+    airllmOnly: true,
+    memoryGB: entry.memoryGB,
+    airllmVramGB: entry.airllmVramGB,
+    diskNeedGB: entry.diskNeedGB,
+    repo: entry.repo,
+    rawModel: entry.repo,
+    downloadUrl: entry.downloadUrl || `${HF}/${entry.repo}`,
+    capabilities: entry.capabilities,
+    certified: true,
+    files: [],
+  }));
 
 function customModelsPath() {
   try {
@@ -224,24 +280,158 @@ function scanCustomModels(extraDirs = []) {
 }
 
 function allModels() {
-  return [...MODELS, ...loadCustomModels()];
+  return [...MODELS, ...CERTIFIED_EXTRA_MODELS, ...loadCustomModels()];
+}
+
+function compatibleCatalogModels() {
+  return [
+    ...MODELS.map((m) => {
+      const spec = COMPATIBLE_SPEC.find((s) => s.id === m.id) || {};
+      return {
+        ...m,
+        name: m.label,
+        engine: 'local',
+        default: true,
+        airllmVramGB: spec.airllmVramGB || Math.min(Number(m.memoryGB) || 4, 4.0),
+        diskNeedGB: spec.diskNeedGB || ((m.files || []).reduce((n, f) => n + (Number(f.size) || 0), 0) / GB),
+        capabilities: MODEL_CAPABILITIES[m.id] || 'General chat & vision tasks',
+      };
+    }),
+    ...CERTIFIED_EXTRA_MODELS.map((m) => ({
+      ...m,
+      name: m.label,
+      default: false,
+    })),
+    ...AIRLLM_CERTIFIED_MODELS.map((m) => ({
+      ...m,
+      name: m.label,
+      default: false,
+    })),
+  ];
 }
 
 function modelById(id) {
-  return allModels().find((m) => m.id === id) || null;
+  return [...allModels(), ...AIRLLM_CERTIFIED_MODELS].find((m) => m.id === id) || null;
+}
+
+function parseParamSizeNum(sizeStr = '') {
+  const m = String(sizeStr).match(/(\d+(?:\.\d+)?)\s*B/i);
+  return m ? parseFloat(m[1]) : 0;
+}
+
+function evaluateModelCompatibility(model, hw = {}, { airllmEnabled = false } = {}) {
+  const m = model || {};
+  const ram = Number(hw.ramGB) || 0;
+  const vram = hw.dedicated ? Number(hw.vramGB) || 0 : 0;
+  const freeDisk = hw.freeDiskGB;
+  const bytes = (m.files || []).reduce((n, f) => n + (Number(f.size) || 0), 0);
+  const diskNeedGB = Number(m.diskNeedGB) || (bytes > 0 ? Math.round((bytes / GB) * 10) / 10 : 4);
+  const memNeedGB = Number(m.memoryGB) || 4.2;
+  const airllmMemNeedGB = Number(m.airllmVramGB) || Math.min(memNeedGB, 4.0);
+  const totalAvailMem = vram + Math.max(0, ram - 3.5);
+
+  const diskOk = freeDisk == null || (bytes > 0 ? freeDisk * GB > bytes * 1.05 : freeDisk >= diskNeedGB * 1.03);
+  const memFitsNative = !m.airllmOnly && totalAvailMem >= memNeedGB;
+  const memFitsAirllm = totalAvailMem >= airllmMemNeedGB;
+
+  const fitsWithoutAirllm = Boolean(memFitsNative && diskOk);
+  const fitsWithAirllm = Boolean(memFitsAirllm && diskOk);
+  const canInstallNow = Boolean(airllmEnabled ? (fitsWithAirllm || fitsWithoutAirllm) : fitsWithoutAirllm);
+
+  let blockedWithoutAirllm = '';
+  if (!diskOk) blockedWithoutAirllm = 'Not enough disk space';
+  else if (m.airllmOnly) blockedWithoutAirllm = 'Requires AirLLM enabled';
+  else if (!memFitsNative) blockedWithoutAirllm = 'Requires more memory';
+
+  let blockedWithAirllm = '';
+  if (!diskOk) blockedWithAirllm = `Not enough disk space (needs ${Math.ceil(diskNeedGB)} GB)`;
+  else if (!memFitsAirllm) blockedWithAirllm = `Requires ${airllmMemNeedGB} GB VRAM/RAM`;
+
+  const blockedReason = airllmEnabled ? blockedWithAirllm : blockedWithoutAirllm;
+
+  return {
+    bytes,
+    diskNeedGB,
+    memNeedGB,
+    airllmMemNeedGB,
+    diskOk,
+    fitsWithoutAirllm,
+    fitsWithAirllm,
+    canInstallNow,
+    blockedWithoutAirllm,
+    blockedWithAirllm,
+    blockedReason,
+  };
+}
+
+function evaluateDeviceCapacity(hw = {}) {
+  const list = compatibleCatalogModels();
+  const rows = list.map((m) => {
+    const ev = evaluateModelCompatibility(m, hw, { airllmEnabled: true });
+    const mainUrl = (m.files && m.files[0]?.url) || m.downloadUrl || `${HF}/${m.repo}`;
+    return {
+      id: m.id,
+      name: m.label || m.name,
+      size: m.size,
+      engine: m.engine || 'local',
+      memNeedGB: ev.memNeedGB,
+      airllmMemNeedGB: ev.airllmMemNeedGB,
+      diskNeedGB: ev.diskNeedGB,
+      fitsWithoutAirllm: ev.fitsWithoutAirllm,
+      fitsWithAirllm: ev.fitsWithAirllm,
+      blockedWithoutAirllm: ev.blockedWithoutAirllm,
+      blockedWithAirllm: ev.blockedWithAirllm,
+      downloadLink: mainUrl,
+      capabilities: m.capabilities || '',
+    };
+  });
+
+  const maxOf = (arr) => {
+    if (!arr.length) return 'None (Cloud only)';
+    const sorted = [...arr].sort((a, b) => parseParamSizeNum(b.size) - parseParamSizeNum(a.size));
+    return sorted[0].size;
+  };
+  const nativeRows = rows.filter((r) => r.fitsWithoutAirllm);
+  const airllmRows = rows.filter((r) => r.fitsWithAirllm || r.fitsWithoutAirllm);
+  const maxNative = maxOf(nativeRows);
+  const maxAirllm = maxOf(airllmRows);
+
+  return {
+    hardware: {
+      gpu: hw.gpu || 'Unknown',
+      vramGB: Number(hw.vramGB) || 0,
+      dedicated: Boolean(hw.dedicated),
+      ramGB: Number(hw.ramGB) || 0,
+      freeDiskGB: hw.freeDiskGB != null ? Math.round(hw.freeDiskGB) : null,
+      cpu: hw.cpu || '',
+    },
+    withoutAirllm: {
+      maxModelSize: maxNative,
+      count: nativeRows.length,
+      modelIds: nativeRows.map((r) => r.id),
+      summary: nativeRows.length ? `Up to ${maxNative} natively (${nativeRows.length} models)` : 'Cloud AI only',
+    },
+    withAirllm: {
+      maxModelSize: maxAirllm,
+      count: airllmRows.length,
+      modelIds: airllmRows.map((r) => r.id),
+      summary: airllmRows.length ? `Up to ${maxAirllm} with AirLLM (${airllmRows.length} models)` : 'Cloud AI only',
+    },
+    models: rows,
+  };
 }
 
 function filesFor(id, arch) {
   const m = modelById(id);
   if (!m) throw new Error(`Unknown local model ${id}`);
-  if (m.custom) return [runtimeFor(arch)];
-  return [runtimeFor(arch), ...m.files];
+  if (m.custom && (!Array.isArray(m.files) || !m.files.length)) return [runtimeFor(arch)];
+  return [runtimeFor(arch), ...(m.files || [])];
 }
 
 function downloadBytes(id, arch) {
   const m = modelById(id);
   if (!m) throw new Error(`Unknown local model ${id}`);
-  if (m.custom) return 0;
+  if (m.custom && (!Array.isArray(m.files) || !m.files.length)) return 0;
   return filesFor(id, arch).reduce((n, f) => n + f.size, 0);
 }
 
@@ -337,7 +527,7 @@ function scanAirLLMModels() {
       label: 'Qwen3 32B (AirLLM Layer Streaming)',
       size: '32B · ~3.5GB VRAM',
       available: true,
-      note: 'Layer-wise streaming inference on RTX 5060 (8GB)',
+      note: 'Layer-wise streaming inference for 8GB+ GPUs',
     },
     {
       id: 'airllm-meta-llama-Meta-Llama-3-70B-Instruct',
@@ -374,7 +564,52 @@ function scanAirLLMModels() {
 }
 
 /** @param {{ ramGB: number, vramGB: number, dedicated: boolean, freeDiskGB?: number }} hw */
-function recommend(hw, extraDirs = []) {
+const MODEL_CAPABILITIES = {
+  'phi-4-mini': 'MAVE 25-Year-Old Executive Brain: Screen control, everyday device actions & master dispatcher to specialist models',
+  'qwen3-vl-4b': 'Fast everyday chat, voice replies, quick screen reading & simple tasks',
+  'qwen3-vl-8b': 'Coding, multi-step computer control, detailed visual & document analysis',
+  'qwen3-vl-30b': 'Complex reasoning, large codebase architecture & heavy multi-file research',
+};
+
+function estimateSpeed(model, hw = {}) {
+  const memNeed = Number(model?.memoryGB) || 4.2;
+  const vram = hw.dedicated ? Number(hw.vramGB) || 0 : 0;
+  const ram = Number(hw.ramGB) || 0;
+  const onGpu = vram >= memNeed;
+  const hybridGpu = !onGpu && Boolean(hw.dedicated) && vram >= 2 && (vram + Math.max(0, ram - 3.5)) >= memNeed;
+  const gpuShort = (hw.gpu || 'GPU').replace(/^NVIDIA\s+GeForce\s+/i, '');
+
+  let minTps, maxTps, gpuFit, gpuLabel;
+  if (onGpu) {
+    gpuFit = 'gpu_full';
+    gpuLabel = `Runs 100% on ${gpuShort} (${vram} GB VRAM)`;
+    if (memNeed <= 4.5) { minTps = 55; maxTps = 85; }
+    else if (memNeed <= 8.0) { minTps = 32; maxTps = 50; }
+    else { minTps = 22; maxTps = 36; }
+  } else if (hybridGpu) {
+    gpuFit = 'gpu_ram_hybrid';
+    gpuLabel = `Splits across ${gpuShort} (${vram} GB VRAM) + RAM`;
+    if (memNeed <= 8.0) { minTps = 14; maxTps = 24; }
+    else { minTps = 10; maxTps = 19; }
+  } else {
+    gpuFit = 'cpu_ram';
+    gpuLabel = 'Runs on CPU + System RAM';
+    if (memNeed <= 4.5) { minTps = 8; maxTps = 16; }
+    else if (memNeed <= 8.0) { minTps = 4; maxTps = 9; }
+    else { minTps = 2; maxTps = 5; }
+  }
+
+  return {
+    gpuFit,
+    gpuLabel,
+    tokensPerSecMin: minTps,
+    tokensPerSecMax: maxTps,
+    tokensPerMinMin: minTps * 60,
+    tokensPerMinMax: maxTps * 60,
+  };
+}
+
+function recommend(hw, extraDirs = [], { airllmEnabled = false } = {}) {
   const ram = Number(hw.ramGB) || 0;
   const vram = hw.dedicated ? Number(hw.vramGB) || 0 : 0;
   const usableRam = Math.max(0, ram - 3) * 0.8; // Windows and other apps need the rest
@@ -391,17 +626,35 @@ function recommend(hw, extraDirs = []) {
 
   const pickIndex = MODELS.findIndex((m) => m.id === pick);
   const options = MODELS.map((m, i) => {
-    const bytes = downloadBytes(m.id);
-    const diskOk = hw.freeDiskGB == null || hw.freeDiskGB * GB > bytes * 1.05;
+    const compat = evaluateModelCompatibility(m, hw, { airllmEnabled });
+    const fits = compat.canInstallNow;
     let note;
-    let fits = loads(m);
-    if (m.id === pick) note = 'Recommended';
-    else if (!fits) note = 'Requires more memory';
+    if (!fits) note = compat.blockedReason;
+    else if (m.id === pick) note = 'Recommended';
     else if (i < pickIndex) note = 'Faster / lighter';
+    else if (!compat.fitsWithoutAirllm && compat.fitsWithAirllm) note = 'AirLLM Stream';
     else if (!runs(m)) note = 'Tight on memory · may be slow';
     else note = onGpu(m) ? 'Higher quality' : 'Higher quality · slower';
-    if (!diskOk) { fits = false; note = 'Not enough disk space'; }
-    return { id: m.id, size: m.size, label: m.label, bytes, recommended: m.id === pick, available: fits, note };
+    const perf = estimateSpeed(m, hw);
+    return {
+      id: m.id,
+      size: m.size,
+      label: m.label,
+      engine: 'local',
+      memoryGB: m.memoryGB,
+      airllmVramGB: compat.airllmMemNeedGB,
+      diskNeedGB: compat.diskNeedGB,
+      bytes: compat.bytes,
+      recommended: fits && m.id === pick,
+      available: fits,
+      fitsWithoutAirllm: compat.fitsWithoutAirllm,
+      fitsWithAirllm: compat.fitsWithAirllm,
+      diskOk: compat.diskOk,
+      blockedReason: compat.blockedReason,
+      note,
+      capabilities: MODEL_CAPABILITIES[m.id] || 'General chat and vision tasks',
+      ...perf,
+    };
   });
 
   const { customModels, imageModels } = scanCustomModels(extraDirs);
@@ -422,8 +675,163 @@ function recommend(hw, extraDirs = []) {
   const colibriModels = scanColibriModels();
   const ollamaModels = scanOllamaModels();
   const airllmModels = scanAirLLMModels();
-
   return { pick, options, customOptions, imageModels, colibriModels, ollamaModels, airllmModels };
 }
 
-module.exports = { MODELS, RETIRED, RUNTIME_TAG, WHISPER_TAG, SPEECH, MATH, VOICE, runtimeFor, modelById, allModels, loadCustomModels, saveCustomModel, removeCustomModel, scanCustomModels, scanColibriModels, scanOllamaModels, scanAirLLMModels, filesFor, downloadBytes, recommend, GB };
+function pickBestGgufEntry(treeEntries = []) {
+  const ggufs = treeEntries.filter((f) =>
+    f && f.type === 'file'
+    && typeof f.path === 'string'
+    && f.path.toLowerCase().endsWith('.gguf')
+    && !path.basename(f.path).toLowerCase().startsWith('mmproj-')
+    && Number(f.size) > 50 * 1024 * 1024
+  );
+  if (!ggufs.length) return null;
+  const rank = (name) => {
+    const u = name.toUpperCase();
+    if (u.includes('Q4_K_M')) return 0;
+    if (u.includes('Q4_K_S')) return 1;
+    if (u.includes('Q4_0')) return 2;
+    if (u.includes('Q5_K_M')) return 3;
+    if (u.includes('Q6_K')) return 4;
+    if (u.includes('Q8_0')) return 5;
+    return 6;
+  };
+  ggufs.sort((a, b) => rank(a.path) - rank(b.path) || (Number(a.size) - Number(b.size)));
+  return ggufs[0];
+}
+
+async function searchOnlineModels(query, hw = {}, fetchFn = globalThis.fetch) {
+  const q = String(query || '').trim();
+  if (!q) return { ok: true, results: [] };
+  if (typeof fetchFn !== 'function') return { ok: false, error: 'Fetch API unavailable', results: [] };
+
+  const searchUrl = `https://huggingface.co/api/models?search=${encodeURIComponent(q)}&filter=gguf&sort=downloads&direction=-1&limit=8`;
+  const res = await fetchFn(searchUrl, { headers: { Accept: 'application/json' } });
+  if (!res.ok) throw new Error(`Hugging Face search failed (${res.status})`);
+  const repos = await res.json();
+  if (!Array.isArray(repos)) return { ok: true, results: [] };
+
+  const ram = Number(hw.ramGB) || 0;
+  const vram = hw.dedicated ? Number(hw.vramGB) || 0 : 0;
+  const freeDisk = hw.freeDiskGB;
+  const settled = await Promise.allSettled(repos.slice(0, 6).map(async (repo) => {
+    const repoId = repo.id || repo.modelId;
+    if (!repoId) return null;
+    const treeRes = await fetchFn(`https://huggingface.co/api/models/${repoId}/tree/main?recursive=true`, { headers: { Accept: 'application/json' } });
+    if (!treeRes.ok) return null;
+    const tree = await treeRes.json();
+    const chosen = pickBestGgufEntry(Array.isArray(tree) ? tree : []);
+    if (!chosen) return null;
+
+    const sizeBytes = Number(chosen.size) || 0;
+    const fileName = path.basename(chosen.path);
+    const sha256 = chosen.lfs?.oid || null;
+    const memoryGB = Math.max(1.5, Math.round((sizeBytes / GB) * 1.25 * 10) / 10);
+    const fitsMemory = (vram + Math.max(0, ram - 3.5)) >= memoryGB;
+    const diskOk = freeDisk == null || freeDisk * GB > sizeBytes * 1.05;
+    const safeId = `hf-${repoId}-${fileName}`.toLowerCase().replace(/\.gguf$/, '').replace(/[^a-z0-9_-]/g, '-').slice(0, 64);
+    const perf = estimateSpeed({ memoryGB }, hw);
+    const paramMatch = `${repoId} ${fileName}`.match(/(\d+(?:\.\d+)?)\s*[bB]\b/);
+    return {
+      id: safeId,
+      repo: repoId,
+      label: repoId.split('/').pop().replace(/[-_]?GGUF$/i, ''),
+      size: paramMatch ? `${paramMatch[1]}B` : `${(sizeBytes / GB).toFixed(1)}GB`,
+      memoryGB,
+      bytes: sizeBytes,
+      fileName,
+      url: `https://huggingface.co/${repoId}/resolve/main/${chosen.path}`,
+      sha256,
+      downloads: Number(repo.downloads) || 0,
+      likes: Number(repo.likes) || 0,
+      available: fitsMemory && diskOk,
+      note: !diskOk ? 'Not enough disk space' : !fitsMemory ? 'Exceeds RAM + VRAM' : `${repo.downloads ? `${Math.round(repo.downloads / 1000)}k+ downloads` : 'GGUF online'}`,
+      capabilities: `${(Array.isArray(repo.tags) && repo.tags.some((t) => /code|coder/i.test(t))) ? 'Coding, ' : ''}General chat & reasoning (${fileName})`,
+      ...perf,
+    };
+  }));
+
+  const results = settled
+    .filter((r) => r.status === 'fulfilled' && r.value)
+    .map((r) => r.value);
+  return { ok: true, results };
+}
+
+function searchCompatibleModels(query = '', hw = {}, { airllmEnabled = false } = {}) {
+  const q = String(query || '').trim().toLowerCase();
+  const list = compatibleCatalogModels().filter((m) => {
+    if (!q) return !m.default;
+    const hay = `${m.id} ${m.label} ${m.size} ${m.repo || ''} ${m.capabilities || ''} ${m.engine || ''}`.toLowerCase();
+    return q.split(/\s+/).every((tok) => hay.includes(tok));
+  });
+
+  return list.map((m) => {
+    const compat = evaluateModelCompatibility(m, hw, { airllmEnabled });
+    const mainFile = (m.files || [])[0] || {};
+    const mainUrl = mainFile.url || m.downloadUrl || (m.repo ? `${HF}/${m.repo}` : '');
+    const perf = m.airllmOnly
+      ? {
+          gpuFit: 'airllm_stream',
+          gpuLabel: `AirLLM Layer-Stream (${compat.airllmMemNeedGB} GB VRAM · ${compat.diskNeedGB} GB SSD)`,
+          tokensPerSecMin: 1,
+          tokensPerSecMax: 4,
+          tokensPerMinMin: 60,
+          tokensPerMinMax: 240,
+        }
+      : estimateSpeed(m, hw);
+    return {
+      id: m.id,
+      label: m.label,
+      size: m.size,
+      engine: m.engine || 'local',
+      airllmOnly: Boolean(m.airllmOnly),
+      memoryGB: compat.memNeedGB,
+      airllmVramGB: compat.airllmMemNeedGB,
+      diskNeedGB: compat.diskNeedGB,
+      bytes: compat.bytes || Math.round(compat.diskNeedGB * GB),
+      fileName: mainFile.name || m.repo || '',
+      repo: m.repo || '',
+      url: mainUrl,
+      downloadLink: mainUrl,
+      sha256: mainFile.sha256 || '',
+      capabilities: m.capabilities || 'General chat & tasks',
+      default: Boolean(m.default),
+      certified: true,
+      fitsWithoutAirllm: compat.fitsWithoutAirllm,
+      fitsWithAirllm: compat.fitsWithAirllm,
+      diskOk: compat.diskOk,
+      available: compat.canInstallNow,
+      blockedReason: compat.blockedReason,
+      note: compat.canInstallNow ? (m.airllmOnly ? 'AirLLM Ready' : 'MAVE Certified') : compat.blockedReason,
+      ...perf,
+    };
+  });
+}
+
+function registerOnlineModel(entry) {
+  if (!entry || !entry.id || !entry.url || !entry.fileName || !entry.bytes) {
+    throw new Error('Incomplete online model metadata');
+  }
+  const modelDef = {
+    id: String(entry.id),
+    size: entry.size || `${Math.round((Number(entry.bytes) / GB) * 10) / 10}GB`,
+    label: entry.label || entry.repo || entry.id,
+    repo: entry.repo || '',
+    memoryGB: Number(entry.memoryGB) || Math.max(2, Math.round((Number(entry.bytes) / GB) * 1.25 * 10) / 10),
+    custom: true,
+    remoteDownload: true,
+    capabilities: entry.capabilities || `Downloaded GGUF model (${entry.fileName})`,
+    files: [
+      {
+        name: entry.fileName,
+        url: entry.url,
+        size: Number(entry.bytes),
+        ...(entry.sha256 ? { sha256: entry.sha256 } : {}),
+      },
+    ],
+  };
+  return saveCustomModel(modelDef);
+}
+
+module.exports = { MODELS, RETIRED, RUNTIME_TAG, WHISPER_TAG, SPEECH, MATH, VOICE, MODEL_CAPABILITIES, CERTIFIED_EXTRA_MODELS, AIRLLM_CERTIFIED_MODELS, estimateSpeed, evaluateModelCompatibility, evaluateDeviceCapacity, searchCompatibleModels, searchOnlineModels, registerOnlineModel, runtimeFor, modelById, allModels, compatibleCatalogModels, loadCustomModels, saveCustomModel, removeCustomModel, scanCustomModels, scanColibriModels, scanOllamaModels, scanAirLLMModels, filesFor, downloadBytes, recommend, GB };

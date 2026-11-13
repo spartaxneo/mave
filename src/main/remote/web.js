@@ -5175,6 +5175,15 @@ class MobileWebServer {
       logger: this.logger,
       port: this.port
     });
+    try {
+      const { SelfProvisioner } = require('../autonomous/self_provisioner');
+      this.provisioner = new SelfProvisioner({
+        logger: this.logger,
+        manager: this.controller ? this.controller.local : null,
+      });
+    } catch (e) {
+      if (this.logger) this.logger.warn('SelfProvisioner init note:', e.message);
+    }
   }
 
   start() {
@@ -5228,10 +5237,16 @@ class MobileWebServer {
     } catch {}
 
     if (this.server) {
+      if (typeof this.server.closeAllConnections === 'function') {
+        this.server.closeAllConnections();
+      }
       this.server.close();
       this.server = null;
     }
     if (this.httpsServer) {
+      if (typeof this.httpsServer.closeAllConnections === 'function') {
+        this.httpsServer.closeAllConnections();
+      }
       this.httpsServer.close();
       this.httpsServer = null;
     }
@@ -5286,19 +5301,101 @@ class MobileWebServer {
     }
 
     // --- Ghost AI Core Protocol Endpoints (MCP, AG-UI, A2UI, A2A) ---
-    try {
-      const { getGhostAICore } = require('../ghost_core');
-      const ghostCore = getGhostAICore();
-      const handled = await ghostCore.handleHttpRequest(req, res, url.pathname);
-      if (handled) return;
-    } catch (ghostErr) {
-      if (this.logger) this.logger.warn('Ghost AI Core route error:', ghostErr.message);
+    if (url.pathname === '/.well-known/agent.json' || url.pathname === '/mcp' || url.pathname.startsWith('/mcp/') || url.pathname.startsWith('/ag-ui/') || url.pathname.startsWith('/api/ghost/')) {
+      try {
+        const { getGhostAICore } = require('../ghost_core');
+        const ghostCore = getGhostAICore();
+        const handled = await ghostCore.handleHttpRequest(req, res, url.pathname);
+        if (handled) return;
+      } catch (ghostErr) {
+        if (this.logger) this.logger.warn('Ghost AI Core route error:', ghostErr.message);
+      }
     }
 
     // Serve rich desktop-parity UI at root and /drop
     if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/drop')) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(getDesktopWebHtml(this.getUrl(), this.getHttpsUrl()));
+    }
+
+    // --- Vorssaint OS Mobile Web Companion & Desktop Suite ---
+    if (req.method === 'GET' && (url.pathname === '/vorssaint' || url.pathname === '/vorssaint/')) {
+      try {
+        const mobileHtmlPath = path.resolve(__dirname, '..', '..', '..', 'vorssaint', 'android', 'mobile_web', 'index.html');
+        if (fs.existsSync(mobileHtmlPath)) {
+          const html = fs.readFileSync(mobileHtmlPath, 'utf8');
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          return res.end(html);
+        }
+      } catch (vErr) {
+        if (this.logger) this.logger.warn('Vorssaint mobile web serve error:', vErr.message);
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/vorssaint/menu') {
+      try {
+        const menuPath = path.resolve(__dirname, '..', '..', 'renderer', 'vorssaint_menu_panel.html');
+        if (fs.existsSync(menuPath)) {
+          const html = fs.readFileSync(menuPath, 'utf8');
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          return res.end(html);
+        }
+      } catch {}
+    }
+
+    if (req.method === 'GET' && url.pathname === '/vorssaint/hub') {
+      try {
+        const hubPath = path.resolve(__dirname, '..', '..', 'renderer', 'vorssaint_hub.html');
+        if (fs.existsSync(hubPath)) {
+          const html = fs.readFileSync(hubPath, 'utf8');
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          return res.end(html);
+        }
+      } catch {}
+    }
+
+    if (req.method === 'GET' && (url.pathname === '/mascot_rig.js' || url.pathname === '/vorssaint/mascot_rig.js')) {
+      try {
+        const jsPath = path.resolve(__dirname, '..', '..', 'renderer', 'mascot_rig.js');
+        if (fs.existsSync(jsPath)) {
+          const js = fs.readFileSync(jsPath, 'utf8');
+          res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+          return res.end(js);
+        }
+      } catch {}
+    }
+
+    if (req.method === 'GET' && (url.pathname === '/mascot_rig.css' || url.pathname === '/vorssaint/mascot_rig.css')) {
+      try {
+        const cssPath = path.resolve(__dirname, '..', '..', 'renderer', 'mascot_rig.css');
+        if (fs.existsSync(cssPath)) {
+          const css = fs.readFileSync(cssPath, 'utf8');
+          res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
+          return res.end(css);
+        }
+      } catch {}
+    }
+
+    if (req.method === 'GET' && (url.pathname === '/manifest.json' || url.pathname === '/vorssaint/manifest.json')) {
+      try {
+        const manifestPath = path.resolve(__dirname, '..', '..', '..', 'vorssaint', 'android', 'mobile_web', 'manifest.json');
+        if (fs.existsSync(manifestPath)) {
+          const manifest = fs.readFileSync(manifestPath, 'utf8');
+          res.writeHead(200, { 'Content-Type': 'application/manifest+json; charset=utf-8' });
+          return res.end(manifest);
+        }
+      } catch {}
+    }
+
+    if (req.method === 'GET' && (url.pathname === '/sw.js' || url.pathname === '/vorssaint/sw.js')) {
+      try {
+        const swPath = path.resolve(__dirname, '..', '..', '..', 'vorssaint', 'android', 'mobile_web', 'sw.js');
+        if (fs.existsSync(swPath)) {
+          const sw = fs.readFileSync(swPath, 'utf8');
+          res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+          return res.end(sw);
+        }
+      } catch {}
     }
 
     // --- Commercial Selling Application Website, Download Hub & Account Portal ---
@@ -6617,6 +6714,42 @@ echo "      Web Console: ${hostUrl}/product"
       }
     }
 
+    // --- Autonomous Zero-Friction Setup & Provisioning Endpoints ---
+    if (req.method === 'GET' && url.pathname === '/api/provision/status') {
+      const status = this.provisioner ? this.provisioner.state : {
+        step: 'ready',
+        percent: 100,
+        label: 'Ready',
+        details: 'Self-provisioner ready',
+        permissionsGranted: true,
+      };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, status }));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/provision/start') {
+      if (this.provisioner) {
+        this.provisioner.bootstrap().catch((err) => {
+          if (this.logger) this.logger.error('Autonomous bootstrap error:', err.message);
+        });
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        ok: true,
+        message: 'Autonomous bootstrap started',
+        status: this.provisioner ? this.provisioner.state : null,
+      }));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/provision/permissions') {
+      let perms = { allGranted: true, permissions: {} };
+      if (this.provisioner) {
+        perms = await this.provisioner.checkAndRequestPermissions();
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, ...perms }));
+    }
+
     // Models API
     if (req.method === 'GET' && url.pathname === '/api/models') {
       try {
@@ -6801,7 +6934,7 @@ echo "      Web Console: ${hostUrl}/product"
           }
         }
         const isTgConfigured = Boolean(tgToken);
-        const tgBotUsername = (settings && settings.get('telegramBotUsername')) || (isTgConfigured ? 'FromnearTaskManager_bot' : '');
+        const tgBotUsername = (settings && settings.get('telegramBotUsername')) || (isTgConfigured ? 'MaveAssistant_bot' : '');
         const info = {
           ok: true,
           mobileLanUrl: this.getUrl(),
@@ -8064,6 +8197,133 @@ echo "      Web Console: ${hostUrl}/product"
         const result = await firebaseService.getPreferences(uid);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    // --- Vorssaint Live Telemetry & Actions API (Mobile & Cloud Parity) ---
+    if (req.method === 'GET' && url.pathname === '/api/vorssaint/telemetry') {
+      try {
+        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
+        const telemetry = getVorssaintManager().getTelemetry();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(telemetry));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/vorssaint/keep-awake') {
+      try {
+        const body = await parseBody(req);
+        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
+        const result = getVorssaintManager().setKeepAwake(body.mode || 'off');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/vorssaint/ports') {
+      try {
+        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
+        const ports = getVorssaintManager().getListeningPorts();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(ports));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/vorssaint/port-kill') {
+      try {
+        const body = await parseBody(req);
+        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
+        const result = getVorssaintManager().killPort(body.port || body.pid);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/vorssaint/scratchpad') {
+      try {
+        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
+        const pad = getVorssaintManager().getScratchpad();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(pad));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/vorssaint/scratchpad') {
+      try {
+        const body = await parseBody(req);
+        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
+        const result = getVorssaintManager().saveScratchpad(body.text || body.content || '');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/vorssaint/mascot') {
+      try {
+        const body = await parseBody(req);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, moment: body.moment }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/vorssaint/matrix') {
+      try {
+        const { getPlatformDetector } = require('../vorssaint/platform_detector');
+        const matrix = getPlatformDetector().getMatrix();
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        return res.end(JSON.stringify(matrix));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/vorssaint/platform-profile') {
+      try {
+        const { getPlatformDetector } = require('../vorssaint/platform_detector');
+        const explicit = url.searchParams.get('platform');
+        const ua = req.headers['user-agent'] || '';
+        const detected = getPlatformDetector().detectPlatform(ua, explicit);
+        const profile = getPlatformDetector().getPlatformProfile(detected);
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        return res.end(JSON.stringify(profile));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/vorssaint/clean-url') {
+      try {
+        const body = await parseBody(req);
+        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
+        const cleaned = getVorssaintManager().cleanUrl(body.url || '');
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        return res.end(JSON.stringify({ ok: true, original: body.url, cleaned }));
       } catch (err) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ ok: false, error: err.message }));

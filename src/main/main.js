@@ -49,8 +49,9 @@ try {
 } catch { /* ignore */ }
 
 // QA only: a separate profile lets a test copy run beside an installed Mave.
-if (process.env.MAVE_PROFILE_DIR || process.env.BIGFOOT_PROFILE_DIR) {
-  app.setPath('userData', process.env.MAVE_PROFILE_DIR || process.env.BIGFOOT_PROFILE_DIR);
+const customProfileDir = (process.env.MAVE_PROFILE_DIR || process.env.BIGFOOT_PROFILE_DIR || '').trim();
+if (customProfileDir) {
+  app.setPath('userData', customProfileDir);
 }
 
 if (!app.requestSingleInstanceLock()) {
@@ -70,7 +71,11 @@ async function start() {
   const costs = new CostTracker();
   const activity = new ActivityLog(logger);
   const input = new InputHelper();
-  const windows = new WindowManager({ onEngineClosed: () => audio.failAll('The audio engine restarted.') });
+  const windows = new WindowManager({
+    settings,
+    onEngineClosed: () => audio.failAll('The audio engine restarted.'),
+    onQuit: () => performCleanShutdown(),
+  });
   const audio = new AudioService({ windows, settings, logger });
   const isOnline = () => net.isOnline();
   const local = new LocalModelManager({ dir: path.join(app.getPath('userData'), 'local-ai'), settings, logger, isOnline });
@@ -135,7 +140,13 @@ async function start() {
         controller.sendUsage();
       },
       approve: (req) => controller.requestApproval(req),
-      notice: (text) => controller.showInfo('Heads up', text),
+      notice: (text) => {
+        if (text === 'Memory updated' || String(text).includes('Memory')) {
+          windows.broadcast('notice', '🧠 Memory updated');
+        } else {
+          controller.showInfo('Heads up', text);
+        }
+      },
       terminal: (kind, text) => activity.add(kind, text),
       draw: (shape) => windows.send(windows.overlayFor(shape.displayId), 'annotate', shape),
       ink: (op) => controller.editInk(op),
@@ -150,12 +161,14 @@ async function start() {
   global.__bigfootController = controller;
 
   // Auto-start remote phone controllers (Mobile Web Controller & Telegram Bot)
+  let activeMobileServer = null;
+  let activeTelegramBridge = null;
   try {
     const { MobileWebServer } = require('./remote/web');
     const { TelegramBridge, loadTelegramConfig } = require('./remote/telegram');
 
-    const mobileServer = new MobileWebServer({ controller, logger, port: 4040 });
-    mobileServer.start().then((url) => {
+    activeMobileServer = new MobileWebServer({ controller, logger, port: 4040 });
+    activeMobileServer.start().then((url) => {
       logger.info(`Mobile Web Controller live at ${url}`);
     }).catch((err) => {
       logger.error('Mobile Web Controller failed to start', err.message);
@@ -164,14 +177,14 @@ async function start() {
     const tgConfig = loadTelegramConfig();
     const tgToken = process.env.TELEGRAM_BOT_TOKEN || tgConfig.token;
     if (tgToken) {
-      const bridge = new TelegramBridge({
+      activeTelegramBridge = new TelegramBridge({
         token: tgToken,
         authorizedChatId: tgConfig.authorizedChatId || null,
         controller,
         logger,
       });
-      bridge.verifyToken().then((botInfo) => {
-        bridge.start();
+      activeTelegramBridge.verifyToken().then((botInfo) => {
+        activeTelegramBridge.start();
         logger.info(`Telegram Bot @${botInfo.username} connected and listening`);
       }).catch((err) => {
         logger.error('Telegram Bot auto-start failed', err.message);
@@ -222,7 +235,6 @@ async function start() {
   });
   const sendLoader = () => {
     const status = loaderStatus();
-    windows.broadcast('loader', status);
     windows.send(windows.main, 'loader', status);
     windows.setToolsBlocked(controller.aiNotReady());
     if (windows.tray) windows.tray.setToolTip(status.ai.state === 'loading' ? `Mave · Loading the AI (${status.ai.percent}%)` : 'Mave');
@@ -357,9 +369,11 @@ async function start() {
   // Someone who finished an older setup (before the on-device model step) and has no model yet
   // gets that step; everyone who already has a model is simply marked as up to date.
   local.installedId(); // a model already on disk counts as installed, even if settings were reset
-  // Launch directly into Home conversation canvas (ChatGPT-style)
+  // Launch clean onboarding on first run (or upgraded onboarding version), otherwise Home
   if (!process.argv.includes('--hidden')) {
-    windows.openMain('home');
+    const needsOnboarding = !settings.get('onboarded') || (settings.get('onboardedVersion') || 0) < ONBOARDING_VERSION;
+    if (needsOnboarding) windows.openOnboarding();
+    else windows.openMain('home');
   }
 
   // Mount the System Dynamic Island as an OS Device Extension (Vorssaint-style)
@@ -377,6 +391,18 @@ async function start() {
     });
     globalShortcut.register('Alt+I', () => {
       windows.toggleIsland();
+    });
+    globalShortcut.register('Alt+V', () => {
+      windows.openVorssaintMenuPanel();
+    });
+    globalShortcut.register('Alt+Shift+H', () => {
+      windows.openVorssaintHub();
+    });
+    globalShortcut.register('Alt+K', () => {
+      if (windows.openCommandBarWindow) windows.openCommandBarWindow();
+    });
+    globalShortcut.register('Alt+Shift+C', () => {
+      if (windows.openCleaningModeWindow) windows.openCleaningModeWindow(30);
     });
     globalShortcut.register('Alt+Shift+V', () => {
       windows.openMain('home');
@@ -406,16 +432,95 @@ async function start() {
     windows.openMain('home');
     windows.showIsland();
   });
-  app.on('window-all-closed', (e) => e.preventDefault()); // lives in the tray
-  app.on('before-quit', () => {
+  let isShuttingDown = false;
+  function performCleanShutdown() {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
     windows.quitting = true;
+
     try { globalShortcut.unregisterAll(); } catch {}
     clearInterval(cursorTimer);
-    agent.stop();
-    input.stop();
-    runtime.stop();
-    speech.stop();
-    terminals.closeAll();
+    try { modelAutoUpdater.stopAutoCheckTimer(); } catch {}
+
+    // Stop remote servers and sockets
+    try { if (activeMobileServer) activeMobileServer.stop(); } catch {}
+    try { if (activeTelegramBridge) activeTelegramBridge.stop(); } catch {}
+    try {
+      const { meshDiscoveryManager } = require('./remote/mesh_discovery');
+      if (meshDiscoveryManager) meshDiscoveryManager.stop();
+    } catch {}
+
+    // Stop background managers, sentinels, butler telemetry, Vorssaint timers, and local inference workers
+    try {
+      const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+      getVorssaintManager().stop();
+    } catch {}
+    try {
+      const { getJarvisButler } = require('./jarvis/proactive_butler');
+      getJarvisButler().stop();
+    } catch {}
+    try {
+      const { getJarvisTelemetry } = require('./jarvis/telemetry');
+      getJarvisTelemetry().stopMonitoring();
+    } catch {}
+    try {
+      const { getAutonomousSentinel } = require('./sentinel/autonomous_sentinel');
+      getAutonomousSentinel().stop();
+    } catch {}
+    try {
+      const { colibriService } = require('./local/colibri');
+      colibriService.stop();
+    } catch {}
+    try {
+      const { airllmService } = require('./local/airllm');
+      airllmService.stop();
+    } catch {}
+    try {
+      if (controller && controller.meshWorker && typeof controller.meshWorker.stop === 'function') {
+        controller.meshWorker.stop();
+      }
+    } catch {}
+
+    // Stop audio/kokoro, agents, input, speech, runtime, terminals
+    try { audio.stop(); } catch {}
+    try { agent.stop(); } catch {}
+    try { input.stop(); } catch {}
+    try { runtime.stop(); } catch {}
+    try { speech.stop(); } catch {}
+    try { terminals.closeAll(); } catch {}
+
+    // Destroy all windows and tray
+    try { windows.destroyAll(); } catch {}
+
+    // Guaranteed hard exit after 150ms to ensure zero zombie processes remain
+    setTimeout(() => {
+      try { app.exit(0); } catch {}
+      try { process.exit(0); } catch {}
+    }, 150);
+  }
+
+  app.on('window-all-closed', () => {
+    if (settings.get('minimizeToTrayOnClose')) {
+      // lives in the tray only if explicitly configured
+    } else {
+      performCleanShutdown();
+      setTimeout(() => {
+        try { app.exit(0); } catch {}
+        try { process.exit(0); } catch {}
+      }, 300);
+    }
+  });
+
+  app.on('before-quit', () => {
+    performCleanShutdown();
+  });
+
+  app.on('will-quit', () => {
+    performCleanShutdown();
+    setTimeout(() => {
+      try { app.exit(0); } catch {}
+      try { process.exit(0); } catch {}
+    }, 300);
   });
 }
 

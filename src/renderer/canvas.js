@@ -27,6 +27,9 @@
     isOpen = true;
     pane.hidden = false;
     document.body.classList.add('canvas-open');
+    if (typeof window.__openWorkspaceTab === 'function') {
+      window.__openWorkspaceTab('canvas');
+    }
 
     updateCanvasView();
   }
@@ -37,6 +40,9 @@
     isOpen = false;
     pane.hidden = true;
     document.body.classList.remove('canvas-open');
+    if (typeof window.__closeWorkspaceInspector === 'function') {
+      window.__closeWorkspaceInspector();
+    }
   }
 
   function updateCanvasView() {
@@ -47,6 +53,8 @@
     if (titleEl) titleEl.textContent = currentFile.title || 'untitled.py';
     if (langBadge) langBadge.textContent = (currentFile.language || 'python').toUpperCase();
     if (editor) editor.value = currentFile.content || '';
+    const extBtn = $('canvas-btn-external');
+    if (extBtn) extBtn.hidden = !currentFile.fullPath;
 
     // Clear previous execution output
     const outputBox = $('canvas-output-box');
@@ -132,6 +140,18 @@
 
     // Copy Code Button
     const copyBtn = $('canvas-btn-copy');
+    const canvasExtBtn = $('canvas-btn-external');
+    if (canvasExtBtn) {
+      canvasExtBtn.addEventListener('click', () => {
+        if (currentFile.fullPath) api.invoke('ghost:open-file', currentFile.fullPath).catch(() => {});
+      });
+    }
+    const capExtBtn = $('cap-btn-external');
+    if (capExtBtn) {
+      capExtBtn.addEventListener('click', () => {
+        if (currentArtifact.fullPath) api.invoke('ghost:open-file', currentArtifact.fullPath).catch(() => {});
+      });
+    }
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
         const editor = $('canvas-code-editor');
@@ -191,9 +211,13 @@
     if (data) currentArtifact = { ...currentArtifact, ...data };
     pane.hidden = false;
     document.body.classList.add('artifacts-open');
+    if (typeof window.__openWorkspaceTab === 'function') {
+      window.__openWorkspaceTab('artifacts');
+    }
 
     if ($('cap-title')) $('cap-title').textContent = currentArtifact.title || 'Artifact Preview';
     if ($('cap-code-content')) $('cap-code-content').textContent = currentArtifact.code || currentArtifact.html || '';
+    if ($('cap-btn-external')) $('cap-btn-external').hidden = !currentArtifact.fullPath;
     if ($('cap-preview-frame')) {
       const srcDoc = currentArtifact.html || currentArtifact.code || '<p>No preview</p>';
       $('cap-preview-frame').srcdoc = srcDoc;
@@ -206,6 +230,9 @@
     if (!pane) return;
     pane.hidden = true;
     document.body.classList.remove('artifacts-open');
+    if (typeof window.__closeWorkspaceInspector === 'function') {
+      window.__closeWorkspaceInspector();
+    }
   }
 
   function setArtifactTab(tab = 'preview') {

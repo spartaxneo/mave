@@ -1,0 +1,17 @@
+Model Name,Quantization,Context Length (Tokens),Measurement Status,Time to First Token (ms),Prompt Processing (t/s),Token Generation (t/s),VRAM Allocation (MB),System RAM (MB),Max Concurrency Slots (8GB VRAM),Primary Hardware Bottleneck,Estimated Power (W)
+Qwen3-4B-Instruct,Q4_K_XL,2048,Estimated,120,285.0,76.5,4420,450,2,GPU Memory Bandwidth,85
+Qwen3-4B-Instruct,Q4_K_XL,4096,Estimated,185,260.0,71.2,4850,480,1,GPU Memory Bandwidth,95
+Qwen3-4B-Instruct,Q4_K_XL,8192,Estimated,340,225.0,63.0,5720,520,1,GPU Memory Bandwidth,105
+Qwen3-4B-Instruct,Q4_K_XL,16384,Estimated,690,175.0,51.8,7450,610,1,VRAM Capacity Limit,115
+Qwen3-4B-Instruct,Q4_K_XL,32768,Estimated,1450,110.0,18.4,8150 (Spill to RAM),12400,1,PCIe Bus & System RAM Bandwidth,115
+Qwen3-VL-8B-Instruct (Text Only),Q4_K_M,2048,Estimated,260,195.0,46.0,6250,550,1,GPU Compute & Bandwidth,110
+Qwen3-VL-8B-Instruct (Text Only),Q4_K_M,4096,Estimated,420,178.0,42.5,6880,590,1,GPU Compute & Bandwidth,115
+Qwen3-VL-8B-Instruct (Text Only),Q4_K_M,8192,Estimated,850,148.0,36.2,7850,680,1,VRAM Capacity Boundary (8GB),115
+Qwen3-VL-8B-Instruct (Text Only),Q4_K_M,16384,Estimated,1950,92.0,12.5,8150 (Partial CPU),7800,1,PCIe Bus (CPU-GPU Spillover),115
+Qwen3-VL-8B-Instruct (Vision + Screen),Q4_K_M + Q8_0 mmproj,4096 (1 Image),Estimated,680,140.0,38.0,7620,720,1,Vision Projector Latency & VRAM,115
+Whisper-Base-English,Q8_0,30s Audio Window,Documented,80,N/A (Audio),25.0x RTF,0 (CPU),185,4,CPU Single-Core AVX2 Throughput,25
+Kokoro-TTS-82M,FP32 ONNX,512 Phonemes,Documented,110,N/A (Audio),6.5x RTF,0 (CPU),350,2,CPU Single-Thread IPC,30
+Pix2Text MFR 1.5,FP32 ONNX,Single Formula Crop,Documented,180,N/A (Image),5.5 crops/s,0 (CPU),220,4,CPU ONNX Matrix Multiply,25
+Llama-3.3-70B-Instruct,Q4_K_M,4096,Estimated (AirLLM),4800,8.5,0.9,6800 (Paged),42500,1,Storage NVMe IOPS & PCIe Transfer,115
+DeepSeek-V3 (Cloud API),FP8 (Cloud),64000,Documented (API),450,Cloud,58.0,0 (Local),150,50,WAN Latency & Internet Egress,5
+Claude-3-5-Sonnet (Cloud API),Proprietary,200000,Documented (API),520,Cloud,65.0,0 (Local),150,50,WAN Latency & Internet Egress,5

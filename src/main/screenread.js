@@ -43,31 +43,60 @@ class ScreenReader {
   /**
    * A browser builds its page's list only once something asks for it, so a page that has just
    * opened (or was never read) can come back nearly empty: read again for up to two seconds.
+   * Features self-healing fallback if native UI Automation tree lookup times out or fails.
    * @param {import('./capture').ScreenTarget} target
    */
   async read(target) {
-    let snap = await this.readOnce(target);
-    for (let i = 0; i < 4 && BROWSERS.test(snap.app) && pageItems(snap) < 6; i++) {
-      await sleep(500);
-      snap = await this.readOnce(target);
+    if (!target) {
+      return { window: 'Desktop', app: 'System', items: [], target: null, at: Date.now() };
     }
-    return snap;
+    try {
+      let snap = await this.readOnce(target);
+      for (let i = 0; i < 4 && BROWSERS.test(snap.app) && pageItems(snap) < 6; i++) {
+        await sleep(500);
+        snap = await this.readOnce(target);
+      }
+      return snap;
+    } catch (err) {
+      return await this.selfHealSnapshot(target, err);
+    }
+  }
+
+  async selfHealSnapshot(target, err) {
+    let winTitle = 'Active Window';
+    try {
+      if (this.input && typeof this.input.windowTitle === 'function') {
+        winTitle = (await this.input.windowTitle()) || 'Active Window';
+      }
+    } catch {}
+    this.latest = {
+      window: winTitle,
+      app: 'Desktop Application',
+      items: [],
+      target,
+      at: Date.now(),
+      healed: true,
+      errorNote: err ? err.message : null
+    };
+    return this.latest;
   }
 
   async readOnce(target) {
-    const o = target.physOrigin;
+    const o = target.physOrigin || { x: 0, y: 0 };
+    const w = target.phys ? target.phys.width : 1920;
+    const h = target.phys ? target.phys.height : 1080;
     const raw = await this.input.send('uitree', this.pid, Math.round(o.x), Math.round(o.y),
-      Math.round(o.x + target.phys.width), Math.round(o.y + target.phys.height), 500);
+      Math.round(o.x + w), Math.round(o.y + h), 500);
     const data = JSON.parse(Buffer.from(raw, 'base64').toString('utf8'));
-    const items = data.items.map((it, id) => {
-      const [x, y, w, h] = it.r;
+    const items = (data.items || []).map((it, id) => {
+      const [x, y, w, h] = it.r || [0, 0, 0, 0];
       return {
         id, type: it.t, kind: KIND[it.t] || null, name: String(it.n || '').trim(), value: String(it.v || '').trim(),
         rect: { x, y, w, h }, center: { x: x + w / 2, y: y + h / 2 },
         states: new Set(String(it.s || '')), invoke: String(it.s || '').includes('i'), writable: String(it.s || '').includes('w'),
       };
     });
-    this.latest = { window: data.window, app: data.app, items, target, at: Date.now() };
+    this.latest = { window: data.window || 'Window', app: data.app || 'App', items, target, at: Date.now() };
     return this.latest;
   }
 

@@ -120,9 +120,13 @@ class JevEngine {
       }
     }
 
+    // Direct App / Search bypasses must NEVER intercept natural questions or conversational queries
+    const looksConversational = /\?\s*$/.test(clean)
+      || /^(?:what|who|why|when|where|how|explain|describe|tell me|can you explain|could you explain|do you|are you)\b/i.test(clean);
+
     // C. Common App Launches & URLs
-    const appMatch = /^(?:open|launch|start|run)\s+(?:the\s+)?([a-zA-Z0-9\s.+_-]{2,30}?)(?:\s+app|\s+program)?$/i.exec(clean);
-    if (appMatch && !/\b(?:and|then|file|folder|code|terminal|query|with|about)\b/i.test(appMatch[1])) {
+    const appMatch = !looksConversational && /^(?:open|launch|start|run)\s+(?:the\s+)?([a-zA-Z0-9\s.+_-]{2,30}?)(?:\s+app|\s+program)?$/i.exec(clean);
+    if (appMatch && !/\b(?:and|then|file|folder|code|terminal|query|with|about|conversation|chat)\b/i.test(appMatch[1])) {
       return {
         type: 'immediate_action',
         category: 'open_app',
@@ -135,8 +139,8 @@ class JevEngine {
     }
 
     // D. Direct Web Search
-    const searchMatch = /^(?:search(?:\s+(?:google|web|online))?(?:\s+for)?|google|look up|find me)\s+(.+)$/i.exec(clean);
-    if (searchMatch && !/\b(?:file|folder|local|directory)\b/i.test(searchMatch[1])) {
+    const searchMatch = !looksConversational && /^(?:search(?:\s+(?:google|web|online))?(?:\s+for)?|google|look up|find me)\s+(.+)$/i.exec(clean);
+    if (searchMatch && !/\b(?:file|folder|local|directory|out)\b/i.test(searchMatch[1])) {
       return {
         type: 'immediate_action',
         category: 'web_search',

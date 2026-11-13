@@ -18,10 +18,10 @@ test('FirebaseService: default configuration is complete and valid', () => {
   const config = firebaseService.getConfig();
   assert.equal(typeof config.apiKey, 'string');
   assert.ok(config.apiKey.length > 20);
-  assert.equal(config.projectId, 'studio-6464285995-59fdf');
+  assert.equal(config.projectId, 'mave-assistant-9026');
   assert.equal(config.appId, '1:283058635167:web:323f98745e7d1c06ca3daa');
-  assert.equal(config.authDomain, 'studio-6464285995-59fdf.firebaseapp.com');
-  assert.equal(config.storageBucket, 'studio-6464285995-59fdf.firebasestorage.app');
+  assert.equal(config.authDomain, 'mave-assistant-9026.firebaseapp.com');
+  assert.equal(config.storageBucket, 'mave-assistant-9026.firebasestorage.app');
   assert.equal(config.messagingSenderId, '283058635167');
 });
 
@@ -255,7 +255,7 @@ test('MobileWebServer: Serves Firebase Auth & Cloud Database REST endpoints', as
     assert.equal(configRes.status, 200);
     const configData = await configRes.json();
     assert.equal(configData.ok, true);
-    assert.equal(configData.config.projectId, 'studio-6464285995-59fdf');
+    assert.equal(configData.config.projectId, 'mave-assistant-9026');
     assert.ok(configData.config.apiKey.length > 20);
 
     // 2. GET /api/firebase/auth/user
@@ -288,4 +288,99 @@ test('MobileWebServer: Serves Firebase Auth & Cloud Database REST endpoints', as
   } finally {
     await server.stop();
   }
+});
+
+test('FirebaseService: getRestoredUser persists Gmail login across restarts and refreshes expired token', async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mave-fb-restore-'));
+  const sessionFile = path.join(tempDir, 'firebase_session.json');
+  fs.writeFileSync(sessionFile, JSON.stringify({
+    uid: 'google-uid-99',
+    email: 'owner@gmail.com',
+    displayName: 'Owner',
+    idToken: 'old-expired-token',
+    refreshToken: 'refresh-tok-99',
+    expiresAt: Date.now() - 120000,
+    isAnonymous: false,
+    providerId: 'google.com',
+  }), 'utf8');
+
+  const svcOnline = new FirebaseService({
+    storageDir: tempDir,
+    fetchFn: async () => ({
+      ok: true,
+      json: async () => ({ id_token: 'fresh-id-token', refresh_token: 'fresh-refresh-tok', expires_in: '3600' }),
+    }),
+  });
+  const restoredOnline = await svcOnline.getRestoredUser();
+  assert.equal(restoredOnline.email, 'owner@gmail.com');
+  assert.equal(restoredOnline.idToken, 'fresh-id-token');
+
+  const svcOffline = new FirebaseService({
+    storageDir: tempDir,
+    fetchFn: async () => { throw new Error('offline'); },
+  });
+  svcOffline.currentUser.expiresAt = Date.now() - 120000;
+  const restoredOffline = await svcOffline.getRestoredUser();
+  assert.equal(restoredOffline.email, 'owner@gmail.com', 'Must keep persisted session intact even when offline');
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+});
+
+test('FirebaseService: getRestoredUser falls back to settings.json authUser when session file is missing', async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mave-fb-settings-fallback-'));
+  const settingsFile = path.join(tempDir, 'settings.json');
+  fs.writeFileSync(settingsFile, JSON.stringify({
+    onboarded: false,
+    authUser: {
+      uid: 'uid-settings-fallback',
+      email: 'fallback@gmail.com',
+      displayName: 'Fallback User',
+      isAnonymous: false,
+      providerId: 'google.com',
+    },
+  }), 'utf8');
+
+  const svc = new FirebaseService({
+    storageDir: tempDir,
+    fetchFn: async () => ({ ok: false }),
+  });
+  const restored = await svc.getRestoredUser();
+  assert.ok(restored, 'Must restore user from settings.json authUser fallback');
+  assert.equal(restored.uid, 'uid-settings-fallback');
+  assert.equal(restored.email, 'fallback@gmail.com');
+  assert.ok(fs.existsSync(path.join(tempDir, 'firebase_session.json')), 'Must recreate firebase_session.json on fallback restoration');
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+});
+
+test('FirebaseService: syncDevice stores hardware and with/without AirLLM deviceCapabilities', async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mave-fb-cap-'));
+  let uploadedBody = null;
+  const svc = new FirebaseService({
+    storageDir: tempDir,
+    fetchFn: async (_url, opts = {}) => {
+      if (opts.body) uploadedBody = JSON.parse(opts.body);
+      return { ok: true, json: async () => ({ fields: {} }) };
+    },
+  });
+  svc.currentUser = { uid: 'uid-cap-1', email: 'owner@gmail.com', idToken: 'tok-1', expiresAt: Date.now() + 600000 };
+  const cap = {
+    withoutAirllm: { maxModelSize: '30B', modelIds: ['qwen3-vl-4b', 'qwen3-vl-8b', 'qwen3-vl-30b'] },
+    withAirllm: { maxModelSize: '72B', modelIds: ['qwen3-vl-4b', 'airllm-Qwen-Qwen3-32B', 'airllm-Qwen-Qwen2.5-72B-Instruct'] },
+  };
+  const res = await svc.syncDevice(null, {
+    deviceId: 'dev-cap-1',
+    name: 'Studio PC',
+    role: 'host',
+    airllmEnabled: true,
+    hardware: { gpu: 'NVIDIA GeForce RTX 5060', vramGB: 8, ramGB: 48, freeDiskGB: 120 },
+    deviceCapabilities: cap,
+  });
+  assert.equal(res.ok, true);
+  assert.equal(res.device.airllmEnabled, true);
+  assert.equal(res.device.deviceCapabilities.withoutAirllm.maxModelSize, '30B');
+  assert.equal(res.device.deviceCapabilities.withAirllm.maxModelSize, '72B');
+  assert.ok(uploadedBody?.fields?.deviceCapabilities?.mapValue, 'Firestore PATCH payload must encode deviceCapabilities');
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
 });

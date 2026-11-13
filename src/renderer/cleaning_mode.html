@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vorssaint · Keyboard Cleaning Mode</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: rgba(8, 8, 12, 0.94);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
+      color: #ffffff;
+      cursor: default;
+    }
+
+    /* Central Glassmorphic HUD Card */
+    .hud-card {
+      width: 440px;
+      padding: 36px 32px;
+      background: rgba(24, 24, 28, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 24px;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.92) translateY(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Animated Countdown Ring */
+    .timer-ring-container {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .timer-svg {
+      width: 96px;
+      height: 96px;
+      transform: rotate(-90deg);
+    }
+    .ring-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.1);
+      stroke-width: 6;
+    }
+    .ring-val {
+      fill: none;
+      stroke: #38bdf8;
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-dasharray: 251.2;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 0.25s linear;
+    }
+    .ring-center-icon {
+      position: absolute;
+      font-size: 32px;
+    }
+
+    .hud-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: #ffffff;
+    }
+    .hud-sub {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #a1a1aa;
+      max-width: 340px;
+    }
+
+    .key-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #71717a;
+      margin-top: 4px;
+    }
+    .kbd-chip {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-family: inherit;
+      font-weight: 600;
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Key hits indicator */
+    .absorbed-indicator {
+      font-size: 11px;
+      color: #38bdf8;
+      font-weight: 600;
+      min-height: 16px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-unlock {
+      margin-top: 10px;
+      background: rgba(239, 68, 68, 0.18);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+      padding: 10px 24px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-unlock:hover {
+      background: #ef4444;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hud-card">
+    <div class="timer-ring-container">
+      <svg class="timer-svg" viewBox="0 0 100 100">
+        <circle class="ring-bg" cx="50" cy="50" r="40" />
+        <circle class="ring-val" id="timer-bar" cx="50" cy="50" r="40" />
+      </svg>
+      <div class="ring-center-icon">⌨️</div>
+    </div>
+
+    <h1 class="hud-title">Keyboard Cleaning Mode</h1>
+    <p class="hud-sub">All keyboard & trackpad keys are locked. You can safely wipe your keyboard, mouse switches, and screen.</p>
+
+    <div class="absorbed-indicator" id="keys-absorbed-text">Keyboard Locked · 30s Remaining</div>
+
+    <div class="key-badge-row">
+      <span>To exit early, press</span>
+      <span class="kbd-chip">Esc</span>
+      <span id="esc-counter">3 times</span>
+      <span>or click below</span>
+    </div>
+
+    <button type="button" class="btn-unlock" id="btn-unlock">Unlock Keyboard Now</button>
+  </div>
+
+  <script>
+    const api = window.buddy;
+    let totalSeconds = 30;
+    let remaining = 30;
+    let absorbedCount = 0;
+    let escPresses = 0;
+    let lastEscTime = 0;
+
+    const timerBar = document.getElementById('timer-bar');
+    const absorbedText = document.getElementById('keys-absorbed-text');
+    const escCounter = document.getElementById('esc-counter');
+    const btnUnlock = document.getElementById('btn-unlock');
+
+    const circumference = 2 * Math.PI * 40; // 251.2
+    timerBar.style.strokeDasharray = circumference;
+
+    function updateTimer() {
+      remaining--;
+      const progress = Math.max(0, remaining / totalSeconds);
+      timerBar.style.strokeDashoffset = circumference * (1 - progress);
+      absorbedText.textContent = `Keyboard Locked · ${remaining}s Remaining (${absorbedCount} keys absorbed)`;
+
+      if (remaining <= 0) {
+        exitCleaningMode();
+      }
+    }
+
+    const interval = setInterval(updateTimer, 1000);
+
+    function exitCleaningMode() {
+      clearInterval(interval);
+      if (api && api.invoke) {
+        api.invoke('vorssaint:cleaning-toggle', 0).catch(() => {});
+      }
+      window.close();
+    }
+
+    btnUnlock.addEventListener('click', exitCleaningMode);
+
+    // Trap and absorb ALL keyboard keys
+    window.addEventListener('keydown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      absorbedCount++;
+
+      if (e.key === 'Escape') {
+        const now = Date.now();
+        if (now - lastEscTime < 1500) {
+          escPresses++;
+        } else {
+          escPresses = 1;
+        }
+        lastEscTime = now;
+
+        const left = Math.max(0, 3 - escPresses);
+        escCounter.textContent = left > 0 ? `${left} more time${left === 1 ? '' : 's'}` : 'Unlocking!';
+        if (escPresses >= 3) {
+          exitCleaningMode();
+          return;
+        }
+      }
+
+      absorbedText.textContent = `Keyboard Locked · ${remaining}s Remaining (${absorbedCount} keys absorbed)`;
+    }, true);
+
+    window.addEventListener('keyup', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
+  </script>
+</body>
+</html>

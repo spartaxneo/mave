@@ -240,7 +240,7 @@ module.exports = [
         },
         project_id: {
           type: 'string',
-          description: 'Target Firebase project ID (e.g. "Fromnear", "studio-6464285995-59fdf", "fir-demo-project").',
+          description: 'Target Firebase project ID (e.g. "mave-assistant-9026", "fir-demo-project").',
         },
         args: {
           type: 'string',

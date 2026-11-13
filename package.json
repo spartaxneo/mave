@@ -21,9 +21,21 @@
     "prestart": "node scripts/build-native.js && node scripts/fetch-speech.js",
     "predist": "node scripts/build-native.js && node scripts/fetch-speech.js",
     "start": "electron .",
-    "test": "node --test test/core.test.js test/agent.test.js test/local.test.js test/plugins.test.js test/speech-stream.test.js test/terminal.test.js test/media-plugins.test.js test/memory-and-models.test.js test/router.test.js test/jarvis-plugins.test.js test/remote.test.js test/superpowers.test.js test/meta_orchestrator.test.js test/airllm.test.js test/diagnostics.test.js test/pinchtab.test.js test/anti_hallucination_and_connected_services.test.js test/privacy_threads_devices_video.test.js test/speaker_voice_interruption.test.js test/remote_hands.test.js test/governance.test.js test/n8n_jarvis_higgsfield_elevenlabs.test.js test/exo_cua_tapkit_openmausbot.test.js test/model_auto_updater.test.js test/instagram_social_brain.test.js test/spatial_object_tracker.test.js test/iot_hub.test.js test/wearables_health_hub.test.js test/telephony_comm.test.js test/financial_sentinel.test.js test/automotive_sentinel.test.js test/acoustic_scene.test.js test/energy_optimizer.test.js test/travel_concierge.test.js test/pantry_chef.test.js test/fitness_coach.test.js test/plant_botanist.test.js test/contract_analyzer.test.js test/daily_briefing.test.js test/network_sentinel.test.js test/knowledge_graph.test.js test/price_hunter.test.js test/digital_wellbeing.test.js test/meeting_copilot.test.js test/inbox_triage.test.js test/career_strategist.test.js test/appliance_diagnostics.test.js test/soundscape_generator.test.js test/disaster_readiness.test.js test/chatgpt_multimodal_projects.test.js test/swarm_prediction_sandbox.test.js test/chatgpt_nervous_system_bridge.test.js test/universal_dictation_cleaner.test.js test/voice_studio_omnivoice.test.js test/comfyui_engine.test.js test/digital_human_heygem.test.js test/firebase_auth_db.test.js test/product_site_and_users.test.js test/backburner_mesh.test.js test/autonomous_goal_graph.test.js test/totp_and_settings.test.js test/ghost_ai_core_os.test.js test/ghost_file_watcher_and_profiler.test.js test/chatgpt_and_jarvis_suite.test.js test/mcp_suite.test.js",
+    "vorssaint": "electron src/vorssaint/standalone.js",
+    "vorssaint:check": "node scripts/build_vorssaint_standalone.js",
+    "dist:vorssaint": "electron-builder --config electron-builder-vorssaint.json",
+    "test": "node --test test/mave_distributed_acceptance.test.js test/mave_intelligence_reconstruction.test.js test/core.test.js test/agent.test.js test/virtual_computer.test.js test/host_non_interference.test.js test/real_vm_and_acceptance.test.js test/browser_worker_and_simulators.test.js test/security_hardening.test.js test/multi_user_memory.test.js test/model_benchmarks_router.test.js test/local.test.js test/plugins.test.js test/speech-stream.test.js test/terminal.test.js test/media-plugins.test.js test/memory-and-models.test.js test/router.test.js test/jarvis-plugins.test.js test/remote.test.js test/superpowers.test.js test/meta_orchestrator.test.js test/airllm.test.js test/diagnostics.test.js test/pinchtab.test.js test/anti_hallucination_and_connected_services.test.js test/conversational_fidelity.test.js test/privacy_threads_devices_video.test.js test/speaker_voice_interruption.test.js test/remote_hands.test.js test/governance.test.js test/n8n_jarvis_higgsfield_elevenlabs.test.js test/exo_cua_tapkit_openmausbot.test.js test/model_auto_updater.test.js test/instagram_social_brain.test.js test/spatial_object_tracker.test.js test/iot_hub.test.js test/wearables_health_hub.test.js test/telephony_comm.test.js test/financial_sentinel.test.js test/automotive_sentinel.test.js test/acoustic_scene.test.js test/energy_optimizer.test.js test/travel_concierge.test.js test/pantry_chef.test.js test/fitness_coach.test.js test/plant_botanist.test.js test/contract_analyzer.test.js test/daily_briefing.test.js test/network_sentinel.test.js test/knowledge_graph.test.js test/price_hunter.test.js test/digital_wellbeing.test.js test/meeting_copilot.test.js test/inbox_triage.test.js test/career_strategist.test.js test/appliance_diagnostics.test.js test/soundscape_generator.test.js test/disaster_readiness.test.js test/chatgpt_multimodal_projects.test.js test/swarm_prediction_sandbox.test.js test/chatgpt_nervous_system_bridge.test.js test/universal_dictation_cleaner.test.js test/voice_studio_omnivoice.test.js test/comfyui_engine.test.js test/digital_human_heygem.test.js test/firebase_auth_db.test.js test/product_site_and_users.test.js test/backburner_mesh.test.js test/distributed_mesh.test.js test/mesh_worker_service.test.js test/remote_worker_scheduler.test.js test/mesh_networked_integration.test.js test/autonomous_goal_graph.test.js test/totp_and_settings.test.js test/ghost_ai_core_os.test.js test/ghost_file_watcher_and_profiler.test.js test/chatgpt_and_jarvis_suite.test.js test/mcp_suite.test.js test/ui_tabs_interaction.test.js test/auth_real_flow.test.js test/ui_antigravity_parity.test.js",
 
-    "dist": "electron-builder --win nsis --x64"
+    "dist": "electron-builder --win nsis --x64",
+    "dist:win": "electron-builder --win nsis --x64",
+    "dist:mac": "electron-builder --mac dmg --universal",
+    "dist:linux": "electron-builder --linux AppImage --x64",
+    "deploy:playstore": "cd mave_flutter && flutter build appbundle --release",
+    "deploy:appstore": "cd mave_flutter && flutter build ipa --release",
+    "deploy:quest": "cd mave_flutter && flutter build apk --release",
+    "build:flutter:mac": "cd mave_flutter && flutter build macos --release",
+    "build:flutter:win": "cd mave_flutter && flutter build windows --release",
+    "build:flutter:linux": "cd mave_flutter && flutter build linux --release"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
@@ -86,7 +98,63 @@
           ]
         }
       ],
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "files": [
+        "src/**/*",
+        "package.json",
+        "!src/**/*.cs",
+        "!src/main/native/MacInputHelper.swift",
+        "!src/main/native/mac-input-helper",
+        "!src/main/native/LinuxInputHelper.py",
+        "!src/main/native/linux-input-helper"
+      ],
+      "asarUnpack": [
+        "src/main/native/input-helper.exe",
+        "src/main/plugins/validate-child.js",
+        "node_modules/onnxruntime-node/bin/**",
+        "node_modules/@lydell/node-pty-win32-x64/**"
+      ]
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "files": [
+        "src/**/*",
+        "package.json",
+        "!src/**/*.cs",
+        "!src/main/native/input-helper.exe",
+        "!src/main/native/LinuxInputHelper.py",
+        "!src/main/native/linux-input-helper",
+        "!build/installer.nsh"
+      ],
+      "asarUnpack": [
+        "src/main/native/mac-input-helper",
+        "src/main/plugins/validate-child.js"
+      ],
+      "artifactName": "Mave-Mac-${version}-${arch}.${ext}"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Utility",
+      "files": [
+        "src/**/*",
+        "package.json",
+        "!src/**/*.cs",
+        "!src/main/native/input-helper.exe",
+        "!src/main/native/MacInputHelper.swift",
+        "!src/main/native/mac-input-helper",
+        "!build/installer.nsh"
+      ],
+      "asarUnpack": [
+        "src/main/native/linux-input-helper",
+        "src/main/native/LinuxInputHelper.py",
+        "src/main/plugins/validate-child.js"
+      ],
+      "artifactName": "Mave-Linux-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,

@@ -70,7 +70,7 @@
       // Status text
       const statusText = $('jhud-status-text');
       if (statusText) {
-        statusText.textContent = `Sir, all tactical systems are nominal. RTX 5060 GPU standing by at ${snap.gpu.tempC}°C. Zero perimeter intrusions.`;
+        statusText.textContent = `Workstation systems nominal. ${snap.gpu.name} active at ${snap.gpu.tempC}°C (${snap.cpu.usagePct}% CPU, ${snap.ram.usedGB}/${snap.ram.totalGB} GB RAM).`;
       }
     } catch {}
   }

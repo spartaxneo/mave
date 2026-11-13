@@ -8,10 +8,10 @@ const path = require('path');
 
 const DEFAULT_FIREBASE_CONFIG = {
   apiKey: 'AIzaSyCKKvm1Aqg3BxuthZ3MoyCL9iDyTxnZCls',
-  authDomain: 'studio-6464285995-59fdf.firebaseapp.com',
-  projectId: 'studio-6464285995-59fdf',
+  authDomain: 'mave-assistant-9026.firebaseapp.com',
+  projectId: 'mave-assistant-9026',
   dedicatedProjectId: 'mave-assistant-9026',
-  storageBucket: 'studio-6464285995-59fdf.firebasestorage.app',
+  storageBucket: 'mave-assistant-9026.firebasestorage.app',
   messagingSenderId: '283058635167',
   appId: '1:283058635167:web:323f98745e7d1c06ca3daa',
   projectNumber: '283058635167',
@@ -92,7 +92,26 @@ class FirebaseService {
     if (process.env.FIREBASE_MESSAGING_SENDER_ID) envConfig.messagingSenderId = process.env.FIREBASE_MESSAGING_SENDER_ID;
 
     this.config = { ...DEFAULT_FIREBASE_CONFIG, ...envConfig, ...(options.config || {}) };
-    this.storageDir = options.storageDir || (process.env.APPDATA ? path.join(process.env.APPDATA, 'mave') : path.join(process.cwd(), '.mave'));
+    let electronUserData = null;
+    try {
+      const electronMod = require('electron');
+      if (electronMod && electronMod.app && typeof electronMod.app.getPath === 'function') {
+        electronUserData = electronMod.app.getPath('userData');
+      }
+    } catch {}
+    const defaultAppData = process.env.APPDATA ? path.join(process.env.APPDATA, 'mave') : path.join(process.cwd(), '.mave');
+    if (options.storageDir) {
+      this.storageDir = options.storageDir;
+      this.isCustomStorage = true;
+    } else if (process.env.MAVE_PROFILE_DIR || process.env.BIGFOOT_PROFILE_DIR) {
+      this.storageDir = process.env.MAVE_PROFILE_DIR || process.env.BIGFOOT_PROFILE_DIR;
+    } else if (electronUserData && fs.existsSync(path.join(electronUserData, 'firebase_session.json'))) {
+      this.storageDir = electronUserData;
+    } else if (fs.existsSync(path.join(defaultAppData, 'firebase_session.json'))) {
+      this.storageDir = defaultAppData;
+    } else {
+      this.storageDir = electronUserData || defaultAppData;
+    }
     this.sessionFile = path.join(this.storageDir, 'firebase_session.json');
     this.cacheFile = path.join(this.storageDir, 'firebase_db_cache.json');
     this.logger = options.logger || console;
@@ -118,10 +137,17 @@ class FirebaseService {
 
   _loadSession() {
     try {
-      if (fs.existsSync(this.sessionFile)) {
-        const data = JSON.parse(fs.readFileSync(this.sessionFile, 'utf8'));
-        if (data && data.uid) {
-          this.currentUser = data;
+      const candidates = [
+        this.sessionFile,
+        !this.isCustomStorage && process.env.APPDATA ? path.join(process.env.APPDATA, 'mave', 'firebase_session.json') : null,
+      ].filter(Boolean);
+      for (const f of candidates) {
+        if (fs.existsSync(f)) {
+          const data = JSON.parse(fs.readFileSync(f, 'utf8'));
+          if (data && data.uid) {
+            this.currentUser = data;
+            return;
+          }
         }
       }
     } catch {
@@ -131,10 +157,19 @@ class FirebaseService {
 
   _saveSession() {
     try {
-      if (this.currentUser) {
-        fs.writeFileSync(this.sessionFile, JSON.stringify(this.currentUser, null, 2), 'utf8');
-      } else if (fs.existsSync(this.sessionFile)) {
-        fs.unlinkSync(this.sessionFile);
+      const targets = new Set([
+        this.sessionFile,
+        !this.isCustomStorage && process.env.APPDATA ? path.join(process.env.APPDATA, 'mave', 'firebase_session.json') : null,
+      ]);
+      targets.delete(null);
+
+      for (const target of targets) {
+        if (this.currentUser) {
+          fs.mkdirSync(path.dirname(target), { recursive: true });
+          fs.writeFileSync(target, JSON.stringify(this.currentUser, null, 2), 'utf8');
+        } else if (fs.existsSync(target)) {
+          try { fs.unlinkSync(target); } catch {}
+        }
       }
     } catch (err) {
       this.logger.warn?.('Could not save Firebase session:', err.message);
@@ -173,6 +208,38 @@ class FirebaseService {
 
   getCurrentUser() {
     return this.currentUser ? { ...this.currentUser } : null;
+  }
+
+  async getRestoredUser() {
+    if (!this.currentUser) {
+      this._loadSession();
+    }
+    if (!this.currentUser) {
+      try {
+        const settingsPaths = [
+          path.join(this.storageDir, 'settings.json'),
+          !this.isCustomStorage && process.env.APPDATA ? path.join(process.env.APPDATA, 'mave', 'settings.json') : null,
+        ].filter(Boolean);
+        for (const sp of settingsPaths) {
+          if (fs.existsSync(sp)) {
+            const raw = JSON.parse(fs.readFileSync(sp, 'utf8'));
+            if (raw && raw.authUser && raw.authUser.uid && !raw.authUser.isAnonymous) {
+              this.currentUser = { ...raw.authUser };
+              this._saveSession();
+              break;
+            }
+          }
+        }
+      } catch {}
+    }
+    if (this.currentUser && this.currentUser.refreshToken) {
+      try {
+        await this._ensureValidToken();
+      } catch {
+        // Keep cached persisted session even if temporarily offline
+      }
+    }
+    return this.getCurrentUser();
   }
 
   isAuthenticated() {
@@ -309,9 +376,9 @@ class FirebaseService {
     try { electronModule = require('electron'); } catch {}
     const BrowserWindow = electronModule?.BrowserWindow;
 
-    // Headless / non-GUI / unit test fallback
+    // Google OAuth requires the interactive desktop BrowserWindow (never fall back to anonymous/ghost login)
     if (!BrowserWindow) {
-      return this.signInAnonymously();
+      return { ok: false, error: 'Google Gmail sign-in requires the desktop application window.' };
     }
 
     try {
@@ -373,11 +440,19 @@ class FirebaseService {
               throw new Error(this._normalizeAuthError(msg));
             }
 
+            let rawProfile = {};
+            try {
+              if (idpData.rawUserInfo) rawProfile = JSON.parse(idpData.rawUserInfo) || {};
+            } catch {}
+            const resolvedEmail = idpData.email || rawProfile.email || '';
+            const resolvedName = idpData.displayName || rawProfile.name || (resolvedEmail ? resolvedEmail.split('@')[0] : 'Google User');
+            const resolvedPhoto = idpData.photoUrl || idpData.profilePicture || rawProfile.picture || '';
+
             const userRecord = {
               uid: idpData.localId,
-              email: idpData.email || '',
-              displayName: idpData.displayName || (idpData.email ? idpData.email.split('@')[0] : 'Google User'),
-              photoUrl: idpData.photoUrl || (idpData.profilePicture || ''),
+              email: resolvedEmail,
+              displayName: resolvedName,
+              photoUrl: resolvedPhoto,
               idToken: idpData.idToken,
               refreshToken: idpData.refreshToken,
               expiresAt: Date.now() + parseInt(idpData.expiresIn || '3600', 10) * 1000,
@@ -747,12 +822,17 @@ class FirebaseService {
     const deviceId = deviceInfo.deviceId || `device-${(deviceInfo.platform || 'node').toLowerCase()}-${Date.now().toString(36)}`;
     const record = {
       deviceId,
-      platform: deviceInfo.platform || 'desktop',
+      name: deviceInfo.name || deviceInfo.hostname || 'MaveNode',
+      email: deviceInfo.email || this.currentUser?.email || '',
+      platform: deviceInfo.platform || process.platform || 'desktop',
       role: deviceInfo.role || 'satellite',
       hostname: deviceInfo.hostname || 'MaveNode',
       ip: deviceInfo.ip || '127.0.0.1',
       lastSeen: new Date().toISOString(),
       capabilities: deviceInfo.capabilities || ['voice', 'chat'],
+      airllmEnabled: Boolean(deviceInfo.airllmEnabled),
+      ...(deviceInfo.hardware ? { hardware: deviceInfo.hardware } : {}),
+      ...(deviceInfo.deviceCapabilities ? { deviceCapabilities: deviceInfo.deviceCapabilities } : {}),
     };
 
     if (!this.localCache.devices[targetUid]) this.localCache.devices[targetUid] = {};

@@ -29,15 +29,23 @@ function toBlocks(content) {
 }
 
 class AnthropicProvider {
-  constructor({ apiKey, model, effort, system, tools }) {
+  constructor({ apiKey, model, effort, system, tools, computerEnabled = true }) {
     this.id = 'anthropic';
     this.model = model;
     this.effort = effort;
     this.system = system;
-    this.tools = tools;
+    this.tools = Array.isArray(tools) ? tools : [];
+    this.computerEnabled = Boolean(computerEnabled);
     this.client = new Anthropic({ apiKey, maxRetries: 4, timeout: 180000 });
     this.messages = [];
     this.lean = false;
+  }
+
+  updateTools(tools = [], opts = {}) {
+    this.tools = Array.isArray(tools) ? tools : [];
+    if (opts && typeof opts.computer === 'boolean') {
+      this.computerEnabled = opts.computer;
+    }
   }
 
   addUserMessage(text, images = []) {
@@ -69,11 +77,15 @@ class AnthropicProvider {
     const extras = !this.lean;
     const betas = ['context-management-2025-06-27'];
     if (extras) betas.push('thinking-display-updates-2026-08-18', 'server-side-fallback-2026-07-01');
+    const activeTools = [
+      ...(this.computerEnabled ? [{ type: 'computer_toolset_20260801' }] : []),
+      ...(this.tools || []),
+    ];
     const params = {
       model: this.model,
       max_tokens: MAX_TOKENS,
       system: this.system,
-      tools: [{ type: 'computer_toolset_20260801' }, ...this.tools],
+      ...(activeTools.length ? { tools: activeTools } : {}),
       messages: this.messages,
       betas,
       thinking: extras ? { type: 'adaptive', display: 'updates' } : { type: 'adaptive' },

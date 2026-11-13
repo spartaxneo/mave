@@ -91,7 +91,7 @@ function estimateMemoryGB(modelOrSize) {
 /**
  * Calculate total usable native memory (VRAM + usable RAM) for running models natively.
  */
-function getUsableNativeMemory(hw = null) {
+function getUsableNativeMemory(hw = null, options = {}) {
   const targetHw = hw || (typeof hardware.getCachedHardware === 'function' ? hardware.getCachedHardware() : null) || {
     dedicated: false,
     vramGB: 0,
@@ -99,9 +99,52 @@ function getUsableNativeMemory(hw = null) {
   };
 
   const vram = targetHw.dedicated ? (Number(targetHw.vramGB) || 0) : 0;
-  const ram = Number(targetHw.ramGB) || 0;
+  let ram = Number(targetHw.ramGB) || 0;
+  if (options.useFreeMemory || targetHw.useFreeMemory || (targetHw.freeRamGB != null && targetHw.enforceMemoryConstraints)) {
+    const freeRam = targetHw.freeRamGB != null ? Number(targetHw.freeRamGB) : (os.freemem() / (1024 ** 3));
+    ram = Math.min(ram, freeRam);
+  }
   const usableRam = Math.max(0, ram - 3.5) * 0.85;
   return Math.round((vram + usableRam) * 10) / 10;
+}
+
+/**
+ * Retrieve dynamic system memory telemetry including host RAM and GPU VRAM if available.
+ */
+function getSystemMemoryTelemetry(hw = null) {
+  const cachedHw = typeof hardware.getCachedHardware === 'function' ? hardware.getCachedHardware() : null;
+  const targetHw = hw || cachedHw || {};
+
+  const totalRamBytes = os.totalmem ? os.totalmem() : 16 * (1024 ** 3);
+  const freeRamBytes = os.freemem ? os.freemem() : 8 * (1024 ** 3);
+
+  const totalRamGB = targetHw.ramGB != null
+    ? Number(targetHw.ramGB)
+    : Math.round((totalRamBytes / (1024 ** 3)) * 10) / 10;
+
+  const freeRamGB = targetHw.freeRamGB != null
+    ? Number(targetHw.freeRamGB)
+    : Math.round((freeRamBytes / (1024 ** 3)) * 10) / 10;
+
+  const vramGB = targetHw.dedicated ? (Number(targetHw.vramGB) || 0) : (Number(targetHw.vramGB) || 0);
+  const freeVramGB = targetHw.freeVramGB != null
+    ? Number(targetHw.freeVramGB)
+    : (targetHw.dedicated ? vramGB : 0);
+
+  let memoryPressure = 'normal';
+  if (freeRamGB < 1.5) memoryPressure = 'critical';
+  else if (freeRamGB < 3.0) memoryPressure = 'high';
+  else if (freeRamGB < 6.0) memoryPressure = 'moderate';
+
+  return {
+    totalRamGB,
+    freeRamGB,
+    vramGB,
+    freeVramGB,
+    dedicatedGpu: Boolean(targetHw.dedicated || vramGB >= 2),
+    memoryPressure,
+    timestamp: Date.now(),
+  };
 }
 
 /**
@@ -131,9 +174,10 @@ function shouldStreamWithAirLLM(modelOrSize, hw = null, explicitRequest = false)
  * - 'brain' (The Sol Thinker): Deep architecture, hard math proofs, multi-file refactors -> DeepSeek-V4 Flash
  * - 'airllm': Layer-streaming reserved for models that exceed native hardware VRAM/RAM or explicit request
  */
-function classifyComplexity(task, hw = null) {
+function classifyComplexity(task, hw = null, options = {}) {
+  const telemetry = getSystemMemoryTelemetry(hw);
   const text = String(task || '').trim();
-  if (!text) return { tier: 'light', tier3: 'vision', score: 0, suggestedModel: 'qwen3-vl-8b', reasons: ['empty prompt'] };
+  if (!text) return { tier: 'light', tier3: 'vision', score: 0, suggestedModel: 'qwen3-vl-8b', reasons: ['empty prompt'], telemetry, nativeCapable: canRunNatively('qwen3-vl-8b', hw) };
 
   let score = 0;
   let brainScore = 0;
@@ -248,7 +292,70 @@ function classifyComplexity(task, hw = null) {
     suggestedModel = 'qwen3-vl-8b';
   }
 
-  return { tier, tier3, score, brainScore, airllmScore, suggestedModel, reasons, nativeCapable: canRunNatively(suggestedModel, hw) };
+  // Dynamic telemetry check:
+  // If dynamic memory is severely constrained (free RAM < 2.5GB and no dedicated GPU VRAM),
+  // adapt heavy models to lighter ones to avoid host memory starvation
+  const shouldEnforceDynamicMemory = Boolean(
+    (hw && (hw.enforceMemoryConstraints || hw.checkDynamicMemory || (hw.freeRamGB != null && Number(hw.freeRamGB) < 2.5))) ||
+    options.checkDynamicMemory ||
+    options.dynamicMemory
+  );
+
+  if (shouldEnforceDynamicMemory && telemetry.memoryPressure === 'critical' && !telemetry.dedicatedGpu) {
+    if (tier3 === 'brain' || tier3 === 'mid') {
+      const prevModel = suggestedModel;
+      suggestedModel = 'qwen3-vl-4b';
+      tier = 'light';
+      tier3 = 'vision';
+      reasons.push(`dynamic memory telemetry: critical host memory pressure (${telemetry.freeRamGB}GB free RAM); downgraded from ${prevModel} to ${suggestedModel} to prevent swapping/OOM`);
+    }
+  }
+
+  // Specialist delegation resolution (MAVE as 25yo Executive Conductor using Phi-4-mini baseline)
+  let specialistDelegation = null;
+  const isCoding = /\b(code|function|script|program|class|component|app|server|module|api|database|query|powershell|python|javascript|typescript|csharp|rust|golang|dockerfile|bug|syntax error|refactor|debug)\b/i.test(text);
+  const isResearch = /\b(research|deep research|synthesize|market analysis|citations?|literature|uncover|investigate|benchmark|facts?)\b/i.test(text);
+  const isMathLogic = /\b(proof|theorem|derive|algebra|calculus|equation|logic puzzle|formal verification|algorithm complexity)\b/i.test(text);
+  const isVisionDense = /\b(ocr|receipt|invoice|chart|bounding box|dense document|schematic)\b/i.test(text);
+
+  if (isCoding) {
+    specialistDelegation = {
+      engine: 'Qwen 2.5-Coder / Gemini Hydrogen',
+      role: 'Specialist Coding Engine',
+      taskType: 'software_engineering',
+      maveAction: 'MAVE (Phi-4-mini) formulates technical specifications, instructs coding specialist, verifies tests, and learns from results',
+    };
+  } else if (isMathLogic) {
+    specialistDelegation = {
+      engine: 'DeepSeek-R1-Distill / OpenAI o1',
+      role: 'Specialist Reasoning Engine',
+      taskType: 'deep_reasoning',
+      maveAction: 'MAVE (Phi-4-mini) captures chain-of-thought derivations, verifies logical steps, and formulates clean conclusions',
+    };
+  } else if (isResearch) {
+    specialistDelegation = {
+      engine: 'ChatGPT Deep Research / Perplexity',
+      role: 'Specialist Deep Research Engine',
+      taskType: 'deep_research',
+      maveAction: 'MAVE (Phi-4-mini) dispatches search queries, cross-checks multi-source citations, and synthesizes findings',
+    };
+  } else if (isVisionDense) {
+    specialistDelegation = {
+      engine: 'Qwen 2.5-VL',
+      role: 'Specialist Document & Vision Engine',
+      taskType: 'dense_vision',
+      maveAction: 'MAVE (Phi-4-mini) directs visual parsing for dense tables, receipts, charts, and diagrams',
+    };
+  } else {
+    specialistDelegation = {
+      engine: 'MAVE Core Brain (Phi-4-mini 3.8B)',
+      role: 'Local Executive & OS Conductor',
+      taskType: 'local_operations',
+      maveAction: 'MAVE executes directly on-device with screen reading, mouse/keyboard control, and daily triage',
+    };
+  }
+
+  return { tier, tier3, score, brainScore, airllmScore, suggestedModel, reasons, nativeCapable: canRunNatively(suggestedModel, hw), telemetry, specialistDelegation };
 }
 
 
@@ -329,24 +436,37 @@ function getModelTiers(options = {}) {
 /**
  * Strategy A: Determine the optimal local model for a task before execution.
  */
-function selectModelForTask(task, currentModelId = '', manager = null, hw = null) {
+function selectModelForTask(task, currentModelId = '', manager = null, hw = null, options = {}) {
+  const opts = options || {};
   const { light, heavy, airllm, canRoute } = getModelTiers({ manager, installedOnly: Boolean(manager) });
   if (!canRoute) {
     const cur = currentModelId || (light && light.id);
-    return { targetId: cur, tier: 'default', reason: 'single local model installed', changed: false };
+    return { targetId: cur, tier: 'default', reason: 'single local model installed', changed: false, telemetry: getSystemMemoryTelemetry(hw) };
   }
 
-  const classification = classifyComplexity(task, hw);
-  const { tier, tier3, score, brainScore, airllmScore, suggestedModel, reasons } = classification;
+  const classification = classifyComplexity(task, hw, opts);
+  const { tier, tier3, score, brainScore, airllmScore, suggestedModel, reasons, telemetry } = classification;
   let target = tier === 'heavy' ? heavy : light;
   if (tier3 === 'airllm' && airllm) {
     target = airllm;
   }
+
+  let dynamicDowngraded = false;
+  if ((opts.dynamicMemory || hw?.dynamicMemory || hw?.enforceMemoryConstraints) && target.id === heavy.id) {
+    const memReq = estimateMemoryGB(target);
+    const availableMem = (telemetry.vramGB || 0) + Math.max(0, (telemetry.freeRamGB || 0) - 2.0);
+    if (availableMem < memReq) {
+      target = light;
+      dynamicDowngraded = true;
+      reasons.push(`dynamic telemetry: available memory (${Math.round(availableMem * 10) / 10}GB) insufficient for ${heavy.id} (${memReq}GB required); routing to light tier`);
+    }
+  }
+
   return {
     targetId: target.id,
     targetModel: target,
-    tier,
-    tier3,
+    tier: dynamicDowngraded ? 'light' : tier,
+    tier3: dynamicDowngraded ? 'vision' : tier3,
     score,
     brainScore,
     airllmScore,
@@ -355,6 +475,8 @@ function selectModelForTask(task, currentModelId = '', manager = null, hw = null
     hardwareAdaptive: true,
     nativeFit: canRunNatively(suggestedModel, hw),
     changed: target.id !== currentModelId,
+    telemetry,
+    dynamicDowngraded,
   };
 }
 
@@ -413,6 +535,189 @@ function inferTaskMode(task = '', intent = null) {
   return 'idle';
 }
 
+/**
+ * Check health of a model endpoint (e.g. llama-server).
+ * Returns health status object with latency and status code. Never throws.
+ */
+async function checkModelHealth(endpoint, timeoutMs = 2000) {
+  if (!endpoint) {
+    return {
+      healthy: false,
+      status: 'no_endpoint',
+      latencyMs: 0,
+      endpoint: null,
+      error: 'No endpoint provided',
+    };
+  }
+
+  let baseUrl = '';
+  let apiKey = '';
+  let model = null;
+
+  if (typeof endpoint === 'string') {
+    baseUrl = endpoint.trim();
+  } else if (typeof endpoint === 'object') {
+    baseUrl = String(endpoint.baseUrl || endpoint.url || endpoint.endpoint || '').trim();
+    apiKey = endpoint.apiKey || endpoint.token || '';
+    model = endpoint.model || endpoint.id || null;
+  }
+
+  if (!baseUrl) {
+    return {
+      healthy: false,
+      status: 'invalid_endpoint',
+      latencyMs: 0,
+      endpoint: baseUrl,
+      error: 'Invalid or missing endpoint URL',
+    };
+  }
+
+  baseUrl = baseUrl.replace(/\/+$/, '');
+  const targetUrl = baseUrl.endsWith('/health') ? baseUrl : `${baseUrl}/health`;
+
+  const headers = {};
+  if (apiKey) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  }
+
+  const startTime = Date.now();
+  try {
+    const res = await fetch(targetUrl, {
+      method: 'GET',
+      headers,
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+
+    const latencyMs = Date.now() - startTime;
+    let data = null;
+    try {
+      data = await res.json();
+    } catch {
+      // Non-JSON response is acceptable if status is 200
+    }
+
+    if (res.ok) {
+      return {
+        healthy: true,
+        status: res.status,
+        latencyMs,
+        endpoint: baseUrl,
+        model: model || data?.model || data?.slots?.[0]?.model || null,
+        data,
+      };
+    }
+
+    return {
+      healthy: false,
+      status: res.status,
+      latencyMs,
+      endpoint: baseUrl,
+      error: `Endpoint responded with HTTP ${res.status}`,
+      data,
+    };
+  } catch (err) {
+    const latencyMs = Date.now() - startTime;
+    const isTimeout = err.name === 'TimeoutError' || err.code === 'ETIMEDOUT' || /timeout/i.test(err.message);
+    return {
+      healthy: false,
+      status: isTimeout ? 'timeout' : 'unreachable',
+      latencyMs,
+      endpoint: baseUrl,
+      error: isTimeout ? `Connection timed out after ${timeoutMs}ms` : err.message,
+    };
+  }
+}
+
+/**
+ * Route requests with resilient fallback across local model endpoints.
+ * If primary fails or times out, degrades gracefully to secondary endpoint or offline fallback.
+ */
+async function routeWithFallback(options = {}) {
+  const {
+    primaryEndpoint = null,
+    secondaryEndpoint = null,
+    endpoints = [],
+    timeoutMs = 2000,
+  } = options;
+
+  const candidates = [];
+  if (primaryEndpoint) candidates.push({ role: 'primary', endpoint: primaryEndpoint });
+  if (secondaryEndpoint) candidates.push({ role: 'secondary', endpoint: secondaryEndpoint });
+  for (const ep of endpoints) {
+    if (ep && !candidates.some((c) => c.endpoint === ep)) {
+      candidates.push({ role: 'backup', endpoint: ep });
+    }
+  }
+
+  if (candidates.length === 0) {
+    return {
+      status: 'offline',
+      activeEndpoint: null,
+      modelTier: 'offline_fallback',
+      isFallback: true,
+      offline: true,
+      message: 'No local model endpoints configured. Operating in offline fallback mode.',
+      healthChecks: [],
+    };
+  }
+
+  const healthChecks = [];
+
+  for (let i = 0; i < candidates.length; i++) {
+    const candidate = candidates[i];
+    const health = await checkModelHealth(candidate.endpoint, timeoutMs);
+    healthChecks.push({ role: candidate.role, endpoint: candidate.endpoint, ...health });
+
+    if (health.healthy) {
+      const isFallback = i > 0;
+      const primaryEpStr = typeof healthChecks[0].endpoint === 'object'
+        ? (healthChecks[0].endpoint.baseUrl || JSON.stringify(healthChecks[0].endpoint))
+        : String(healthChecks[0].endpoint);
+      return {
+        status: isFallback ? 'degraded' : 'ok',
+        activeEndpoint: candidate.endpoint,
+        modelTier: candidate.role,
+        isFallback,
+        fallbackReason: isFallback
+          ? `Primary endpoint (${primaryEpStr}) failed [${healthChecks[0].status}: ${healthChecks[0].error || 'unhealthy'}]; degraded gracefully to ${candidate.role} model endpoint.`
+          : null,
+        healthChecks,
+        health,
+        offline: false,
+      };
+    }
+  }
+
+  return {
+    status: 'offline',
+    activeEndpoint: null,
+    modelTier: 'offline_fallback',
+    isFallback: true,
+    offline: true,
+    message: `All local model endpoints failed (${healthChecks.map((h) => `${h.role} [${h.status}]`).join(', ')}). Degraded cleanly to offline fallback.`,
+    healthChecks,
+  };
+}
+
+/**
+ * Strategy C: Select model for task and verify endpoint health with automatic fallback.
+ */
+async function selectModelWithFallback(options = {}) {
+  const { task = '', currentModelId = '', manager = null, hw = null } = options;
+  const routing = selectModelForTask(task, currentModelId, manager, hw, options);
+  const fallbackResult = await routeWithFallback(options);
+
+  return {
+    ...routing,
+    endpointStatus: fallbackResult.status,
+    activeEndpoint: fallbackResult.activeEndpoint,
+    isFallback: fallbackResult.isFallback,
+    fallbackReason: fallbackResult.fallbackReason,
+    offline: fallbackResult.offline,
+    healthChecks: fallbackResult.healthChecks,
+  };
+}
+
 module.exports = {
   classifyComplexity,
   getModelTiers,
@@ -421,8 +726,12 @@ module.exports = {
   getInstalledModels,
   estimateMemoryGB,
   getUsableNativeMemory,
+  getSystemMemoryTelemetry,
   canRunNatively,
   shouldStreamWithAirLLM,
   inferTaskMode,
+  checkModelHealth,
+  routeWithFallback,
+  selectModelWithFallback,
 };
 

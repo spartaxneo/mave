@@ -208,6 +208,13 @@ class AudioService extends EventEmitter {
     this.call('stop-audio', {}, 3000).catch(() => {});
   }
 
+  stop() {
+    this.stopSpeaking();
+    try {
+      if (this.kokoro && typeof this.kokoro.stop === 'function') this.kokoro.stop();
+    } catch {}
+  }
+
   // speaking a reply as it's written
   /** Start a reply that arrives in pieces. */
   beginStream() {

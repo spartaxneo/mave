@@ -190,8 +190,8 @@ test('app_automation tools generate proper actions and deep links', async () => 
 
   // 5. Firebase
   const fb = appAutomationPlugin.find((t) => t.name === 'use_firebase');
-  const fbConsole = await fb.run({ action: 'console', project_id: 'Fromnear' }, ctx);
-  assert.ok(fbConsole.includes('console.firebase.google.com/project/Fromnear'));
+  const fbConsole = await fb.run({ action: 'console', project_id: 'mave-assistant-9026' }, ctx);
+  assert.ok(fbConsole.includes('console.firebase.google.com/project/mave-assistant-9026'));
 
   // 6. Learn and operate app on the fly (Spotify with music taste personalization)
   const learnTool = appAutomationPlugin.find((t) => t.name === 'learn_and_operate_app');

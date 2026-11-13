@@ -41,11 +41,16 @@ class ColibriProvider extends openai.OpenAIProvider {
         }
       }
     } catch { /* use modelId as is */ }
+    const payload = { model: modelId, messages: this.messages, ...this.requestExtras() };
+    if (this.tools && this.tools.length > 0) {
+      payload.tools = this.tools;
+      payload.tool_choice = 'auto';
+    }
     const { requestJson } = require('./errors');
     return requestJson(`${url}/chat/completions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: modelId, messages: this.messages, tools: this.tools, tool_choice: 'auto', ...this.requestExtras() }),
+      body: JSON.stringify(payload),
     }, this.label, signal, this.timeoutMs);
   }
 }
@@ -73,11 +78,16 @@ class AirLLMProvider extends openai.OpenAIProvider {
         }
       }
     } catch { /* use modelId as is */ }
+    const payload = { model: modelId, messages: this.messages, ...this.requestExtras() };
+    if (this.tools && this.tools.length > 0) {
+      payload.tools = this.tools;
+      payload.tool_choice = 'auto';
+    }
     const { requestJson } = require('./errors');
     return requestJson(`${url}/chat/completions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: modelId, messages: this.messages, tools: this.tools, tool_choice: 'auto', ...this.requestExtras() }),
+      body: JSON.stringify(payload),
     }, this.label, signal, this.timeoutMs);
   }
 }
@@ -125,21 +135,25 @@ function describe(settings, id) {
   return `${PROVIDERS[id].label} · ${settings.get(PROVIDERS[id].modelSetting)}`;
 }
 
-function createProvider(settings, { system, tools, screen, runtime, online = true }) {
+function createProvider(settings, { system, tools, screen, runtime, online = true, computerEnabled = true }) {
   const id = resolveProvider(settings, { online });
   if (!id) throw new ProviderError('Set up your local AI in Settings › Models to get started.', 'Set up your local AI');
   const p = PROVIDERS[id];
   if (id === 'local') {
-    return new p.Provider({ runtime, model: settings.get('localModel'), label: describe(settings, id), system, tools, screen });
+    return new p.Provider({ runtime, model: settings.get('localModel'), label: describe(settings, id), system, tools, screen, computerEnabled });
   }
   if (id === 'colibri') {
-    return new p.Provider({ model: settings.get('colibriModel') || 'qwen36-35b', system, tools, screen });
+    const inst = new p.Provider({ model: settings.get('colibriModel') || 'qwen36-35b', system, tools, screen });
+    if (typeof inst.updateTools === 'function') inst.updateTools(tools, { computer: computerEnabled });
+    return inst;
   }
   if (id === 'ollama') {
-    return new p.Provider({ model: settings.get('ollamaModel') || 'deepseek-r1:8b', system, tools, screen });
+    const inst = new p.Provider({ model: settings.get('ollamaModel') || 'deepseek-r1:8b', system, tools, screen });
+    if (typeof inst.updateTools === 'function') inst.updateTools(tools, { computer: computerEnabled });
+    return inst;
   }
   if (id === 'openai') {
-    return new p.Provider({
+    const inst = new p.Provider({
       apiKey: settings.secret(p.keyName),
       model: settings.get(p.modelSetting) || 'gpt-4o',
       endpoint: settings.get('openaiEndpoint') || 'https://api.openai.com/v1',
@@ -148,6 +162,8 @@ function createProvider(settings, { system, tools, screen, runtime, online = tru
       tools,
       screen,
     });
+    if (typeof inst.updateTools === 'function') inst.updateTools(tools, { computer: computerEnabled });
+    return inst;
   }
   return new p.Provider({
     apiKey: settings.secret(p.keyName),
@@ -156,6 +172,7 @@ function createProvider(settings, { system, tools, screen, runtime, online = tru
     system,
     tools,
     screen,
+    computerEnabled,
   });
 }
 

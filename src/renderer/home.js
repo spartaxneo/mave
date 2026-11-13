@@ -29,9 +29,30 @@
     return n;
   };
 
-  function scrollDown() {
-    const log = $('log');
-    if (log) log.scrollTop = log.scrollHeight;
+  let scrollScheduled = false;
+  let userScrolledUp = false;
+
+  if ($('log')) {
+    $('log').addEventListener('scroll', () => {
+      const log = $('log');
+      if (log) {
+        const distFromBottom = log.scrollHeight - log.scrollTop - log.clientHeight;
+        userScrolledUp = distFromBottom > 80;
+      }
+    }, { passive: true });
+  }
+
+  function scrollDown(force = false) {
+    if (userScrolledUp && !force) return;
+    if (scrollScheduled) return;
+    scrollScheduled = true;
+    requestAnimationFrame(() => {
+      scrollScheduled = false;
+      const log = $('log');
+      if (log && (!userScrolledUp || force)) {
+        log.scrollTop = log.scrollHeight;
+      }
+    });
   }
 
   function add(node) {
@@ -54,9 +75,20 @@
     if (!md) return '';
     let text = String(md);
 
+    // 0. Pre-clean: horizontal rules merged with headings
+    text = text.replace(/^(?:---|[*]{3}|_{3})\s*(#+.*)$/gim, '<hr class="md-hr">\n\n$1');
+
     // 1. Code blocks ```lang\ncode\n```
     const codeBlocks = [];
     text = text.replace(/```([a-zA-Z0-9_+#.-]*)\r?\n([\s\S]*?)```/g, (_m, lang, code) => {
+      const id = `__CODE_BLOCK_${codeBlocks.length}__`;
+      const cleanLang = (lang || 'code').toLowerCase().trim();
+      codeBlocks.push({ lang: cleanLang, code });
+      return id;
+    });
+
+    // Handle in-flight streaming unclosed code block
+    text = text.replace(/```([a-zA-Z0-9_+#.-]*)\r?\n([\s\S]*)$/g, (_m, lang, code) => {
       const id = `__CODE_BLOCK_${codeBlocks.length}__`;
       const cleanLang = (lang || 'code').toLowerCase().trim();
       codeBlocks.push({ lang: cleanLang, code });
@@ -86,11 +118,11 @@
 
     // 7. Unordered lists
     text = text.replace(/^\s*[-*]\s+(.*$)/gim, '<li class="md-li">$1</li>');
-    text = text.replace(/(<li class="md-li">[\s\S]*?<\/li>)+/g, '<ul class="md-ul">$&</ul>');
+    text = text.replace(/(<li class="md-li">[\s\S]*?<\/li>(\s*<li class="md-li">[\s\S]*?<\/li>)*)/g, '<ul class="md-ul">$1</ul>');
 
     // 8. Ordered lists
     text = text.replace(/^\s*\d+\.\s+(.*$)/gim, '<li class="md-oli">$1</li>');
-    text = text.replace(/(<li class="md-oli">[\s\S]*?<\/li>)+/g, '<ol class="md-ol">$&</ol>');
+    text = text.replace(/(<li class="md-oli">[\s\S]*?<\/li>(\s*<li class="md-oli">[\s\S]*?<\/li>)*)/g, '<ol class="md-ol">$1</ol>');
 
     // 9. Links & Images
     // Images: ![alt](url) -> ChatGPT Generative Image Card
@@ -119,9 +151,12 @@
     text = paragraphs.map((p) => {
       const trimmed = p.trim();
       if (!trimmed) return '';
-      if (/^<(h[2-4]|ul|ol|blockquote|div|hr|video|iframe)/.test(trimmed)) return trimmed;
+      if (/^<(h[1-6]|ul|ol|li|blockquote|div|hr|video|iframe|table|pre|p)/i.test(trimmed)) return trimmed;
       return `<p class="md-p">${trimmed.replace(/\n/g, '<br>')}</p>`;
     }).filter(Boolean).join('\n');
+
+    // 11b. Clean up any invalid paragraph-wrapped lists
+    text = text.replace(/<p class="md-p">\s*(<(?:ul|ol)[\s\S]*?<\/(?:ul|ol)>)\s*<\/p>/gi, '$1');
 
     // 12. Unescape video tags if generated
     text = text.replace(/&lt;video([\s\S]*?)&gt;([\s\S]*?)&lt;\/video&gt;/gi, '<div class="generated-video-card"><video$1>$2</video><div class="media-overlay"><span class="media-badge">🎬 Generated Video</span></div></div>');
@@ -160,14 +195,12 @@
 
     return text;
   }
+  window.__renderMarkdownHtml = renderMarkdown;
 
   function assistantBubble() {
     const row = el('div', 'turn assistant');
-    const avatar = el('img', 'avatar');
-    avatar.src = 'assets/tray@2x.png';
-    avatar.alt = '';
     const body = el('div', 'msg assistant');
-    row.append(avatar, body);
+    row.append(body);
     return { row, body };
   }
 
@@ -211,6 +244,7 @@
         api.invoke('task:run', promptToReplay, {
           threadId: temporaryMode ? null : activeThreadId,
           temporary: temporaryMode,
+          mode: window.__maveAppMode || 'work',
         });
       }
     });
@@ -281,6 +315,10 @@
     running = s === 'processing' || s === 'acting';
     document.body.classList.toggle('running', running);
     showThinking(running);
+    if (!running && live && live.body) {
+      const cursor = live.body.querySelector('.streaming-cursor');
+      if (cursor) cursor.remove();
+    }
     updateSend();
   }
 
@@ -325,6 +363,20 @@
     updateSend();
   }
 
+  function formatRelativeTime(ts) {
+    if (!ts) return '';
+    const diffSec = Math.max(0, Math.floor((Date.now() - Number(ts)) / 1000));
+    if (diffSec < 60) return 'now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h`;
+    const diffDays = Math.floor(diffHr / 24);
+    if (diffDays < 30) return `${diffDays}d`;
+    const diffMo = Math.floor(diffDays / 30);
+    return `${diffMo}mo`;
+  }
+
   // --- Multi-Session Conversations & Timeline ---
   async function loadSidebarChats() {
     const container = $('sidebar-chats');
@@ -340,7 +392,7 @@
       container.innerHTML = '';
 
       const groupLabels = [
-        { key: 'pinned', title: '📌 Pinned' },
+        { key: 'pinned', title: 'Pinned' },
         { key: 'today', title: 'Today' },
         { key: 'yesterday', title: 'Yesterday' },
         { key: 'previous7Days', title: 'Previous 7 Days' },
@@ -361,7 +413,8 @@
             chatItem.dataset.id = item.id;
 
             const titleSpan = el('span', 'chat-item-title', item.title || 'Untitled Chat');
-            chatItem.append(titleSpan);
+            const timeSpan = el('span', 'chat-item-time', formatRelativeTime(item.updatedAt || item.createdAt));
+            chatItem.append(titleSpan, timeSpan);
 
             // 3-Dots Context Menu Button
             const menuBtn = el('button', 'chat-item-menu-btn');
@@ -431,6 +484,31 @@
       }
     });
 
+    // Export Chat (Markdown / JSON)
+    const exportBtn = el('button', '', '📥 Export Chat');
+    exportBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      menu.remove();
+      const format = confirm('Export as Markdown (.md)? Click Cancel for JSON (.json).') ? 'markdown' : 'json';
+      try {
+        const content = await api.invoke('threads:export', thread.id, format);
+        if (content) {
+          const blob = new Blob([content], { type: format === 'markdown' ? 'text/markdown' : 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const cleanName = (thread.title || 'chat').replace(/[^a-zA-Z0-9_-]/g, '_');
+          a.download = `${cleanName}.${format === 'markdown' ? 'md' : 'json'}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      } catch (err) {
+        alert('Export failed: ' + err.message);
+      }
+    });
+
     // Delete
     const deleteBtn = el('button', 'danger', '🗑️ Delete');
     deleteBtn.addEventListener('click', async (e) => {
@@ -446,7 +524,7 @@
       }
     });
 
-    menu.append(pinBtn, renameBtn, archiveBtn, deleteBtn);
+    menu.append(pinBtn, renameBtn, archiveBtn, exportBtn, deleteBtn);
     chatItem.append(menu);
 
     const closeMenu = (ev) => {
@@ -461,6 +539,19 @@
 
   async function switchThread(threadId) {
     if (!threadId) return;
+    if (running) {
+      await api.invoke('task:stop');
+      running = false;
+      document.body.classList.remove('running');
+      if (thinking) { thinking.remove(); thinking = null; }
+      if (live && live.body) {
+        const cursor = live.body.querySelector('.streaming-cursor');
+        if (cursor) cursor.remove();
+      }
+      live = null;
+      steps = null;
+      updateSend();
+    }
     activeThreadId = threadId;
     try {
       const thread = await api.invoke('threads:switch', threadId);
@@ -542,54 +633,118 @@
 
   async function startNewChat() {
     try {
+      if (running) {
+        await api.invoke('task:stop');
+        running = false;
+        document.body.classList.remove('running');
+        if (thinking) { thinking.remove(); thinking = null; }
+        if (live && live.body) {
+          const cursor = live.body.querySelector('.streaming-cursor');
+          if (cursor) cursor.remove();
+        }
+        live = null;
+        steps = null;
+        updateSend();
+      }
       const thread = await api.invoke('threads:create', 'New Chat', 'desktop', activeProjectId);
       activeThreadId = thread.id;
       renderThreadMessages(thread);
       loadSidebarChats();
-      if ($('prompt')) $('prompt').focus();
+      if ($('prompt')) {
+        $('prompt').value = '';
+        autosize();
+        $('prompt').focus();
+      }
     } catch {}
   }
 
-  // --- Projects Management ---
+  // --- Projects Tree Management (Antigravity Expandable Hierarchy) ---
+  const expandedProjects = new Set();
   async function loadProjects() {
     const listEl = $('projects-list');
     if (!listEl) return;
     try {
-      const projs = await api.invoke('projects:list');
+      const [projs, allThreads] = await Promise.all([
+        api.invoke('projects:list'),
+        api.invoke('threads:list').catch(() => []),
+      ]);
       listEl.innerHTML = '';
       if (!Array.isArray(projs) || projs.length === 0) {
-        listEl.innerHTML = `<div style="font-size:11.5px;color:var(--text-3);padding:4px 6px;">No projects yet</div>`;
+        listEl.innerHTML = `<div style="font-size:11.5px;color:var(--text-3);padding:4px 8px;">No projects yet</div>`;
         return;
       }
       projs.forEach((p) => {
+        const isOpen = expandedProjects.has(p.id) || p.id === activeProjectId;
+        const projWrap = el('div', 'project-tree-node');
         const item = el('button', `project-item ${p.id === activeProjectId ? 'active' : ''}`);
         item.type = 'button';
         item.innerHTML = `
           <div class="project-item-left">
-            <span>📁</span>
+            <span class="project-caret">${isOpen ? '▾' : '▸'}</span>
             <span class="project-title">${escapeHtml(p.name)}</span>
           </div>
           <span class="project-badge-count">${p.threadCount || 0}</span>
         `;
         item.addEventListener('click', () => {
-          activeProjectId = activeProjectId === p.id ? null : p.id;
+          if (expandedProjects.has(p.id)) {
+            expandedProjects.delete(p.id);
+            if (activeProjectId === p.id) activeProjectId = null;
+          } else {
+            expandedProjects.add(p.id);
+            activeProjectId = p.id;
+          }
           loadProjects();
           loadSidebarChats();
         });
-        listEl.append(item);
+        projWrap.append(item);
+
+        if (isOpen && Array.isArray(allThreads)) {
+          const children = allThreads.filter((t) => t.projectId === p.id && !t.archived);
+          const childList = el('div', 'project-threads-nested');
+          if (children.length === 0) {
+            const emptyChild = el('div', 'project-thread-empty', 'No conversations yet');
+            childList.append(emptyChild);
+          } else {
+            children.forEach((t) => {
+              const tBtn = el('button', `project-thread-row ${t.id === activeThreadId ? 'active' : ''}`);
+              tBtn.type = 'button';
+              tBtn.innerHTML = `
+                <span class="ptr-title">${escapeHtml(t.title || 'Untitled')}</span>
+                <span class="ptr-time">${escapeHtml(formatRelativeTime(t.updatedAt || t.createdAt))}</span>
+              `;
+              tBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                switchThread(t.id);
+                loadProjects();
+              });
+              childList.append(tBtn);
+            });
+          }
+          projWrap.append(childList);
+        }
+        listEl.append(projWrap);
       });
     } catch {}
   }
 
   function finishAssistant(text) {
     showThinking(false);
+    document.querySelectorAll('.ctb-status-dot.running').forEach((d) => d.classList.remove('running'));
     if (!live) { const { row, body } = assistantBubble(); live = { row, body }; add(row); }
     live.body.innerHTML = renderMarkdown(text);
+    if (window.chatArtifacts) window.chatArtifacts.bindCardEvents(live.body);
     attachAssistantActions(live.row, text);
     live = null;
     steps = null;
     scrollDown();
     loadSidebarChats(); // Update title or preview in sidebar
+    if (activeThreadId) {
+      api.invoke('threads:get', activeThreadId).then((t) => {
+        if (t && t.title && $('chat-header-title')) {
+          $('chat-header-title').textContent = t.title;
+        }
+      }).catch(() => {});
+    }
   }
 
   function addEntry({ kind, text }) {
@@ -618,12 +773,17 @@
     if (kind === 'assistant') { finishAssistant(text); return; }
     if (kind === 'recommendations') { renderRecommendations(text); return; }
 
-    // Actions, diagnostics, and progress go in a collapsible thought accordion
+    // Actions, diagnostics, and progress go in a crisp collapsible Antigravity/Codex activity block
     if (!steps) {
-      const details = el('details', 'thought-accordion');
-      const summary = el('summary', 'thought-summary');
-      summary.innerHTML = `<span class="thought-spark">💭</span><span class="thought-label">Thought process</span><svg class="thought-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>`;
-      const content = el('div', 'thought-content');
+      const details = el('details', 'thought-accordion codex-tool-badge');
+      const summary = el('summary', 'thought-summary ctb-summary');
+      const isTool = /tool|command|ran|terminal|executing/i.test(text || '');
+      const isToolLoad = /loaded.*tool|tool/i.test(text || '');
+      const badgePrefix = `<span class="ctb-status-dot running"></span>` + (isToolLoad ? '<span class="ctb-badge-prefix">🔧</span>' : (isTool ? '<span class="ctb-badge-prefix">&gt;_</span>' : '<span class="thought-spark">💭</span>'));
+      const labelText = isToolLoad ? 'Tool execution' : (isTool ? 'Ran commands' : 'Thought process');
+      summary.dataset.baseLabel = labelText;
+      summary.innerHTML = `${badgePrefix}<span class="thought-label ctb-title">${labelText}</span><svg class="thought-chevron ctb-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>`;
+      const content = el('div', 'thought-content ctb-content');
       details.append(summary, content);
       steps = content;
       add(details);
@@ -632,6 +792,13 @@
     if (kind === 'progress' && last && last.textContent === text) return;
     const line = el('div', `step ${kind}`, text);
     steps.append(line);
+    const parentDetails = steps.closest('details');
+    const titleEl = parentDetails && parentDetails.querySelector('.ctb-title');
+    const summaryEl = parentDetails && parentDetails.querySelector('.ctb-summary');
+    if (titleEl && summaryEl) {
+      const n = steps.children.length;
+      titleEl.textContent = `${summaryEl.dataset.baseLabel || 'Activity'} · ${n} step${n === 1 ? '' : 's'}`;
+    }
     if (thinking) $('log').append(thinking);
     scrollDown();
   }
@@ -709,8 +876,40 @@
 
   async function submit(e) {
     if (e) e.preventDefault();
-    if (running) { api.invoke('task:stop'); return; }
-    const text = $('prompt').value.trim();
+    const text = $('prompt') ? $('prompt').value.trim() : '';
+
+    if (running) {
+      if (!text && pendingAttachments.length === 0) {
+        // User clicked the Stop button on the composer
+        api.invoke('task:stop');
+        running = false;
+        document.body.classList.remove('running');
+        if (thinking) { thinking.remove(); thinking = null; }
+        if (live && live.body) {
+          const cursor = live.body.querySelector('.streaming-cursor');
+          if (cursor) cursor.remove();
+        }
+        live = null;
+        steps = null;
+        updateSend();
+        return;
+      } else {
+        // User typed a new prompt while the assistant was writing and submitted:
+        // Stop previous task cleanly and proceed immediately with the new prompt
+        await api.invoke('task:stop');
+        running = false;
+        document.body.classList.remove('running');
+        if (thinking) { thinking.remove(); thinking = null; }
+        if (live && live.body) {
+          const cursor = live.body.querySelector('.streaming-cursor');
+          if (cursor) cursor.remove();
+        }
+        live = null;
+        steps = null;
+        await new Promise((r) => setTimeout(r, 60));
+      }
+    }
+
     if (!text && pendingAttachments.length === 0) return;
 
     lastSubmittedPrompt = text;
@@ -718,13 +917,16 @@
     pendingAttachments = [];
     renderAttachmentsPreview();
 
-    $('prompt').value = '';
+    if ($('prompt')) $('prompt').value = '';
     autosize();
 
+    userScrolledUp = false;
     await api.invoke('task:run', text, {
       attachments: attachmentsToSend,
       threadId: temporaryMode ? null : activeThreadId,
       temporary: temporaryMode,
+      think: thinkMode,
+      mode: window.__maveAppMode || 'work',
     });
   }
 
@@ -994,10 +1196,177 @@
     }
   });
 
-  if ($('composer')) $('composer').addEventListener('submit', submit);
+  const SLASH_COMMANDS = [
+    { cmd: '/chat', desc: 'Switch to focused Chat mode (no PC control)', kind: 'mode', run: () => { const b = $('mode-btn-chat'); if (b) b.click(); } },
+    { cmd: '/work', desc: 'Switch to Work mode (agent tools & Virtual PC)', kind: 'mode', run: () => { const b = $('mode-btn-work'); if (b) b.click(); } },
+    { cmd: '/files', desc: 'Toggle Workspace file explorer split pane', kind: 'panel', run: () => { if (typeof window.__openWorkspaceTab === 'function') window.__openWorkspaceTab('files'); } },
+    { cmd: '/canvas', desc: 'Open side-by-side Canvas code editor', kind: 'panel', run: () => { if (typeof window.__openWorkspaceTab === 'function') window.__openWorkspaceTab('canvas'); } },
+    { cmd: '/terminal', desc: 'Open interactive Terminal & activity console', kind: 'panel', run: () => { if (typeof window.showSection === 'function') window.showSection('terminal'); } },
+    { cmd: '/virtual-pc', desc: 'Open Isolated Virtual Computer guest view', kind: 'panel', run: () => { if (typeof window.showSection === 'function') window.showSection('virtual-computer'); } },
+    { cmd: '/plan', desc: 'Start a structured step-by-step engineering plan', kind: 'insert', value: 'Create a structured step-by-step implementation plan for: ' },
+    { cmd: '/settings', desc: 'Open Workspace & Model Settings (Ctrl+,)', kind: 'panel', run: () => { if (typeof window.openSettingsModal === 'function') window.openSettingsModal('general'); } },
+    { cmd: '/clear', desc: 'Start a fresh conversation (Ctrl+N)', kind: 'action', run: () => startNewChat() },
+  ];
+
+  let cachedWorkspaceMentions = null;
+  let popoverItems = [];
+  let popoverActiveIdx = 0;
+  let popoverContext = null;
+
+  async function ensureWorkspaceMentions() {
+    if (cachedWorkspaceMentions) return cachedWorkspaceMentions;
+    const base = [
+      { label: '@workspace', desc: 'Reference active workspace structure', kind: 'context', insert: '@workspace ' },
+      { label: '@terminal', desc: 'Reference recent terminal session output', kind: 'context', insert: '@terminal ' },
+      { label: '@virtual-pc', desc: 'Target the isolated Virtual Computer', kind: 'context', insert: '@virtual-pc ' },
+    ];
+    try {
+      const tree = await api.invoke('ghost:workspace-tree', '');
+      const entries = (tree && Array.isArray(tree.entries)) ? tree.entries : [];
+      for (const e of entries.slice(0, 24)) {
+        base.push({
+          label: `@${e.relPath || e.name}`,
+          desc: e.isDirectory ? 'Folder in workspace' : 'File in workspace',
+          kind: e.isDirectory ? 'dir' : (e.ext || 'file'),
+          insert: `@${e.relPath || e.name} `,
+        });
+      }
+    } catch {}
+    cachedWorkspaceMentions = base;
+    return base;
+  }
+
+  function hideSuggestPopover() {
+    const pop = $('composer-suggest-popover');
+    if (pop) pop.hidden = true;
+    popoverItems = [];
+    popoverActiveIdx = 0;
+    popoverContext = null;
+  }
+
+  function applySuggestItem(item) {
+    const ta = $('prompt');
+    if (!item || !ta) return;
+    if (popoverContext && popoverContext.type === 'slash') {
+      hideSuggestPopover();
+      if (item.kind === 'insert') {
+        ta.value = item.value;
+        autosize();
+        ta.focus();
+      } else {
+        ta.value = '';
+        autosize();
+        if (typeof item.run === 'function') item.run();
+      }
+      return;
+    }
+    if (popoverContext && popoverContext.type === 'mention') {
+      const val = ta.value;
+      const before = val.slice(0, popoverContext.startIdx);
+      const after = val.slice(ta.selectionStart);
+      ta.value = `${before}${item.insert}${after}`;
+      const newPos = (before + item.insert).length;
+      ta.setSelectionRange(newPos, newPos);
+      autosize();
+      ta.focus();
+      hideSuggestPopover();
+    }
+  }
+
+  function renderSuggestPopover(title, items) {
+    const pop = $('composer-suggest-popover');
+    if (!pop) return;
+    popoverItems = items;
+    if (!items.length) {
+      hideSuggestPopover();
+      return;
+    }
+    if (popoverActiveIdx >= items.length) popoverActiveIdx = 0;
+    pop.innerHTML = '';
+    const hdr = el('div', 'csp-header', title);
+    pop.append(hdr);
+    items.forEach((item, idx) => {
+      const row = el('button', `csp-item ${idx === popoverActiveIdx ? 'active' : ''}`);
+      row.type = 'button';
+      row.innerHTML = `
+        <span class="csp-main">
+          <span class="csp-cmd">${escapeHtml(item.cmd || item.label)}</span>
+          <span class="csp-desc">${escapeHtml(item.desc || '')}</span>
+        </span>
+        <span class="csp-kind">${escapeHtml(item.kind || '')}</span>
+      `;
+      row.addEventListener('mousedown', (ev) => {
+        ev.preventDefault();
+        applySuggestItem(item);
+      });
+      pop.append(row);
+    });
+    pop.hidden = false;
+  }
+
+  async function updateSuggestPopover() {
+    const ta = $('prompt');
+    if (!ta) return;
+    const val = ta.value;
+    const caret = ta.selectionStart || 0;
+
+    if (val.startsWith('/') && !val.slice(0, caret).includes('\n') && !val.slice(0, caret).includes(' ')) {
+      const q = val.slice(1, caret).toLowerCase();
+      const matches = SLASH_COMMANDS.filter((c) => c.cmd.toLowerCase().includes(`/${q}`) || c.desc.toLowerCase().includes(q));
+      popoverContext = { type: 'slash' };
+      renderSuggestPopover('Slash Actions', matches);
+      return;
+    }
+
+    const prefix = val.slice(0, caret);
+    const atMatch = /(^|\s)@([^\s]*)$/.exec(prefix);
+    if (atMatch) {
+      const q = atMatch[2].toLowerCase();
+      const all = await ensureWorkspaceMentions();
+      const matches = all.filter((m) => m.label.toLowerCase().includes(q) || m.desc.toLowerCase().includes(q)).slice(0, 12);
+      popoverContext = { type: 'mention', startIdx: caret - atMatch[2].length - 1 };
+      renderSuggestPopover('Mention File or Context', matches);
+      return;
+    }
+
+    hideSuggestPopover();
+  }
+
+  if ($('composer')) $('composer').addEventListener('submit', (e) => { hideSuggestPopover(); submit(e); });
   if ($('prompt')) {
-    $('prompt').addEventListener('input', autosize);
+    $('prompt').addEventListener('input', () => {
+      autosize();
+      updateSuggestPopover();
+    });
+    $('prompt').addEventListener('blur', () => {
+      setTimeout(() => hideSuggestPopover(), 140);
+    });
     $('prompt').addEventListener('keydown', (e) => {
+      const pop = $('composer-suggest-popover');
+      if (pop && !pop.hidden && popoverItems.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          popoverActiveIdx = (popoverActiveIdx + 1) % popoverItems.length;
+          renderSuggestPopover(popoverContext?.type === 'slash' ? 'Slash Actions' : 'Mention File or Context', popoverItems);
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          popoverActiveIdx = (popoverActiveIdx - 1 + popoverItems.length) % popoverItems.length;
+          renderSuggestPopover(popoverContext?.type === 'slash' ? 'Slash Actions' : 'Mention File or Context', popoverItems);
+          return;
+        }
+        if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+          e.preventDefault();
+          applySuggestItem(popoverItems[popoverActiveIdx]);
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          hideSuggestPopover();
+          return;
+        }
+      }
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); }
     });
   }
@@ -1012,29 +1381,18 @@
     loadProjects();
   });
 
-  // Empty state chips
+  // Empty state chips (authentic Codex/Antigravity starter pills)
   document.querySelectorAll('.empty-chip').forEach((btn) => {
     btn.addEventListener('click', () => {
-      if (btn.id === 'empty-chip-canvas') {
-        if (window.__openChatGPTCanvas) {
-          window.__openChatGPTCanvas({
-            title: 'model.py',
-            language: 'python',
-            content: '# Python Data & Architecture Model\nimport math\n\ndef analyze():\n    return {"status": "ok", "pi": math.pi}\n\nif __name__ == "__main__":\n    print(analyze())\n',
-          });
-        }
-        return;
-      }
-      if (btn.id === 'empty-chip-jarvis') {
-        const hudBtn = $('jarvis-hud-trigger-btn');
-        if (hudBtn) hudBtn.click();
-        return;
-      }
       const p = btn.dataset.prompt;
-      if (p && $('prompt')) {
-        $('prompt').value = p;
-        autosize();
-        $('prompt').focus();
+      if (!p || !$('prompt')) return;
+      $('prompt').value = p;
+      autosize();
+      $('prompt').focus();
+      userScrolledUp = false;
+      if (/:\s*$/.test(p)) {
+        $('prompt').selectionStart = $('prompt').selectionEnd = $('prompt').value.length;
+      } else {
         submit();
       }
     });
@@ -1086,7 +1444,7 @@
     });
   }
 
-  if ($('btn-setup')) $('btn-setup').addEventListener('click', () => api.invoke('app:open-settings', 'account'));
+  if ($('btn-setup')) $('btn-setup').addEventListener('click', () => api.invoke('app:open-onboarding'));
   if ($('region-clear')) $('region-clear').addEventListener('click', () => api.invoke('region:clear'));
 
   // --- Modern ChatGPT UI/UX & Voice Mode Wiring ---
@@ -1133,14 +1491,15 @@
           name = (u && (u.name || u.displayName)) || gov.activeUser;
         }
       }
-      if (typeof name !== 'string' || !name.trim() || name === 'From Near') name = 'Local User';
+      if (typeof name !== 'string' || !name.trim() || name === 'From Near') name = 'Local Owner';
       if ($('user-profile-name')) $('user-profile-name').textContent = name;
       if ($('upm-user-name')) $('upm-user-name').textContent = name;
       const initials = name.split(/\s+/).filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'U';
       if ($('user-avatar-initials')) $('user-avatar-initials').textContent = initials;
-      if ($('empty-greeting')) $('empty-greeting').textContent = `Hey, ${name.split(/\s+/)[0]}. Ready to dive in?`;
-      if ($('upm-auth-text')) $('upm-auth-text').textContent = 'Sign In / Register';
-      if ($('user-plan-badge')) $('user-plan-badge').textContent = 'Free';
+      if ($('empty-greeting')) $('empty-greeting').textContent = `Hey, ${name.split(/\s+/)[0]}. Ready when you are.`;
+      if ($('upm-auth-text')) $('upm-auth-text').textContent = 'Sign In / Switch Account';
+      if ($('user-plan-badge')) $('user-plan-badge').textContent = 'Local Node';
+      if ($('upm-user-plan')) $('upm-user-plan').textContent = 'Sovereign Node';
     } catch {}
   }
   window.loadUserProfile = loadUserProfile;
@@ -1278,21 +1637,35 @@
       api.invoke('app:open-settings');
     });
   }
+  if ($('titlebar-vorssaint-btn')) {
+    $('titlebar-vorssaint-btn').addEventListener('click', () => {
+      if (api && api.invoke) api.invoke('vorssaint:open-panel');
+    });
+  }
   if ($('upm-vorssaint')) {
     $('upm-vorssaint').addEventListener('click', () => {
       if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
-      api.invoke('app:open-settings', 'vorssaint');
+      if (api && api.invoke) api.invoke('vorssaint:open-panel');
+    });
+  }
+  if ($('upm-vorssaint-hub')) {
+    $('upm-vorssaint-hub').addEventListener('click', () => {
+      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
+      if (api && api.invoke) api.invoke('vorssaint:open-hub');
     });
   }
   if ($('nav-item-vorssaint')) {
     $('nav-item-vorssaint').addEventListener('click', () => {
       const nmd = $('nav-more-dropdown');
       if (nmd) nmd.hidden = true;
-      if (typeof window.openSettingsModal === 'function') {
-        window.openSettingsModal('vorssaint');
-      } else {
-        api.invoke('app:open-settings', 'vorssaint');
-      }
+      if (api && api.invoke) api.invoke('vorssaint:open-panel');
+    });
+  }
+  if ($('nav-item-vorssaint-hub')) {
+    $('nav-item-vorssaint-hub').addEventListener('click', () => {
+      const nmd = $('nav-more-dropdown');
+      if (nmd) nmd.hidden = true;
+      if (api && api.invoke) api.invoke('vorssaint:open-hub');
     });
   }
   if ($('nav-item-island')) {
@@ -1377,17 +1750,6 @@
       try {
         await api.invoke('dictation:set-mode', dictating);
       } catch {}
-    });
-  }
-
-  // Try GPT-6 button
-  if ($('edc-btn')) {
-    $('edc-btn').addEventListener('click', () => {
-      if ($('prompt')) {
-        $('prompt').value = 'Explain how GPT-6 with Intelligent UI can autonomously build an interactive application for me.';
-        autosize();
-        $('prompt').focus();
-      }
     });
   }
 
@@ -1765,17 +2127,13 @@
     });
   }
 
-  // General Appearance Dropdown in Settings (Screenshot 3)
+  // Appearance Mode Sync
   if ($('appearance-select')) {
     $('appearance-select').addEventListener('change', () => {
       const val = $('appearance-select').value;
-      api.invoke('settings:update', { themeMode: val });
-      if (val === 'dark') {
-        document.body.classList.remove('theme-light');
-        document.documentElement.setAttribute('data-theme', 'dark');
-      } else if (val === 'light') {
-        document.body.classList.add('theme-light');
-        document.documentElement.setAttribute('data-theme', 'light');
+      api.invoke('settings:update', { theme: val });
+      if (typeof window.__applyTheme === 'function') {
+        window.__applyTheme(val);
       }
     });
   }
@@ -1795,6 +2153,24 @@
   });
   api.on('log-live', ({ text }) => streamText(text));
   api.on('recommendations', (recs) => renderRecommendations(recs));
+
+  api.on('vc:artifact-created', (artifact) => {
+    if (!artifact) return;
+    if (window.chatArtifacts) {
+      const cardHtml = window.chatArtifacts.renderCard(artifact);
+      if (live && live.body) {
+        live.body.insertAdjacentHTML('beforeend', cardHtml);
+        window.chatArtifacts.bindCardEvents(live.body);
+      } else {
+        const { row, body } = assistantBubble();
+        body.innerHTML = `<p>I have generated a new artifact in the isolated Virtual Computer:</p>${cardHtml}`;
+        add(row);
+        window.chatArtifacts.bindCardEvents(body);
+        attachAssistantActions(row, `Generated artifact: ${artifact.fileName}`);
+      }
+      scrollDown();
+    }
+  });
 
   // OS Device Extension Global Shortcut & Sentinel Notifications
   api.on('voice:toggle-talk', () => {
@@ -1826,6 +2202,10 @@
     } else {
       showChatToast('📶 Sovereign Offline Mode: Running 100% locally on-device.');
     }
+  });
+
+  api.on('notice', (text) => {
+    if (text) showChatToast(text);
   });
 
   api.on('sentinel:incoming-activity', (data) => {
@@ -2255,6 +2635,13 @@
 
     async initFirebase() {
       try {
+        const fbCfg = await api.invoke('firebase:get-config').catch(() => null);
+        if (fbCfg) {
+          if ($('fb-info-project-id')) $('fb-info-project-id').textContent = fbCfg.projectId || 'Not configured';
+          if ($('fb-info-ai-project')) $('fb-info-ai-project').textContent = fbCfg.aiProjectId || fbCfg.projectId || 'local';
+          if ($('fb-info-app-id')) $('fb-info-app-id').textContent = fbCfg.appId || 'Not configured';
+          if ($('fb-info-auth-domain')) $('fb-info-auth-domain').textContent = fbCfg.authDomain || 'Not configured';
+        }
         const user = await api.invoke('firebase:get-user');
         if (user && user.uid && !user.isAnonymous) {
           this.accountName = user.displayName || user.email?.split('@')[0] || 'User';
@@ -2271,17 +2658,11 @@
           if (devRes && devRes.devices && $('fb-mesh-devices-list')) {
             $('fb-mesh-devices-list').textContent = `${devRes.devices.length} device(s) in cloud mesh`;
           }
-        } else if (user && user.uid && user.isAnonymous) {
-          this.accountName = 'Guest User';
-          if ($('fb-profile-name')) $('fb-profile-name').textContent = 'Guest User (Anonymous Session)';
-          if ($('fb-profile-email')) $('fb-profile-email').textContent = `Anonymous UID: ${user.uid.slice(0, 8)}…`;
-          if ($('fb-profile-cloud-status')) $('fb-profile-cloud-status').textContent = '☁️ Anonymous Cloud Session';
-          if ($('fb-btn-signout')) $('fb-btn-signout').style.display = 'inline-block';
         } else {
-          this.accountName = 'Local User';
-          if ($('fb-profile-name')) $('fb-profile-name').textContent = 'Guest / Offline';
-          if ($('fb-profile-email')) $('fb-profile-email').textContent = 'Not signed in to Firebase';
-          if ($('fb-profile-cloud-status')) $('fb-profile-cloud-status').textContent = '⚠️ Local-only mode';
+          this.accountName = 'Not Signed In';
+          if ($('fb-profile-name')) $('fb-profile-name').textContent = 'Sign in with Gmail';
+          if ($('fb-profile-email')) $('fb-profile-email').textContent = 'Gmail sign-in required for cloud sync';
+          if ($('fb-profile-cloud-status')) $('fb-profile-cloud-status').textContent = 'Sign in with your Gmail account';
           if ($('fb-btn-signout')) $('fb-btn-signout').style.display = 'none';
         }
         if (typeof window.loadUserProfile === 'function') window.loadUserProfile();
@@ -2330,18 +2711,16 @@
 
       const stepAuth = $('nom-step-auth');
       const stepRole = $('nom-step-role');
-      const authGuest = $('nom-auth-guest-btn');
       const hostCard = $('nom-role-host');
       const satCard = $('nom-role-satellite');
       const finishBtn = $('nom-role-finish-btn');
       const satFields = $('nom-satellite-fields');
 
       let selectedRole = 'host';
-      let authMode = 'signin'; // 'signin' | 'signup' | 'guest'
+      let authMode = 'signin'; // 'signin' | 'signup'
 
       const tabSignIn = $('nom-auth-tab-signin');
       const tabSignUp = $('nom-auth-tab-signup');
-      const tabGuest = $('nom-auth-tab-guest');
       const groupName = $('nom-group-name');
       const groupEmail = $('nom-group-email');
       const groupPass = $('nom-group-pass');
@@ -2358,19 +2737,15 @@
           tabSignUp.style.background = mode === 'signup' ? 'rgba(59,130,246,0.3)' : 'transparent';
           tabSignUp.style.color = mode === 'signup' ? '#fff' : 'var(--text-3)';
         }
-        if (tabGuest) {
-          tabGuest.style.background = mode === 'guest' ? 'rgba(59,130,246,0.3)' : 'transparent';
-          tabGuest.style.color = mode === 'guest' ? '#fff' : 'var(--text-3)';
-        }
 
         if (groupName) groupName.style.display = mode === 'signup' ? 'block' : 'none';
-        if (groupEmail) groupEmail.style.display = mode === 'guest' ? 'none' : 'block';
-        if (groupPass) groupPass.style.display = mode === 'guest' ? 'none' : 'block';
+        if (groupEmail) groupEmail.style.display = 'block';
+        if (groupPass) groupPass.style.display = 'block';
 
         if (submitBtn) {
-          submitBtn.textContent = mode === 'signin' ? 'Sign In & Connect Cloud DB →' :
-                                  mode === 'signup' ? 'Create Account & Initialize Cloud DB →' :
-                                  'Continue as Guest (Anonymous Session) →';
+          submitBtn.textContent = mode === 'signin'
+            ? 'Sign In with Gmail →'
+            : 'Create Account with Gmail →';
         }
         if (statusEl) {
           statusEl.style.display = 'none';
@@ -2380,7 +2755,6 @@
 
       if (tabSignIn) tabSignIn.addEventListener('click', () => setAuthTab('signin'));
       if (tabSignUp) tabSignUp.addEventListener('click', () => setAuthTab('signup'));
-      if (tabGuest) tabGuest.addEventListener('click', () => setAuthTab('guest'));
 
       if ($('nom-btn-google')) {
         $('nom-btn-google').addEventListener('click', async () => {
@@ -2469,30 +2843,6 @@
 
       if (submitBtn) {
         submitBtn.addEventListener('click', async () => {
-          if (authMode === 'guest') {
-            try {
-              if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Starting anonymous cloud session…'; }
-              await api.invoke('firebase:sign-in-anon');
-              this.accountName = 'Guest User';
-              localStorage.setItem('mave_account_name', this.accountName);
-              if (statusEl) {
-                statusEl.style.color = '#34d399';
-                statusEl.textContent = '✅ Connected as Guest!';
-              }
-              setTimeout(() => {
-                hideModal();
-                this.initFirebase();
-                if (typeof window.loadUserProfile === 'function') window.loadUserProfile();
-              }, 500);
-            } catch (err) {
-              if (statusEl) {
-                statusEl.style.color = '#ef4444';
-                statusEl.textContent = err.message || 'Guest session initialization failed.';
-              }
-            }
-            return;
-          }
-
           const email = $('nom-fb-email') ? $('nom-fb-email').value.trim() : '';
           const pass = $('nom-fb-pass') ? $('nom-fb-pass').value : '';
           const name = $('nom-fb-name') ? $('nom-fb-name').value.trim() : '';
@@ -2546,14 +2896,6 @@
           } finally {
             if (submitBtn) submitBtn.disabled = false;
           }
-        });
-      }
-
-      if (authGuest) {
-        authGuest.addEventListener('click', () => {
-          this.accountName = 'Local Guest';
-          localStorage.setItem('mave_account_name', this.accountName);
-          hideModal();
         });
       }
 
@@ -2612,21 +2954,51 @@
     }
 
     bindSettingsPanel() {
+      api.invoke('settings:get').then((cfg) => {
+        if (!cfg) return;
+        if (cfg.nodeRole) {
+          this.role = cfg.nodeRole;
+          this.updateNodeDisplay();
+        }
+        if ($('node-toggle-gpu')) $('node-toggle-gpu').checked = cfg.nodeGpuAccel !== false;
+        if ($('node-toggle-cam')) $('node-toggle-cam').checked = cfg.nodeCamRelay !== false;
+        if ($('node-toggle-ios')) $('node-toggle-ios').checked = cfg.nodeIosAudio !== false;
+        if (cfg.mascotStyle && $('mascot-style-select')) {
+          $('mascot-style-select').value = cfg.mascotStyle;
+          this.avatar.applyStyle(cfg.mascotStyle);
+        }
+        if (cfg.mascotPalette) {
+          this.avatar.applyPalette(cfg.mascotPalette);
+          document.querySelectorAll('.palette-swatch').forEach((sw) => {
+            sw.classList.toggle('active', sw.dataset.palette === cfg.mascotPalette);
+          });
+        }
+      }).catch(() => {});
+
+      if ($('node-toggle-gpu')) {
+        $('node-toggle-gpu').addEventListener('change', (e) => api.invoke('settings:update', { nodeGpuAccel: e.target.checked }));
+      }
+      if ($('node-toggle-cam')) {
+        $('node-toggle-cam').addEventListener('change', (e) => api.invoke('settings:update', { nodeCamRelay: e.target.checked }));
+      }
+      if ($('node-toggle-ios')) {
+        $('node-toggle-ios').addEventListener('change', (e) => api.invoke('settings:update', { nodeIosAudio: e.target.checked }));
+      }
+
       if ($('settings-node-role-select')) {
         $('settings-node-role-select').addEventListener('change', () => {
           const val = $('settings-node-role-select').value;
           this.role = val;
           localStorage.setItem('mave_node_role', val);
+          api.invoke('settings:update', { nodeRole: val });
           this.updateNodeDisplay();
         });
       }
 
       if ($('btn-relaunch-onboarding')) {
         $('btn-relaunch-onboarding').addEventListener('click', () => {
-          if ($('node-onboarding-modal')) {
-            $('node-onboarding-modal').hidden = false;
-            if ($('nom-step-auth')) $('nom-step-auth').style.display = 'block';
-            if ($('nom-step-role')) $('nom-step-role').style.display = 'none';
+          if (api && api.invoke) {
+            api.invoke('app:open-onboarding').catch(() => {});
           }
         });
       }
@@ -2658,6 +3030,7 @@
           swatch.classList.add('active');
           const p = swatch.dataset.palette;
           this.avatar.applyPalette(p);
+          api.invoke('settings:update', { mascotPalette: p });
         });
       });
 
@@ -2665,6 +3038,7 @@
         $('mascot-style-select').addEventListener('change', () => {
           const val = $('mascot-style-select').value;
           this.avatar.applyStyle(val);
+          api.invoke('settings:update', { mascotStyle: val });
         });
       }
 
@@ -3066,6 +3440,63 @@
       setTimeout(() => $('prompt').focus(), 50);
     }
   });
+
+  // In-window startup & runtime loader (never as a floating desktop snackbar)
+  function renderWindowLoader(status) {
+    const el = $('ai-loading');
+    if (!el || !status) return;
+    const ai = status.ai || { state: 'ready', percent: 100 };
+    const voice = status.voice || { state: 'ready' };
+    const textEl = $('ai-loading-text');
+    const pctEl = $('ai-loading-pct');
+    const barEl = $('ai-loading-bar');
+    const noteEl = $('ai-loading-note');
+    const retryBtn = $('ai-loading-retry');
+
+    const aiBusy = ai.state === 'preparing' || ai.state === 'loading';
+    const voiceBusy = voice.state === 'loading';
+
+    if (ai.state === 'failed') {
+      el.dataset.state = 'failed';
+      el.hidden = false;
+      if (textEl) textEl.textContent = 'Local runtime could not start';
+      if (pctEl) pctEl.textContent = '';
+      if (barEl) barEl.style.width = '0%';
+      if (noteEl) noteEl.textContent = ai.label || 'You can retry starting the local AI or switch to a cloud model.';
+      if (retryBtn) retryBtn.hidden = false;
+      return;
+    }
+
+    if (aiBusy || voiceBusy) {
+      const p = Math.max(0, Math.min(100, ai.percent || 0));
+      el.dataset.state = 'loading';
+      el.hidden = false;
+      if (textEl) {
+        textEl.textContent = ai.state === 'preparing'
+          ? 'Preparing MAVE workspace & local runtime…'
+          : ai.state === 'loading'
+            ? `Starting local AI · ${ai.label || 'initializing'}`
+            : 'Initializing speech engine…';
+      }
+      if (pctEl) pctEl.textContent = aiBusy ? `${p}%` : '';
+      if (barEl) barEl.style.width = `${p}%`;
+      if (noteEl) noteEl.textContent = voiceBusy && aiBusy ? 'Initializing speech in parallel · You can browse settings or cloud models immediately.' : '';
+      if (retryBtn) retryBtn.hidden = true;
+      return;
+    }
+
+    el.dataset.state = 'ready';
+    el.hidden = true;
+    if (retryBtn) retryBtn.hidden = true;
+  }
+
+  if ($('ai-loading-retry') && api && api.invoke) {
+    $('ai-loading-retry').addEventListener('click', () => {
+      api.invoke('loader:retry').catch(() => {});
+    });
+  }
+  if (api && api.on) api.on('loader', renderWindowLoader);
+  if (api && api.invoke) api.invoke('loader:status').then(renderWindowLoader).catch(() => {});
 
   document.addEventListener('section-shown', (e) => { if (e.detail === 'home' && $('prompt')) setTimeout(() => $('prompt').focus(), 60); });
   renderSetup();

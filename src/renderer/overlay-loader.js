@@ -82,6 +82,9 @@
     }
   }
 
-  api.on('loader', render);
-  api.invoke('loader:status').then(render).catch(() => {});
+  // Startup status now renders inside MAVE's own window (#ai-loading),
+  // never as a floating desktop overlay snackbar.
+  card.classList.remove('show');
+  card.hidden = true;
+  pointer(false);
 })();

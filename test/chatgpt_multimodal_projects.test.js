@@ -115,9 +115,11 @@ test('ThreadManager: Timeline Grouping (Pinned, Today, Yesterday, 7 Days, 30 Day
   thPinned.pinned = true;
   thPinned.updatedAt = now - (oneDayMs * 10); // older, but pinned
 
-  // Thread yesterday
+  // Thread yesterday (anchored to calendar midnight so test passes at any hour)
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
   const thYesterday = tm.createThread('Yesterday Debrief', 'desktop');
-  thYesterday.updatedAt = now - (oneDayMs * 1.5);
+  thYesterday.updatedAt = startOfToday.getTime() - (12 * 60 * 60 * 1000);
 
   // Thread 7 days
   const th7Days = tm.createThread('Last Week Sprint', 'desktop');

@@ -45,8 +45,8 @@ function matchIntent(text) {
   }
 
   // [open chrome and] search [google] for … / google … / look up …
-  m = new RegExp(`^(?:(?:open|launch|start|use) ${BROWSERS}\\s*(?:,|and|then|and then)?\\s*)?(?:search(?: google| the web| online)?(?: for)?|google|look up|find me|find|browse(?: the web| online)?(?: for)?) (.+?)(?: on (?:google|chrome|the web|the internet|online))?$`, 'i').exec(t);
-  if (m && !/\b(?:file|folder|document|on (?:my|this) (?:pc|computer|laptop))\b/i.test(m[1])) {
+  m = new RegExp(`^(?:(?:open|launch|start|use) ${BROWSERS}\\s*(?:,|and|then|and then)?\\s*)?(?:search(?: google| the web| online)?(?: for)?|google|look up|find me|find(?!\\s+out\\b)|browse(?: the web| online)?(?: for)?) (.+?)(?: on (?:google|chrome|the web|the internet|online))?$`, 'i').exec(t);
+  if (m && !/\b(?:file|folder|document|meaning|difference|out|on (?:my|this) (?:pc|computer|laptop))\b/i.test(m[1])) {
     // "… and browse their menu": search now, then the model carries on from the results page.
     const [query, rest] = splitFollowUp(m[1]);
     // Songs and films usually aren't free to download: the model gets them playing instead.

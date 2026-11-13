@@ -8,9 +8,45 @@ const path = require('path');
 const os = require('os');
 const { app } = require('electron');
 
-function defaultMemoryPath() {
-  const dir = app && app.getPath ? app.getPath('userData') : path.join(os.homedir(), '.bigfoot');
-  return path.join(dir, 'memory.json');
+function defaultMemoryPath(userIdOrOptions = null, options = {}) {
+  let uid = null;
+  let opts = options;
+
+  if (typeof userIdOrOptions === 'string') {
+    uid = userIdOrOptions.trim();
+  } else if (userIdOrOptions && typeof userIdOrOptions === 'object') {
+    opts = { ...userIdOrOptions, ...options };
+    if (opts.userId) uid = String(opts.userId).trim();
+  } else if (options && options.userId) {
+    uid = String(options.userId).trim();
+  }
+
+  if (opts && opts.baseDir) {
+    if (!uid || uid.toLowerCase() === 'default') {
+      return path.join(opts.baseDir, 'memory.json');
+    }
+    const safeUid = uid.replace(/[/\\:*?"<>|]/g, '_');
+    return path.join(opts.baseDir, 'users', safeUid, 'memory.json');
+  }
+
+  const baseDir = process.env.APPDATA
+    ? path.join(process.env.APPDATA, 'mave')
+    : (app && app.getPath ? app.getPath('userData') : path.join(os.homedir(), '.bigfoot'));
+
+  if (!uid || uid.toLowerCase() === 'default') {
+    if (process.env.APPDATA) {
+      const mavePath = path.join(process.env.APPDATA, 'mave', 'memory.json');
+      const bigfootPath = path.join(os.homedir(), '.bigfoot', 'memory.json');
+      if (!fs.existsSync(mavePath) && fs.existsSync(bigfootPath)) {
+        return bigfootPath;
+      }
+      return mavePath;
+    }
+    return path.join(baseDir, 'memory.json');
+  }
+
+  const safeUid = uid.replace(/[/\\:*?"<>|]/g, '_');
+  return path.join(baseDir, 'users', safeUid, 'memory.json');
 }
 
 const SHORT_KEYWORDS = new Set(['me', 'ai', 'os', 'pc', 'ui', 'ip', 'se', 'db', 'js', 'py']);
@@ -24,8 +60,89 @@ function cleanKeywords(text) {
 }
 
 class MemoryStore {
-  constructor(filePath = defaultMemoryPath()) {
-    this.file = filePath;
+  static _userInstances = new Map();
+
+  static forUser(userId = 'default', options = {}) {
+    const uid = (typeof userId === 'string' ? userId.trim() : null) || (options && options.userId ? String(options.userId).trim() : 'default');
+    const storagePath = options.storagePath || options.filePath || defaultMemoryPath(uid, options);
+    const cacheKey = `${uid}:${storagePath}`;
+
+    if (!options.fresh && MemoryStore._userInstances.has(cacheKey)) {
+      return MemoryStore._userInstances.get(cacheKey);
+    }
+
+    const mergedOptions = { ...options, userId: uid, storagePath };
+    const instance = new MemoryStore(mergedOptions);
+    if (!options.noCache) {
+      MemoryStore._userInstances.set(cacheKey, instance);
+    }
+    return instance;
+  }
+
+  static purgeUserData(userId, options = {}) {
+    const uid = typeof userId === 'string' ? userId.trim() : (userId && userId.userId ? String(userId.userId).trim() : null);
+    if (!uid) throw new Error('userId is required to purge user data');
+
+    for (const [key, instance] of MemoryStore._userInstances.entries()) {
+      if (key.startsWith(`${uid}:`)) {
+        instance.memories = [];
+        instance.keywordIndex = new Map();
+        MemoryStore._userInstances.delete(key);
+      }
+    }
+
+    const filePath = options.storagePath || options.filePath || defaultMemoryPath(uid, options);
+    let removed = false;
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.rmSync(filePath, { force: true });
+        removed = true;
+      }
+      const userDir = path.dirname(filePath);
+      if (uid.toLowerCase() !== 'default' && fs.existsSync(userDir)) {
+        const remaining = fs.readdirSync(userDir);
+        if (remaining.length === 0) {
+          fs.rmdirSync(userDir);
+        }
+      }
+    } catch {}
+
+    return true;
+  }
+
+  purgeUserData() {
+    return MemoryStore.purgeUserData(this.userId, this.options);
+  }
+
+  constructor(filePathOrOptions = null, options = {}) {
+    let resolvedPath = null;
+    let resolvedUserId = 'default';
+    let resolvedOptions = {};
+
+    if (typeof filePathOrOptions === 'string') {
+      if (filePathOrOptions.includes('/') || filePathOrOptions.includes('\\') || filePathOrOptions.endsWith('.json')) {
+        resolvedPath = filePathOrOptions;
+        resolvedUserId = options.userId || 'default';
+        resolvedOptions = options;
+      } else {
+        resolvedUserId = filePathOrOptions || 'default';
+        resolvedOptions = options;
+        resolvedPath = options.storagePath || options.filePath || defaultMemoryPath(resolvedUserId, options);
+      }
+    } else if (filePathOrOptions && typeof filePathOrOptions === 'object') {
+      resolvedOptions = filePathOrOptions;
+      resolvedUserId = filePathOrOptions.userId || options.userId || 'default';
+      resolvedPath = filePathOrOptions.storagePath || filePathOrOptions.filePath || options.storagePath || options.filePath || defaultMemoryPath(resolvedUserId, resolvedOptions);
+    } else {
+      resolvedUserId = options.userId || 'default';
+      resolvedOptions = options;
+      resolvedPath = options.storagePath || options.filePath || defaultMemoryPath(resolvedUserId, options);
+    }
+
+    this.userId = resolvedUserId;
+    this.file = resolvedPath;
+    this.storagePath = resolvedPath;
+    this.options = resolvedOptions;
     this.memories = [];
     this.keywordIndex = new Map();
     this.load();
@@ -188,9 +305,16 @@ class MemoryStore {
    * Remove a memory by its ID or exact text match.
    */
   forget(idOrText) {
-    const target = String(idOrText || '').trim().toLowerCase();
+    const raw = String(idOrText || '').trim().toLowerCase();
+    if (!raw) return false;
+    const cleanTarget = raw.replace(/^(?:that\s+)?(?:i\s+)?(?:like|love|prefer|am|use)\s+/i, '').trim();
     const countBefore = this.memories.length;
-    this.memories = this.memories.filter((m) => m.id !== idOrText && m.fact.toLowerCase() !== target);
+    this.memories = this.memories.filter((m) => {
+      if (m.id === idOrText) return false;
+      const f = m.fact.toLowerCase();
+      if (f === raw || f === cleanTarget || (cleanTarget.length >= 3 && f.includes(cleanTarget))) return false;
+      return true;
+    });
     const removed = countBefore - this.memories.length;
     if (removed > 0) {
       this.rebuildIndex();
@@ -231,11 +355,12 @@ class MemoryStore {
   }
 
   /**
-   * Automatically detect and extract user tastes, preferences, and habits from an interaction.
+   * Automatically detect and extract user tastes, preferences, identity, and instructions from an interaction.
+   * Mirrors ChatGPT continuous learning and memory persistence.
    */
-  autoExtractTaste(userText, assistantText = '') {
+  autoExtractLearnings(userText, assistantText = '') {
     const text = String(userText || '').trim();
-    if (!text || text.length < 4) return [];
+    if (!text || text.length < 3) return [];
 
     const lower = text.toLowerCase();
     const extracted = [];
@@ -268,7 +393,64 @@ class MemoryStore {
       }
     }
 
-    // 3. Explicit preference: "i prefer dark mode", "i like typescript", "always use tabs"
+    // 3. Explicit Memory Instruction ("Remember that...", "Remember I...", "Don't forget that...")
+    const rememberMatch = /\b(?:remember(?: that)?|don['’]?t forget(?: that)?|keep in mind(?: that)?|note that)\s+([^.,;!?\n][^.,;!?\n]{2,120})/i.exec(text);
+    if (rememberMatch) {
+      const fact = rememberMatch[1].trim();
+      extracted.push({
+        category: 'instruction',
+        preference: fact,
+        keywords: ['remember', 'memory', ...fact.toLowerCase().split(/\s+/)],
+      });
+    }
+
+    // 4. Identity & Name ("My name is...", "Call me...", "I am [Name]")
+    const nameMatch = /\b(?:my name is|i am called|call me)\s+([a-zA-Z0-9_ -]{2,30})\b/i.exec(text);
+    if (nameMatch) {
+      const name = nameMatch[1].trim();
+      if (!/^(here|ready|done|online|offline|sorry|back)$/i.test(name)) {
+        extracted.push({
+          category: 'identity',
+          preference: `User's name is ${name}`,
+          keywords: ['name', 'user', 'identity', name.toLowerCase()],
+        });
+      }
+    }
+
+    // 5. Profession / Role ("I am a software engineer", "I work as a designer")
+    const roleMatch = /\b(?:i am an?|i work as an?|my job is|my profession is)\s+([a-zA-Z0-9_ -]{3,40})\b/i.exec(text);
+    if (roleMatch && !/\b(human|person|robot|ai|ready|here)\b/i.test(roleMatch[1])) {
+      const role = roleMatch[1].trim();
+      extracted.push({
+        category: 'profession',
+        preference: `User works as ${role}`,
+        keywords: ['role', 'job', 'profession', ...role.toLowerCase().split(/\s+/)],
+      });
+    }
+
+    // 6. Projects & Building ("I am building...", "I am working on...", "My project is...")
+    const projMatch = /\b(?:i am building|i'm building|i am working on|i'm working on|my project is)\s+([^.,;!?\n]{3,60})/i.exec(text);
+    if (projMatch) {
+      const proj = projMatch[1].trim();
+      extracted.push({
+        category: 'project',
+        preference: `User is building: ${proj}`,
+        keywords: ['project', 'building', ...proj.toLowerCase().split(/\s+/)],
+      });
+    }
+
+    // 7. Tech Stack & Coding Preferences ("I code in...", "I use typescript", "I primarily use...")
+    const techMatch = /\b(?:i (?:primarily )?(?:code in|write in|develop in|use)|my tech stack is)\s+([a-zA-Z0-9_ #+.-]{2,40})/i.exec(text);
+    if (techMatch && /\b(python|javascript|typescript|c\+\+|rust|go|golang|swift|kotlin|java|react|vue|node|electron|angular|django|flask|tailwind)\b/i.test(techMatch[1])) {
+      const tech = techMatch[1].trim();
+      extracted.push({
+        category: 'tech',
+        preference: `User uses ${tech}`,
+        keywords: ['tech', 'programming', tech.toLowerCase()],
+      });
+    }
+
+    // 8. General preference: "i prefer dark mode", "i like typescript", "always use tabs"
     const generalPrefMatch = /\b(?:i (?:really )?prefer|i always use|my favorite\s+([a-zA-Z0-9_-]+)\s+is|i (?:like|love))\s+([^.,;!?\n]{3,60})/i.exec(text);
     if (generalPrefMatch && !extracted.length) {
       const subject = generalPrefMatch[1] || 'general';
@@ -282,12 +464,31 @@ class MemoryStore {
       }
     }
 
+    // 9. Explicit Forget Command ("forget that...", "delete memory of...")
+    const forgetMatch = /\b(?:forget(?: that)?|delete memory(?: of)?|remove memory(?: of)?)\s+([^.,;!?\n]{3,60})/i.exec(text);
+    if (forgetMatch) {
+      const target = forgetMatch[1].trim();
+      this.forget(target);
+      try {
+        const { getChatGPTPersonalization } = require('./chatgpt/personalization');
+        const p = getChatGPTPersonalization();
+        const mems = p.listMemories();
+        const found = mems.find((m) => m.text.toLowerCase().includes(target.toLowerCase()));
+        if (found) p.deleteMemory(found.id);
+      } catch {}
+      return []; // Exit immediately so forget commands do not re-add preferences
+    }
+
     // Save extracted items into long-term memory
     for (const item of extracted) {
       this.recordTaste(item.category, item.preference, item.keywords);
     }
 
     return extracted;
+  }
+
+  autoExtractTaste(userText, assistantText = '') {
+    return this.autoExtractLearnings(userText, assistantText);
   }
 
   /**
@@ -436,9 +637,9 @@ class MemoryStore {
         keywords: ['instagram', 'dm', 'profile', 'post', 'social'],
       },
       {
-        fact: 'Firebase Playbook: Firebase CLI is installed locally. Use "firebase projects:list" to list projects, "firebase deploy" to deploy hosting/functions/firestore, "firebase emulators:start" for local development, and "firebase init" for setup. Web console: https://console.firebase.google.com. Active projects include Fromnear (studio-6464285995-59fdf) and fir-demo-project.',
+        fact: 'Firebase Playbook: Firebase CLI is installed locally. Use "firebase projects:list" to list projects, "firebase deploy" to deploy hosting/functions/firestore, "firebase emulators:start" for local development, and "firebase init" for setup. Web console: https://console.firebase.google.com. Active projects include Mave (mave-assistant-9026) and fir-demo-project.',
         topic: 'project',
-        keywords: ['firebase', 'hosting', 'firestore', 'deploy', 'database', 'cloud', 'backend', 'fromnear'],
+        keywords: ['firebase', 'hosting', 'firestore', 'deploy', 'database', 'cloud', 'backend', 'mave'],
       },
     ];
 
@@ -465,13 +666,35 @@ class MemoryStore {
 
 // Global singleton instance for the app
 let defaultStore = null;
-function getMemoryStore(customPath = null) {
-  if (customPath) return new MemoryStore(customPath);
+function getMemoryStore(customPathOrOptions = null) {
+  if (typeof customPathOrOptions === 'string') {
+    if (customPathOrOptions.includes('/') || customPathOrOptions.includes('\\') || customPathOrOptions.endsWith('.json')) {
+      return new MemoryStore(customPathOrOptions);
+    }
+    return MemoryStore.forUser(customPathOrOptions);
+  }
+  if (customPathOrOptions && typeof customPathOrOptions === 'object') {
+    if (customPathOrOptions.userId) {
+      return MemoryStore.forUser(customPathOrOptions.userId, customPathOrOptions);
+    }
+    if (customPathOrOptions.storagePath || customPathOrOptions.filePath) {
+      return new MemoryStore(customPathOrOptions);
+    }
+  }
   if (!defaultStore) {
-    defaultStore = new MemoryStore();
+    defaultStore = MemoryStore.forUser('default');
     defaultStore.seedAppPlaybooks();
   }
   return defaultStore;
+}
+
+function purgeUserData(userId, options = {}) {
+  const memPurged = MemoryStore.purgeUserData(userId, options);
+  try {
+    const { PersonalKnowledgeGraph } = require('./rag/knowledge_graph');
+    PersonalKnowledgeGraph.purgeUserData(userId, options);
+  } catch {}
+  return memPurged;
 }
 
 function getUserProfileSummary() {
@@ -482,15 +705,27 @@ function getUserProfileSummary() {
     const cpus = os.cpus();
     const cpuModel = cpus && cpus[0] ? cpus[0].model.trim() : 'AMD Ryzen';
     const ramGB = Math.round(os.totalmem() / (1024 ** 3));
-    return `User: "${user}" on PC "${hostname}" (${platform}). Specs: ${cpuModel}, NVIDIA GeForce RTX 5060 (8 GB dedicated VRAM), ${ramGB} GB system RAM. Local AI: Qwen3-VL models running directly on their GPU. Mobile LAN Controller: active on port 4040. Telegram Bot: @FromnearTaskManager_bot.`;
+    return `User: "${user}" on PC "${hostname}" (${platform}). Specs: ${cpuModel}, NVIDIA GeForce RTX 5060 (8 GB dedicated VRAM), ${ramGB} GB system RAM. Local AI: Qwen3-VL models running directly on their GPU. Mobile LAN Controller: active on port 4040. Telegram Bot: @MaveAssistant_bot.`;
   } catch {
     return 'User on Windows PC with NVIDIA GeForce RTX 5060 GPU and Mave local AI.';
   }
 }
+
+const { MemoryDatabase } = require('./memory/memory_database');
+const { MemoryPipeline } = require('./memory/memory_pipeline');
+const { getMemoryScopeRouter, ScopeCategory } = require('./memory/memory_scope_router');
+const { getContextBudgetManager, ContextBudgetManager } = require('./memory/context_budget_manager');
 
 module.exports = {
   MemoryStore,
   getMemoryStore,
   defaultMemoryPath,
   getUserProfileSummary,
+  purgeUserData,
+  MemoryDatabase,
+  MemoryPipeline,
+  getMemoryScopeRouter,
+  ScopeCategory,
+  getContextBudgetManager,
+  ContextBudgetManager,
 };

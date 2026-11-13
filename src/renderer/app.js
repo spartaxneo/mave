@@ -4,8 +4,14 @@
 (async () => {
   const api = window.buddy;
   const $ = (id) => document.getElementById(id);
-  const TITLES = { home: 'Home', terminal: 'Terminal', data: 'Data Tab', channels: 'Channels', assistant: 'Assistant', account: 'Models', voice: 'Voice', superpowers: 'Superpowers', general: 'General' };
-  const ALIASES = { listening: 'voice', models: 'account' }; // links to pages
+  const escapeHtml = (str) => String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+  const TITLES = { home: 'Home', terminal: 'Terminal', data: 'Tabular Data SQL', channels: 'Channels', 'virtual-computer': 'Virtual Computer', mesh: 'Brain Mesh & Devices', assistant: 'Assistant', models: 'Models', voice: 'Voice', superpowers: 'Superpowers', general: 'General', appearance: 'Appearance' };
+  const ALIASES = { listening: 'voice', account: 'models', profile: 'firebase', shortcuts: 'appearance', 'archived-chats': 'data-controls', data: 'data-controls' };
   const update = (patch) => api.invoke('settings:update', patch).then((v) => { s = v; return v; }).catch(() => patch);
 
   let s = null;
@@ -16,39 +22,193 @@
   }
   if (!s) s = { theme: 'dark', assistantName: 'Mave' };
 
-  function applyTheme(theme) {
-    const t = theme || 'dark';
-    document.documentElement.setAttribute('data-theme', t);
-    document.body.classList.toggle('theme-light', t === 'light');
-    document.body.classList.toggle('theme-dark', t === 'dark');
-    document.body.classList.toggle('theme-system', t === 'system');
+  function resolveSystemTheme(t) {
+    if (t === 'system') {
+      const dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return dark ? 'dark' : 'light';
+    }
+    return t || 'light';
   }
-  applyTheme(s.theme || 'dark');
+  function applyTheme(theme) {
+    const raw = theme || 'light';
+    const resolved = resolveSystemTheme(raw);
+    document.documentElement.setAttribute('data-theme', resolved);
+    document.body.classList.toggle('theme-light', resolved === 'light');
+    document.body.classList.toggle('theme-dark', resolved === 'dark');
+    document.body.classList.toggle('theme-system', raw === 'system');
+  }
+  function applyAccent(colorKey) {
+    const colors = {
+      blue: '#2563eb',
+      emerald: '#10a37f',
+      indigo: '#4f46e5',
+      violet: '#8b5cf6',
+      amber: '#f59e0b',
+    };
+    const hex = colors[colorKey] || colors.blue;
+    document.documentElement.style.setProperty('--buddy', hex);
+    document.documentElement.style.setProperty('--accent', hex);
+    document.documentElement.style.setProperty('--accent-primary', hex);
+  }
+  window.__applyTheme = applyTheme;
+  window.__applyAccent = applyAccent;
+  applyTheme(s.theme || 'light');
+  applyAccent(s.accentColor || 'blue');
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if ((s && s.theme) === 'system') applyTheme('system');
+    });
+  }
   if (typeof UI !== 'undefined' && UI.titlebar) UI.titlebar();
 
   // navigation & ChatGPT layout
   const SETTINGS_SECTIONS = new Set([
-    'general', 'notifications', 'customization', 'plugins', 'voice',
+    'general', 'appearance', 'notifications', 'customization', 'plugins', 'voice',
     'billing', 'usage', 'analytics', 'data-controls', 'storage',
     'safety', 'security', 'governance', 'trusted-contact',
-    'account', 'superpowers', 'assistant', 'nodes', 'companion',
-    'firebase', 'workspace', 'sentinel', 'vorssaint'
+    'models', 'superpowers', 'assistant', 'nodes', 'companion',
+    'firebase', 'workspace', 'sentinel',
+    'virtual-computer', 'agents', 'mesh-settings'
   ]);
   let activeMain = 'home';
   let micTesting = false;
+
+  const SETTINGS_CATEGORIES = {
+    general: {
+      title: 'General',
+      subs: [
+        { pane: 'appearance', title: 'Appearance & Display', desc: 'Theme, accent color, typography, and contrast' },
+        { pane: 'customization', title: 'Customization & Memory', desc: 'Personal instructions, assistant persona, and saved preferences' },
+        { pane: 'notifications', title: 'Notifications & Alerts', desc: 'Desktop completion alerts and sound preferences' },
+      ],
+    },
+    models: {
+      title: 'AI Models',
+      subs: [
+        { pane: 'usage', title: 'Usage & Token Limits', desc: 'Session and monthly token consumption breakdown' },
+        { pane: 'analytics', title: 'Performance Analytics', desc: 'Latency, model mix, and response efficiency stats' },
+      ],
+    },
+    workspace: {
+      title: 'Workspace & Agents',
+      subs: [
+        { pane: 'agents', title: 'Agent & Swarm Controls', desc: 'Autonomous task limits, multi-agent coordination, and defaults' },
+        { pane: 'plugins', title: 'Plugins & MCP Tools', desc: 'Manage connected MCP servers and built-in capabilities' },
+        { pane: 'superpowers', title: 'Skills & Connected Services', desc: 'Custom workflows, tool packs, and integrations' },
+        { pane: 'assistant', title: 'Assistant Identity', desc: 'Assistant display name and local activation profile' },
+      ],
+    },
+    'virtual-computer': {
+      title: 'Virtual PC & Mesh',
+      subs: [
+        { pane: 'mesh-settings', title: 'Brain Mesh & Compute Sharing', desc: 'Peer discovery, compute resource caps, and task routing' },
+        { pane: 'nodes', title: 'Remote Nodes & Tunnel', desc: 'Mobile companion pairing and Telegram bridge' },
+        { pane: 'storage', title: 'Storage & Local Cache', desc: 'Downloaded models, workspace caches, and disk cleanup' },
+      ],
+    },
+    voice: {
+      title: 'Voice & Companion',
+      subs: [
+        { pane: 'companion', title: 'Vorssaint Notch & Companion', desc: 'Top notch capsule behavior, mascot style, and palette' },
+      ],
+    },
+    billing: {
+      title: 'Account & Sync',
+      subs: [
+        { pane: 'firebase', title: 'Cloud Sync & Backup', desc: 'Optional cloud synchronization and server configuration' },
+      ],
+    },
+    security: {
+      title: 'Privacy & Security',
+      subs: [
+        { pane: 'safety', title: 'Safety Guardrails', desc: 'Action confirmation rules and workspace boundaries' },
+        { pane: 'sentinel', title: 'Sensory Sentinel', desc: 'Connectivity monitoring and optional activity awareness' },
+        { pane: 'governance', title: 'Privacy Governance & DPDP', desc: 'Compliance controls, masking, and local audit trails' },
+        { pane: 'trusted-contact', title: 'Trusted Contact', desc: 'Approval escalation and recovery contact configuration' },
+        { pane: 'data-controls', title: 'Data Controls & Export', desc: 'Archive, export, or erase conversations and memory' },
+      ],
+    },
+  };
+
+  const SUB_TO_PARENT = {};
+  const SUB_META = {};
+  Object.entries(SETTINGS_CATEGORIES).forEach(([parent, cat]) => {
+    cat.subs.forEach((sub) => {
+      SUB_TO_PARENT[sub.pane] = parent;
+      SUB_META[sub.pane] = sub;
+    });
+  });
+
+  function renderSubSettingsUI(tab) {
+    const subHeader = $('settings-sub-header');
+    const subBackBtn = $('settings-sub-back-btn');
+    const subBackLabel = $('settings-sub-back-label');
+    const subCrumb = $('settings-sub-crumb');
+    const subnavWrap = $('settings-subnav-wrap');
+    const parentKey = SUB_TO_PARENT[tab];
+
+    if (subHeader) {
+      if (parentKey && SETTINGS_CATEGORIES[parentKey]) {
+        const parentTitle = SETTINGS_CATEGORIES[parentKey].title;
+        const subTitle = (SUB_META[tab] && SUB_META[tab].title) || tab;
+        subHeader.hidden = false;
+        if (subBackLabel) subBackLabel.textContent = `Back to ${parentTitle}`;
+        if (subCrumb) subCrumb.textContent = `${parentTitle} › ${subTitle}`;
+        if (subBackBtn) subBackBtn.onclick = () => openSettingsModal(parentKey);
+      } else {
+        subHeader.hidden = true;
+      }
+    }
+
+    if (subnavWrap) {
+      const cat = SETTINGS_CATEGORIES[tab];
+      if (!parentKey && cat && cat.subs && cat.subs.length) {
+        subnavWrap.hidden = false;
+        subnavWrap.innerHTML = '';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'settings-subnav-title';
+        titleEl.textContent = `${cat.title} Sub-Settings`;
+        const card = document.createElement('div');
+        card.className = 'settings-subnav-card';
+        cat.subs.forEach((sub) => {
+          const row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'settings-subnav-row';
+          row.innerHTML = `
+            <span class="settings-subnav-meta">
+              <span class="settings-subnav-name">${sub.title}</span>
+              <span class="settings-subnav-desc">${sub.desc}</span>
+            </span>
+            <span class="settings-subnav-chevron">›</span>
+          `;
+          row.addEventListener('click', () => openSettingsModal(sub.pane));
+          card.appendChild(row);
+        });
+        subnavWrap.appendChild(titleEl);
+        subnavWrap.appendChild(card);
+      } else {
+        subnavWrap.hidden = true;
+        subnavWrap.innerHTML = '';
+      }
+    }
+  }
 
   function openSettingsModal(tab = 'general') {
     tab = ALIASES[tab] || tab;
     if (!SETTINGS_SECTIONS.has(tab)) tab = 'general';
     const modal = $('settings-modal');
     if (modal) modal.hidden = false;
+    const highlightTab = SUB_TO_PARENT[tab] || tab;
     document.querySelectorAll('.settings-tab-btn').forEach((b) => {
-      b.classList.toggle('active', b.dataset.tab === tab);
+      b.classList.toggle('active', b.dataset.tab === highlightTab);
     });
     document.querySelectorAll('#settings-content section').forEach((p) => {
       const match = (p.dataset.pane && p.dataset.pane === tab) || (p.dataset.tab && p.dataset.tab === tab);
       p.hidden = !match;
     });
+    renderSubSettingsUI(tab);
+    const contentEl = $('settings-content');
+    if (contentEl) contentEl.scrollTop = 0;
     document.dispatchEvent(new CustomEvent('section-shown', { detail: tab }));
     if (tab !== 'voice' && micTesting) toggleMicTest(false);
     if (tab === 'voice') refreshMic();
@@ -64,12 +224,20 @@
     if (tab === 'safety') loadSafetySettings();
     if (tab === 'data-controls') loadDataControlsSettings();
     if (tab === 'billing') loadBillingSettings();
-    if (tab === 'vorssaint') loadVorssaintSettings();
     if (tab === 'workspace' && window.__maveNodeController) window.__maveNodeController.initWorkspace();
     if (tab === 'firebase' && window.__maveNodeController) window.__maveNodeController.initFirebase();
+    if (tab === 'mesh-settings' && typeof window.initMeshDashboardUI === 'function') {
+      window.initMeshDashboardUI();
+    }
     if (tab === 'nodes') {
       if (window.__maveNodeController) window.__maveNodeController.updateNodeDisplay();
       loadTunnelSettings();
+    }
+    if (tab === 'virtual-computer' && typeof loadVcSettings === 'function') {
+      loadVcSettings();
+    }
+    if (tab === 'models') {
+      renderModels();
     }
     requestAnimationFrame(() => {
       document.querySelectorAll('#settings-content section:not([hidden]) .segmented').forEach((el) => el._seg && el._seg.set(el._value()));
@@ -80,8 +248,13 @@
 
   function closeSettingsModal() {
     const modal = $('settings-modal');
-    if (modal) modal.hidden = true;
-    if (micTesting) toggleMicTest(false);
+    if (!modal || modal.hidden) return;
+    modal.classList.add('closing');
+    setTimeout(() => {
+      modal.hidden = true;
+      modal.classList.remove('closing');
+      if (micTesting) toggleMicTest(false);
+    }, 120);
   }
 
   function show(section) {
@@ -101,7 +274,13 @@
     $('section-title').textContent = section === 'assistant' ? s.assistantName : TITLES[section];
     document.title = section === 'home' ? (s.assistantName || 'Mave') : `${s.assistantName || 'Mave'} · ${TITLES[section] || 'Settings'}`;
     $('pane').scrollTop = 0;
-    $('pane').classList.toggle('fill', section === 'home' || section === 'terminal' || section === 'data' || section === 'channels');
+    $('pane').classList.toggle('fill', section === 'home' || section === 'terminal' || section === 'data' || section === 'channels' || section === 'virtual-computer' || section === 'mesh');
+    if (section === 'virtual-computer' && typeof window.initVirtualComputerUI === 'function') {
+      window.initVirtualComputerUI();
+    }
+    if (section === 'mesh' && typeof window.initMeshDashboardUI === 'function') {
+      window.initMeshDashboardUI();
+    }
     document.dispatchEvent(new CustomEvent('section-shown', { detail: section }));
   }
   window.show = show;
@@ -113,9 +292,25 @@
   $('pane').addEventListener('scroll', () => document.querySelector('.content').classList.toggle('scrolled', $('pane').scrollTop > 4));
   document.querySelectorAll('[data-link]').forEach((a) => a.addEventListener('click', () => api.invoke('app:open-link', a.dataset.link)));
 
-  // ChatGPT Sidebar & Settings Modal wiring
+  // Settings Modal triggers + Ctrl+, shortcut
   if ($('open-settings-btn')) $('open-settings-btn').addEventListener('click', () => openSettingsModal('general'));
+  if ($('titlebar-settings-btn')) $('titlebar-settings-btn').addEventListener('click', () => openSettingsModal('general'));
   if ($('settings-modal-close')) $('settings-modal-close').addEventListener('click', closeSettingsModal);
+  if ($('settings-back-to-app-btn')) $('settings-back-to-app-btn').addEventListener('click', closeSettingsModal);
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+      e.preventDefault();
+      const modal = $('settings-modal');
+      if (modal && !modal.hidden) closeSettingsModal();
+      else openSettingsModal('general');
+    } else if (e.key === 'Escape') {
+      const modal = $('settings-modal');
+      if (modal && !modal.hidden) {
+        e.preventDefault();
+        closeSettingsModal();
+      }
+    }
+  });
   const modalEl = $('settings-modal');
   if (modalEl) {
     modalEl.addEventListener('click', (e) => {
@@ -126,7 +321,349 @@
     b.addEventListener('click', () => openSettingsModal(b.dataset.tab));
   });
 
-  // ChatGPT User Profile Menu
+  // Settings Search Filtering (searches primary categories & reveals matching sub-settings)
+  if ($('settings-search-input')) {
+    $('settings-search-input').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      document.querySelectorAll('#settings-tabs .settings-tab-btn').forEach((b) => {
+        const tabKey = b.dataset.tab;
+        const txt = b.textContent.toLowerCase();
+        const cat = SETTINGS_CATEGORIES[tabKey];
+        const subHit = cat && cat.subs.some((sub) => (sub.title + ' ' + sub.desc + ' ' + sub.pane).toLowerCase().includes(q));
+        b.style.display = q && !txt.includes(q) && !subHit ? 'none' : 'flex';
+      });
+      document.querySelectorAll('#settings-tabs .settings-tab-list').forEach((list) => {
+        const hdr = list.previousElementSibling;
+        const anyVisible = [...list.querySelectorAll('.settings-tab-btn')].some((b) => b.style.display !== 'none');
+        if (hdr && hdr.classList.contains('settings-category-header')) {
+          hdr.style.display = anyVisible ? 'block' : 'none';
+        }
+      });
+      const subRes = $('settings-search-subresults');
+      if (subRes) {
+        if (!q) {
+          subRes.hidden = true;
+          subRes.innerHTML = '';
+        } else {
+          const matches = Object.values(SUB_META).filter((sub) => (sub.title + ' ' + sub.desc + ' ' + sub.pane).toLowerCase().includes(q));
+          if (matches.length) {
+            subRes.hidden = false;
+            subRes.innerHTML = '<div class="settings-category-header">Matching Sub-Settings</div>';
+            matches.forEach((sub) => {
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'settings-tab-btn';
+              btn.textContent = sub.title;
+              btn.addEventListener('click', () => openSettingsModal(sub.pane));
+              subRes.appendChild(btn);
+            });
+          } else {
+            subRes.hidden = true;
+            subRes.innerHTML = '';
+          }
+        }
+      }
+    });
+  }
+
+  // Settings General & Workspace Controls
+  if ($('settings-chat-folder-path') && s.projectlessChatFolder) {
+    $('settings-chat-folder-path').textContent = s.projectlessChatFolder;
+  }
+  if ($('settings-btn-change-folder')) {
+    $('settings-btn-change-folder').addEventListener('click', async () => {
+      try {
+        const folder = await api.invoke('dialog:openDirectory');
+        if (folder && $('settings-chat-folder-path')) {
+          $('settings-chat-folder-path').textContent = folder;
+          update({ projectlessChatFolder: folder });
+        }
+      } catch {}
+    });
+  }
+  if ($('settings-file-open-dest')) {
+    $('settings-file-open-dest').value = s.fileOpenDest || 'vscode';
+    $('settings-file-open-dest').addEventListener('change', (e) => update({ fileOpenDest: e.target.value }));
+  }
+  if ($('settings-terminal-shell')) {
+    $('settings-terminal-shell').value = s.terminalShell || 'powershell';
+    $('settings-terminal-shell').addEventListener('change', (e) => update({ terminalShell: e.target.value }));
+  }
+  if ($('settings-confirm-close-window')) {
+    $('settings-confirm-close-window').value = s.confirmCloseWindow || 'shortcut-only';
+    $('settings-confirm-close-window').addEventListener('change', (e) => update({ confirmCloseWindow: e.target.value }));
+  }
+
+  // Antigravity Collapsible Right Workspace Inspector (Canvas, Artifacts Preview, Real Workspace Files)
+  const wiEl = $('workspace-inspector');
+  const wiToggleBtn = $('workspace-panel-toggle-btn');
+  let wiCurrentSubdir = '';
+
+  async function loadWorkspaceFiles(relDir = wiCurrentSubdir) {
+    wiCurrentSubdir = relDir || '';
+    const treeEl = $('wi-files-tree');
+    const pathEl = $('wi-files-path');
+    if (!treeEl) return;
+    try {
+      const res = await api.invoke('ghost:workspace-tree', wiCurrentSubdir);
+      if (pathEl) {
+        pathEl.textContent = res.currentRel ? `${res.root}/${res.currentRel}` : (res.root || 'Workspace');
+      }
+      const entries = res && Array.isArray(res.entries) ? res.entries : [];
+      treeEl.innerHTML = '';
+
+      if (wiCurrentSubdir) {
+        const upRow = document.createElement('button');
+        upRow.type = 'button';
+        upRow.className = 'wi-file-row wi-dir-row';
+        upRow.innerHTML = '<span class="wi-file-icon">..</span><span class="wi-file-name">Parent directory</span>';
+        upRow.addEventListener('click', () => {
+          const parts = wiCurrentSubdir.split('/').filter(Boolean);
+          parts.pop();
+          loadWorkspaceFiles(parts.join('/'));
+        });
+        treeEl.append(upRow);
+      }
+
+      if (entries.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'wi-files-empty';
+        empty.textContent = 'No files in this directory.';
+        treeEl.append(empty);
+        return;
+      }
+
+      for (const item of entries) {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = `wi-file-row ${item.isDirectory ? 'wi-dir-row' : ''}`;
+        const icon = item.isDirectory ? '▸' : '·';
+        row.innerHTML = `<span class="wi-file-icon">${icon}</span><span class="wi-file-name">${escapeHtml(item.name)}</span>`;
+        row.title = item.fullPath;
+        row.addEventListener('click', async () => {
+          if (item.isDirectory) {
+            loadWorkspaceFiles(item.relPath);
+            return;
+          }
+          try {
+            const file = await api.invoke('ghost:read-file', item.fullPath);
+            if (file && file.ok) {
+              const ext = (file.ext || '').toLowerCase();
+              const isMarkdown = ext === 'md' || ext === 'markdown';
+              const isWebPreview = ext === 'html' || ext === 'htm' || ext === 'svg';
+              if ((isMarkdown || isWebPreview) && typeof window.__openClaudeArtifact === 'function') {
+                let previewHtml = file.content;
+                if (isMarkdown) {
+                  const rendered = typeof window.__renderMarkdownHtml === 'function'
+                    ? window.__renderMarkdownHtml(file.content)
+                    : `<pre style="white-space:pre-wrap;font-family:inherit;">${escapeHtml(file.content)}</pre>`;
+                  previewHtml = `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.65;color:#111827;padding:20px 24px;margin:0;}pre{background:#f3f4f6;padding:12px;border-radius:8px;overflow:auto;font-family:Consolas,monospace;font-size:12.5px;}code{background:#f3f4f6;padding:2px 5px;border-radius:4px;font-family:Consolas,monospace;font-size:12.5px;}h1,h2,h3,h4{margin:16px 0 8px;}hr{border:0;border-top:1px solid #e5e7eb;margin:16px 0;}</style></head><body>${rendered}</body></html>`;
+                }
+                window.__openClaudeArtifact({
+                  title: file.relPath || file.name,
+                  code: file.content,
+                  html: previewHtml,
+                  fullPath: file.fullPath,
+                });
+                return;
+              }
+              if (typeof window.__openChatGPTCanvas === 'function') {
+                const langMap = { py: 'python', js: 'javascript', mjs: 'javascript', ts: 'typescript', json: 'json', html: 'html', css: 'css', md: 'markdown', ps1: 'powershell', sh: 'bash', yml: 'yaml', yaml: 'yaml' };
+                window.__openChatGPTCanvas({
+                  title: file.relPath || file.name,
+                  language: langMap[ext] || ext || 'text',
+                  content: file.content,
+                  fullPath: file.fullPath,
+                });
+                return;
+              }
+            }
+          } catch {}
+          api.invoke('ghost:open-file', item.fullPath).catch(() => {});
+        });
+        treeEl.append(row);
+      }
+    } catch {
+      treeEl.innerHTML = '<div class="wi-files-empty">Unable to read workspace files.</div>';
+    }
+  }
+
+  function setWorkspaceTab(tab = 'canvas') {
+    if (!wiEl) return;
+    wiEl.hidden = false;
+    document.body.classList.add('workspace-inspector-open');
+    if (wiToggleBtn) wiToggleBtn.classList.add('active');
+
+    document.querySelectorAll('.wi-tab-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.wiTab === tab);
+    });
+    const canvasPane = $('chatgpt-canvas-pane');
+    const artPane = $('claude-artifacts-pane');
+    const filesPane = $('workspace-files-pane');
+    if (canvasPane) canvasPane.hidden = tab !== 'canvas';
+    if (artPane) artPane.hidden = tab !== 'artifacts';
+    if (filesPane) filesPane.hidden = tab !== 'files';
+    if (tab === 'files') loadWorkspaceFiles();
+  }
+
+  function closeWorkspaceInspector() {
+    if (!wiEl) return;
+    wiEl.hidden = true;
+    document.body.classList.remove('workspace-inspector-open');
+    document.body.classList.remove('canvas-open');
+    document.body.classList.remove('artifacts-open');
+    if (wiToggleBtn) wiToggleBtn.classList.remove('active');
+    if ($('chatgpt-canvas-pane')) $('chatgpt-canvas-pane').hidden = true;
+    if ($('claude-artifacts-pane')) $('claude-artifacts-pane').hidden = true;
+  }
+
+  window.__openWorkspaceTab = setWorkspaceTab;
+  window.__closeWorkspaceInspector = closeWorkspaceInspector;
+
+  if (wiToggleBtn) {
+    wiToggleBtn.addEventListener('click', () => {
+      if (wiEl && !wiEl.hidden) closeWorkspaceInspector();
+      else setWorkspaceTab('files');
+    });
+  }
+  if ($('wi-close-btn')) $('wi-close-btn').addEventListener('click', closeWorkspaceInspector);
+  if ($('wi-refresh-files-btn')) $('wi-refresh-files-btn').addEventListener('click', () => loadWorkspaceFiles());
+  document.querySelectorAll('.wi-tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => setWorkspaceTab(btn.dataset.wiTab || 'files'));
+  });
+
+  // 2. Mode Switcher (Chat | Work)
+  window.__maveAppMode = ($('mode-btn-chat') && $('mode-btn-chat').classList.contains('active')) ? 'chat' : 'work';
+  function setAppMode(mode) {
+    const normalizedMode = mode === 'chat' ? 'chat' : 'work';
+    window.__maveAppMode = normalizedMode;
+    const chatBtn = $('mode-btn-chat');
+    const workBtn = $('mode-btn-work');
+    const hint = $('composer-top-hint');
+    const prompt = $('prompt');
+    if (chatBtn) chatBtn.classList.toggle('active', normalizedMode === 'chat');
+    if (workBtn) workBtn.classList.toggle('active', normalizedMode === 'work');
+    if (normalizedMode === 'chat') {
+      if (hint) hint.textContent = 'Conversational mode — MAVE answers directly using your selected model.';
+      if (prompt) prompt.placeholder = 'Ask MAVE anything, @ to mention, / for actions';
+    } else {
+      if (hint) hint.textContent = 'Workspace mode — MAVE can execute tools, Python scripts, and Virtual Computer workflows.';
+      if (prompt) prompt.placeholder = 'Ask anything, @ to mention, / for tools & Virtual PC tasks';
+    }
+  }
+  if ($('mode-btn-chat')) $('mode-btn-chat').addEventListener('click', () => setAppMode('chat'));
+  if ($('mode-btn-work')) $('mode-btn-work').addEventListener('click', () => setAppMode('work'));
+
+  // 3. Access Permissions Mode Toggle (Synced with General -> Execution Permissions)
+  function updateFullAccess(enabled, persist = true) {
+    const pill = $('full-access-pill-btn');
+    const pillText = $('full-access-pill-text');
+    const switchEl = $('settings-perm-full-access');
+    if (pill) {
+      pill.classList.toggle('inactive', !enabled);
+      pill.classList.toggle('active', enabled);
+    }
+    if (pillText) pillText.textContent = enabled ? 'Full access' : 'Supervised';
+    if (switchEl && switchEl.checked !== enabled) switchEl.checked = enabled;
+    if (persist) update({ fullAccess: enabled, approvalMode: enabled ? 'auto' : 'risky' });
+  }
+  updateFullAccess(s.fullAccess !== false, false);
+  if ($('settings-perm-default')) {
+    $('settings-perm-default').checked = s.defaultPermissions !== false;
+    $('settings-perm-default').addEventListener('change', (e) => {
+      update({ defaultPermissions: e.target.checked });
+    });
+  }
+  if ($('full-access-pill-btn')) {
+    $('full-access-pill-btn').addEventListener('click', () => {
+      const curr = !$('full-access-pill-btn').classList.contains('inactive');
+      updateFullAccess(!curr);
+    });
+  }
+  if ($('settings-perm-full-access')) {
+    $('settings-perm-full-access').addEventListener('change', (e) => {
+      updateFullAccess(e.target.checked);
+    });
+  }
+
+  // 4. Unified Canonical Model Selector (Populated exclusively from real configured backend providers)
+  const capsuleModelBtn = $('capsule-model-picker-btn');
+  const capsuleModelDropdown = $('capsule-model-dropdown');
+
+  async function refreshCapsuleModels() {
+    try {
+      const cat = await api.invoke('models:catalog');
+      const items = (cat && Array.isArray(cat.items)) ? cat.items : [];
+      const activeItem = items.find((i) => i.active) || items[0];
+      const displayLabel = activeItem ? activeItem.name.replace(/\s*\(.*?\)/, '').trim() : (cat.activeLabel || 'Local AI');
+      if ($('capsule-model-label')) $('capsule-model-label').textContent = displayLabel;
+      if ($('model-picker-name')) $('model-picker-name').textContent = cat.activeLabel || displayLabel;
+
+      const list = $('capsule-model-options-list');
+      if (list) {
+        list.innerHTML = '';
+        for (const item of items) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `cmd-item ${item.active ? 'active' : ''}`;
+          btn.innerHTML = `
+            <div class="cmd-item-info">
+              <div class="cmd-item-title">
+                <span>${escapeHtml(item.name)}</span>
+                <span class="cmd-tag ${item.ready ? 'ready' : 'muted'}">${escapeHtml(item.badge || '')}</span>
+              </div>
+              <div class="cmd-item-sub">${escapeHtml(item.desc || '')}</div>
+            </div>
+          `;
+          btn.addEventListener('click', async () => {
+            capsuleModelDropdown.hidden = true;
+            if (item.id === 'auto') {
+              await update({ autoModelRouting: true });
+            } else if (item.provider === 'local') {
+              await update({ provider: 'local', autoModelRouting: false, ...(item.model ? { localModel: item.model } : {}) });
+            } else if (item.provider === 'ollama') {
+              await update({ provider: 'ollama', autoModelRouting: false, ollamaModel: item.model });
+            } else if (item.provider === 'colibri') {
+              await update({ provider: 'colibri', autoModelRouting: false, colibriModel: item.model });
+            } else if (item.provider === 'airllm') {
+              await update({ provider: 'airllm', autoModelRouting: false, airllmModel: item.model });
+            } else if (item.provider === 'anthropic') {
+              await update({ provider: 'anthropic', autoModelRouting: false });
+            } else if (item.provider === 'openai') {
+              await update({ provider: 'openai', autoModelRouting: false });
+            }
+            await refreshCapsuleModels();
+            if (typeof renderModels === 'function') renderModels();
+          });
+          list.append(btn);
+        }
+      }
+    } catch {}
+  }
+
+  if (capsuleModelBtn && capsuleModelDropdown) {
+    capsuleModelBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = capsuleModelDropdown.hidden;
+      capsuleModelDropdown.hidden = !willOpen;
+      if (willOpen) refreshCapsuleModels();
+    });
+    if ($('model-picker-name')) {
+      $('model-picker-name').addEventListener('click', (e) => {
+        e.stopPropagation();
+        capsuleModelDropdown.hidden = !capsuleModelDropdown.hidden;
+        if (!capsuleModelDropdown.hidden) refreshCapsuleModels();
+      });
+    }
+    document.addEventListener('click', (e) => {
+      if (!capsuleModelDropdown.contains(e.target) && !capsuleModelBtn.contains(e.target) && e.target !== $('model-picker-name')) {
+        capsuleModelDropdown.hidden = true;
+      }
+    });
+  }
+  refreshCapsuleModels();
+
+  // User Profile Popup Menu
   if ($('user-profile-btn')) {
     $('user-profile-btn').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -141,12 +678,6 @@
     }
   });
 
-  if ($('upm-try-plus')) {
-    $('upm-try-plus').addEventListener('click', () => {
-      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
-      openSettingsModal('billing');
-    });
-  }
   if ($('upm-personalization')) {
     $('upm-personalization').addEventListener('click', () => {
       if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
@@ -156,7 +687,7 @@
   if ($('upm-profile')) {
     $('upm-profile').addEventListener('click', () => {
       if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
-      openSettingsModal('customization');
+      openSettingsModal('firebase');
     });
   }
   if ($('upm-settings')) {
@@ -169,14 +700,7 @@
     $('upm-help').addEventListener('click', () => {
       if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
       show('home');
-      api.invoke('task:run', 'Sir, what all can you do? Show me your full capabilities.');
-    });
-  }
-  if ($('upm-logout')) {
-    $('upm-logout').addEventListener('click', () => {
-      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
-      api.invoke('conversation:reset');
-      show('home');
+      api.invoke('task:run', 'What capabilities are configured in MAVE right now?');
     });
   }
 
@@ -204,6 +728,12 @@
       winEl.classList.remove('sidebar-mobile-open');
     });
   }
+  if ($('sidebar-search-btn')) {
+    $('sidebar-search-btn').addEventListener('click', () => {
+      if ($('omnibox-trigger-btn')) $('omnibox-trigger-btn').click();
+      else if ($('chat-search')) $('chat-search').focus();
+    });
+  }
   if ($('sidebar-new-chat')) {
     $('sidebar-new-chat').addEventListener('click', () => {
       winEl.classList.remove('sidebar-mobile-open');
@@ -211,69 +741,11 @@
       if ($('new-chat')) $('new-chat').click();
     });
   }
-  document.querySelectorAll('#sidebar-recents .recent-item').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      show('home');
-      const p = btn.dataset.prompt;
-      if (p && $('prompt')) {
-        $('prompt').value = p;
-        $('prompt').dispatchEvent(new Event('input', { bubbles: true }));
-        $('prompt').focus();
-      }
+  if ($('mp-open-settings')) {
+    $('mp-open-settings').addEventListener('click', () => {
+      if (capsuleModelDropdown) capsuleModelDropdown.hidden = true;
+      openSettingsModal('models');
     });
-  });
-
-  // Model Picker Dropdown
-  const modelBtn = $('model-picker-btn');
-  const modelDropdown = $('model-picker-dropdown');
-  function updateModelHeader(label) {
-    if ($('model-picker-name')) $('model-picker-name').textContent = label;
-  }
-  if (modelBtn && modelDropdown) {
-    modelBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const hidden = !modelDropdown.hidden;
-      modelDropdown.hidden = hidden;
-      modelBtn.setAttribute('aria-expanded', String(!hidden));
-    });
-    document.addEventListener('click', (e) => {
-      if (!modelDropdown.contains(e.target) && e.target !== modelBtn) {
-        modelDropdown.hidden = true;
-        modelBtn.setAttribute('aria-expanded', 'false');
-      }
-    });
-    document.querySelectorAll('#model-picker-dropdown .mp-item').forEach((item) => {
-      item.addEventListener('click', async () => {
-        const type = item.dataset.modelType;
-        modelDropdown.hidden = true;
-        modelBtn.setAttribute('aria-expanded', 'false');
-        if (!type) return;
-
-        if (type === 'auto') {
-          await update({ autoRouting: true });
-          updateModelHeader('Mave 4o (Auto)');
-        } else if (type === 'local') {
-          await update({ provider: 'local', autoRouting: false });
-          updateModelHeader('Qwen 3-VL (Local)');
-        } else if (type === 'anthropic') {
-          await update({ provider: 'anthropic', autoRouting: false });
-          updateModelHeader('Claude 3.7 Sonnet');
-        } else if (type === 'openai') {
-          await update({ provider: 'openai', autoRouting: false });
-          updateModelHeader('GPT-4o (ChatGPT)');
-        } else if (type === 'airllm') {
-          await update({ airllmEnabled: true });
-          updateModelHeader('AirLLM 70B MoE');
-        }
-        renderActive();
-      });
-    });
-    if ($('mp-open-settings')) {
-      $('mp-open-settings').addEventListener('click', () => {
-        modelDropdown.hidden = true;
-        openSettingsModal('account');
-      });
-    }
   }
 
   // Global Keyboard Shortcuts
@@ -285,6 +757,10 @@
     } else if ((e.ctrlKey || e.metaKey) && e.key === ',') {
       e.preventDefault();
       openSettingsModal('general');
+    } else if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
+      e.preventDefault();
+      if (wiEl && !wiEl.hidden) closeWorkspaceInspector();
+      else setWorkspaceTab('files');
     } else if (e.key === 'Escape' && $('settings-modal') && !$('settings-modal').hidden) {
       closeSettingsModal();
     }
@@ -333,11 +809,14 @@
   const current = () => LLM[s.provider] || LLM.anthropic;
   let local = null;
   document.addEventListener('section-shown', (e) => {
-    if (e.detail === 'account' && !local) local = LocalAI.picker($('local-ai'), { onChange: renderLocalFoot });
+    if (e.detail === 'models' && !local && $('local-ai')) {
+      local = LocalAI.picker($('local-ai'), { onChange: renderLocalFoot });
+    }
   });
   function renderLocalFoot() {
     if (!local) return;
     renderActive();
+    refreshCapsuleModels();
   }
   UI.switchControl($('keep-loaded'), s.keepAiLoaded, (v) => update({ keepAiLoaded: v }));
   const autoUpdateToggle = $('auto-update-models');
@@ -393,14 +872,18 @@
 
   let modelsToken = 0;
   async function renderModels() {
-    const cloud = s.provider !== 'local';
-    document.querySelectorAll('[data-pane="account"] .cloud-only').forEach((el) => { el.hidden = !cloud; });
-    $('effort-row').hidden = s.provider !== 'anthropic';
-    $('detail-row').hidden = s.provider !== 'anthropic';
+    const cloud = s.provider === 'anthropic' || s.provider === 'openai';
+    document.querySelectorAll('[data-pane="models"] .cloud-only').forEach((el) => { el.hidden = !cloud; });
+    if ($('effort-row')) $('effort-row').hidden = s.provider !== 'anthropic';
+    if ($('detail-row')) $('detail-row').hidden = s.provider !== 'anthropic';
     if ($('endpoint-row')) $('endpoint-row').hidden = s.provider !== 'openai';
     if ($('openai-endpoint') && document.activeElement !== $('openai-endpoint')) $('openai-endpoint').value = s.openaiEndpoint || '';
-    $('provider-hint').textContent = cloud ? 'Online only' : 'Private, works offline';
-    if (!cloud) { renderActive(); return; }
+    if ($('provider-hint')) $('provider-hint').textContent = cloud ? 'Cloud API (requires internet & key)' : 'Local runtime on this PC (offline)';
+    if (!cloud) {
+      renderActive();
+      refreshCapsuleModels();
+      return;
+    }
     const p = current();
     const token = ++modelsToken;
     $('llm-key-label').textContent = p.keyLabel;
@@ -454,16 +937,10 @@
     const active = await api.invoke('provider:active');
     const st = $('active-status');
     if ($('model-picker-name')) {
-      if (s.autoRouting) {
-        $('model-picker-name').textContent = 'Mave 4o (Auto)';
-      } else if (s.provider === 'local' || active.id === 'local') {
-        $('model-picker-name').textContent = 'Qwen 3-VL (Local)';
-      } else if (s.provider === 'anthropic') {
-        $('model-picker-name').textContent = 'Claude 3.7 Sonnet';
-      } else if (s.provider === 'openai') {
-        $('model-picker-name').textContent = 'GPT-4o (ChatGPT)';
+      if (s.autoModelRouting) {
+        $('model-picker-name').textContent = active.label ? `Auto · ${active.label}` : 'Auto Router';
       } else if (active.label) {
-        $('model-picker-name').textContent = active.label.split('(')[0].trim();
+        $('model-picker-name').textContent = active.label;
       }
     }
     if (!active.id) {
@@ -860,6 +1337,18 @@
     if (!curUser) return;
 
     if ($('custom-user-name')) $('custom-user-name').value = curUser.name || '';
+    try {
+      api.invoke('personalization:get').then((pData) => {
+        if (pData) {
+          if ($('custom-instructions-text') && !$('custom-instructions-text').value) {
+            $('custom-instructions-text').value = pData.aboutUser || '';
+          }
+          if ($('custom-response-style-text') && !$('custom-response-style-text').value) {
+            $('custom-response-style-text').value = pData.responseInstructions || '';
+          }
+        }
+      }).catch(() => {});
+    } catch {}
     if ($('custom-instructions-text')) $('custom-instructions-text').value = curUser.customInstructions || '';
     if ($('custom-language-select')) $('custom-language-select').value = curUser.language || 'auto';
     if ($('custom-pet-species')) $('custom-pet-species').value = curUser.companionSpecies || 'meta_muse';
@@ -918,6 +1407,11 @@
           theme: $('custom-theme-select') ? $('custom-theme-select').value : undefined,
         };
         await api.invoke('governance:save-customization', activeCustomUserId, updates);
+        try {
+          const aboutUser = $('custom-instructions-text') ? $('custom-instructions-text').value.trim() : '';
+          const responseInstructions = $('custom-response-style-text') ? $('custom-response-style-text').value.trim() : '';
+          await api.invoke('personalization:update', { aboutUser, responseInstructions });
+        } catch {}
         if (updates.theme) applyTheme(updates.theme);
         if (status) {
           status.className = 'status ok';
@@ -951,6 +1445,92 @@
       } catch (err) {
         alert(err.message);
       }
+    });
+  }
+
+  // ==========================================
+  // ChatGPT Memory Management
+  // ==========================================
+  async function loadMemoriesList() {
+    const container = $('memories-list-container');
+    if (!container) return;
+    container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-3);font-size:12.5px;">Loading memories…</div>';
+    try {
+      const memories = await api.invoke('personalization:memories');
+      if (!Array.isArray(memories) || memories.length === 0) {
+        container.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--text-3);font-size:13px;">No memories stored yet. Tell Mave about yourself, your projects, or your preferences!</div>';
+        return;
+      }
+      container.innerHTML = '';
+      memories.forEach((mem) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:var(--surface-2);border:1px solid var(--border-subtle);border-radius:10px;font-size:13px;color:var(--text-1);';
+
+        const left = document.createElement('div');
+        left.style.cssText = 'flex:1;min-width:0;';
+
+        const textSpan = document.createElement('div');
+        textSpan.style.cssText = 'line-height:1.4;word-break:break-word;';
+        textSpan.textContent = mem.text;
+
+        const metaSpan = document.createElement('div');
+        metaSpan.style.cssText = 'font-size:11px;color:var(--text-3);margin-top:3px;display:flex;gap:8px;';
+        const d = mem.createdAt ? new Date(mem.createdAt).toLocaleDateString() : '';
+        metaSpan.innerHTML = `<span style="text-transform:capitalize;background:var(--surface-3);padding:1px 6px;border-radius:4px;">${mem.category || 'general'}</span> ${d ? `<span>• ${d}</span>` : ''}`;
+
+        left.append(textSpan, metaSpan);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.style.cssText = 'flex:none;width:28px;height:28px;border-radius:6px;border:0;background:transparent;color:var(--text-3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--fast);';
+        delBtn.title = 'Delete memory';
+        delBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+        delBtn.addEventListener('mouseenter', () => { delBtn.style.color = '#ef4444'; delBtn.style.background = 'rgba(239,68,68,0.1)'; });
+        delBtn.addEventListener('mouseleave', () => { delBtn.style.color = 'var(--text-3)'; delBtn.style.background = 'transparent'; });
+        delBtn.addEventListener('click', async () => {
+          delBtn.disabled = true;
+          await api.invoke('personalization:delete-memory', mem.id);
+          row.remove();
+          if (container.children.length === 0) {
+            container.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--text-3);font-size:13px;">No memories stored yet.</div>';
+          }
+        });
+
+        row.append(left, delBtn);
+        container.append(row);
+      });
+    } catch (err) {
+      container.innerHTML = `<div style="padding:16px;text-align:center;color:#ef4444;font-size:12.5px;">Failed to load memories: ${err.message}</div>`;
+    }
+  }
+
+  if ($('btn-manage-memories')) {
+    $('btn-manage-memories').addEventListener('click', () => {
+      const modal = $('manage-memories-modal');
+      if (modal) {
+        modal.hidden = false;
+        loadMemoriesList();
+      }
+    });
+  }
+
+  if ($('manage-memories-close')) {
+    $('manage-memories-close').addEventListener('click', () => {
+      if ($('manage-memories-modal')) $('manage-memories-modal').hidden = true;
+    });
+  }
+
+  if ($('btn-memories-done')) {
+    $('btn-memories-done').addEventListener('click', () => {
+      if ($('manage-memories-modal')) $('manage-memories-modal').hidden = true;
+    });
+  }
+
+  if ($('btn-clear-all-memories')) {
+    $('btn-clear-all-memories').addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to clear all memories? Mave will forget all learned details and preferences.')) return;
+      await api.invoke('personalization:clear-memories');
+      loadMemoriesList();
     });
   }
 
@@ -1352,18 +1932,18 @@
     }).catch(() => {});
     $('accent-select').addEventListener('change', (e) => {
       const val = e.target.value;
-      const colors = {
-        emerald: '#10a37f',
-        blue: '#3b82f6',
-        indigo: '#6366f1',
-        violet: '#8b5cf6',
-        amber: '#f59e0b',
-      };
-      if (colors[val]) {
-        document.documentElement.style.setProperty('--buddy', colors[val]);
-        document.documentElement.style.setProperty('--accent-primary', colors[val]);
-      }
-      api.invoke('settings:update', { accentColor: val });
+      applyAccent(val);
+      update({ accentColor: val });
+    });
+  }
+  if ($('appearance-select')) {
+    api.invoke('settings:get').then((cfg) => {
+      if (cfg && cfg.theme) $('appearance-select').value = cfg.theme;
+    }).catch(() => {});
+    $('appearance-select').addEventListener('change', (e) => {
+      const val = e.target.value;
+      applyTheme(val);
+      update({ theme: val });
     });
   }
 
@@ -1554,7 +2134,11 @@
       if ($('usage-val-rss')) $('usage-val-rss').textContent = `${data.processRssMB || 0} MB`;
       if ($('usage-val-sysram')) $('usage-val-sysram').textContent = `${data.systemUsedGB || 0} / ${data.systemTotalGB || 0} GB`;
       if ($('usage-val-cpu')) $('usage-val-cpu').textContent = `${data.cpuCount || 0} Cores`;
-      if ($('usage-val-model')) $('usage-val-model').textContent = data.activeModel || 'Qwen3-VL (Local)';
+      if ($('usage-val-model')) $('usage-val-model').textContent = data.activeModel || 'No model active';
+      if ($('usage-val-cache')) {
+        const pc = data.promptCache || {};
+        $('usage-val-cache').textContent = `${pc.hitRatePct != null ? pc.hitRatePct : 0}% (${pc.hits || 0} hits)`;
+      }
       if ($('usage-val-input') && data.session) $('usage-val-input').textContent = (data.session.input || 0).toLocaleString();
       if ($('usage-val-output') && data.session) $('usage-val-output').textContent = (data.session.output || 0).toLocaleString();
       if ($('usage-val-reqs') && data.session) $('usage-val-reqs').textContent = (data.session.requests || 0).toLocaleString();
@@ -1571,14 +2155,27 @@
     });
   }
 
-  // 5. Analytics Loader & Wiring
+  // 5. Analytics Loader & Wiring (Strict zero fake telemetry)
   async function loadAnalyticsData() {
     try {
       const data = await api.invoke('analytics:stats');
-      if ($('analytics-focus-score')) $('analytics-focus-score').textContent = `${data.focusScore || 88}/100`;
-      if ($('analytics-active-hours')) $('analytics-active-hours').textContent = `${data.activeHours || 0}h`;
+      if (!data || !data.hasData) {
+        if ($('analytics-focus-score')) $('analytics-focus-score').textContent = '0/100';
+        if ($('analytics-active-hours')) $('analytics-active-hours').textContent = '0.0h';
+        if ($('analytics-categories-summary')) $('analytics-categories-summary').textContent = 'No activity recorded yet';
+        if ($('analytics-top-tools')) $('analytics-top-tools').textContent = 'No autonomous tool runs recorded yet';
+        return;
+      }
+      if ($('analytics-focus-score')) $('analytics-focus-score').textContent = `${data.focusScore}/100`;
+      if ($('analytics-active-hours')) $('analytics-active-hours').textContent = `${data.activeHours}h`;
       if ($('analytics-categories-summary')) {
-        $('analytics-categories-summary').textContent = `💻 Coding ${data.workPercent || 65}% · 🌐 Research 20% · ⚡ System 10% · 💬 Personal ${data.personalPercent || 35}%`;
+        $('analytics-categories-summary').textContent = `Work ${data.workPercent}% · Personal ${data.personalPercent}% · ${data.queriesToday || 0} interactions`;
+      }
+      if ($('analytics-top-tools')) {
+        const tools = Array.isArray(data.toolDistribution) && data.toolDistribution.length > 0
+          ? data.toolDistribution.map((t) => `${t.name} (${t.percent}%)`).join(' · ')
+          : 'No autonomous tool runs recorded yet';
+        $('analytics-top-tools').textContent = tools;
       }
     } catch { /* empty */ }
   }
@@ -1626,6 +2223,23 @@
       if (confirm('Permanently erase all chat conversations and thread history? This cannot be undone.')) {
         await api.invoke('data:clear-history');
         alert('All chat conversations have been wiped clean.');
+      }
+    });
+  }
+
+  // General Pane Archived & Delete All Chats Wiring
+  if ($('btn-general-archived')) {
+    $('btn-general-archived').addEventListener('click', () => {
+      closeSettingsModal();
+      if ($('open-archived-btn')) $('open-archived-btn').click();
+    });
+  }
+  if ($('btn-general-delete-chats')) {
+    $('btn-general-delete-chats').addEventListener('click', async () => {
+      if (confirm('Permanently delete all chat conversations and thread history? This cannot be undone.')) {
+        await api.invoke('data:clear-history').catch(() => {});
+        alert('All chat conversations have been deleted.');
+        if (typeof window.startNewChat === 'function') window.startNewChat();
       }
     });
   }
@@ -1824,71 +2438,11 @@
     });
   }
 
-  // --- Vorssaint OS Toolkit Settings Loader ---
-  async function loadVorssaintSettings() {
-    try {
-      const vs = await api.invoke('vorssaint:settings-get');
-      if (!vs) return;
-      if ($('vs-toggle-master')) $('vs-toggle-master').checked = vs.enabled !== false;
-      if ($('vs-mod-telemetry')) $('vs-mod-telemetry').checked = vs.enableTelemetry !== false;
-      if ($('vs-mod-agents')) $('vs-mod-agents').checked = vs.enableAgentStrip !== false;
-      if ($('vs-mod-island')) $('vs-mod-island').checked = vs.showDynamicIsland !== false;
-      if ($('vs-mod-clipboard')) $('vs-mod-clipboard').checked = vs.enableClipboardShelf !== false;
-      if ($('vs-mod-scratchpad')) $('vs-mod-scratchpad').checked = vs.enableScratchpad !== false;
-      if ($('vs-mod-caffeinate')) $('vs-mod-caffeinate').checked = vs.enableKeepAwake !== false;
-      if ($('vs-mod-screen')) $('vs-mod-screen').checked = vs.enableScreenTools !== false;
-      if ($('vs-mod-cleaning')) $('vs-mod-cleaning').checked = vs.enableCleaningMode !== false;
-      if ($('vs-island-hover-expand')) $('vs-island-hover-expand').checked = vs.expandOnHover !== false;
-      if ($('vs-mascot-freq')) $('vs-mascot-freq').value = vs.mascotVisitFreq || 'normal';
-      if ($('vs-island-width')) {
-        $('vs-island-width').value = vs.islandWidth || 360;
-        if ($('vs-island-width-val')) $('vs-island-width-val').textContent = `${vs.islandWidth || 360}px`;
-      }
-      if ($('vs-alert-cpu')) $('vs-alert-cpu').value = vs.alertHighCpu || 85;
-      if ($('vs-alert-temp')) $('vs-alert-temp').value = vs.alertHighTemp || 80;
-    } catch {}
-  }
 
-  if ($('vs-island-width')) {
-    $('vs-island-width').addEventListener('input', (e) => {
-      if ($('vs-island-width-val')) $('vs-island-width-val').textContent = `${e.target.value}px`;
-    });
-  }
 
-  if ($('btn-save-vorssaint')) {
-    $('btn-save-vorssaint').addEventListener('click', async () => {
-      const patch = {
-        enabled: $('vs-toggle-master') ? $('vs-toggle-master').checked : true,
-        enableTelemetry: $('vs-mod-telemetry') ? $('vs-mod-telemetry').checked : true,
-        enableAgentStrip: $('vs-mod-agents') ? $('vs-mod-agents').checked : true,
-        showDynamicIsland: $('vs-mod-island') ? $('vs-mod-island').checked : true,
-        enableClipboardShelf: $('vs-mod-clipboard') ? $('vs-mod-clipboard').checked : true,
-        enableScratchpad: $('vs-mod-scratchpad') ? $('vs-mod-scratchpad').checked : true,
-        enableKeepAwake: $('vs-mod-caffeinate') ? $('vs-mod-caffeinate').checked : true,
-        enableScreenTools: $('vs-mod-screen') ? $('vs-mod-screen').checked : true,
-        enableCleaningMode: $('vs-mod-cleaning') ? $('vs-mod-cleaning').checked : true,
-        expandOnHover: $('vs-island-hover-expand') ? $('vs-island-hover-expand').checked : true,
-        mascotVisitFreq: $('vs-mascot-freq') ? $('vs-mascot-freq').value : 'normal',
-        islandWidth: $('vs-island-width') ? parseInt($('vs-island-width').value, 10) : 360,
-        alertHighCpu: $('vs-alert-cpu') ? parseInt($('vs-alert-cpu').value, 10) : 85,
-        alertHighTemp: $('vs-alert-temp') ? parseInt($('vs-alert-temp').value, 10) : 80,
-      };
-      await api.invoke('vorssaint:settings-update', patch);
-      const btn = $('btn-save-vorssaint');
-      btn.textContent = '✓ Saved Settings';
-      setTimeout(() => { btn.textContent = 'Save Vorssaint Settings'; }, 1600);
-    });
-  }
-
-  // --- Bot Data Tab (Zero-Hallucination Tabular SQL Engine) ---
-  let dataTabTable = [
-    { department: 'Engineering', salary: 250000, role: 'Senior Architect', level: 'L6' },
-    { department: 'Engineering', salary: 190000, role: 'Full-Stack Engineer', level: 'L4' },
-    { department: 'Marketing', salary: 180000, role: 'Growth Director', level: 'L5' },
-    { department: 'Sales', salary: 110000, role: 'Account Executive', level: 'L3' },
-    { department: 'Design', salary: 135000, role: 'Product Designer', level: 'L4' },
-    { department: 'Operations', salary: 95000, role: 'DevOps Lead', level: 'L4' },
-  ];
+  // --- Tabular Data SQL Console (Real CSV/JSON Datasets, Zero Mock Rows) ---
+  let dataTabTable = [];
+  let dataTabFileName = '';
 
   function executeDataSql() {
     const input = $('data-sql-input');
@@ -1897,36 +2451,49 @@
     const countEl = $('data-results-count');
     if (!input || !tableEl) return;
 
+    const thead = tableEl.querySelector('thead');
+    const tbody = tableEl.querySelector('tbody');
+    if (dataTabTable.length === 0) {
+      if (titleEl) titleEl.textContent = 'Dataset Inspector';
+      if (countEl) countEl.textContent = 'No dataset loaded';
+      if (thead) thead.innerHTML = '<tr><th>Status</th></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td style="color:var(--text-3);">Import a CSV, TSV, or JSON file first before executing SQL queries.</td></tr>';
+      return;
+    }
+
     const query = input.value.trim();
     if (!query) return;
 
-    let columns = [];
+    const allCols = Object.keys(dataTabTable[0] || {});
+    let columns = allCols;
     let rows = [];
 
     try {
-      if (/GROUP\s+BY\s+department/i.test(query)) {
-        const deptMap = {};
-        dataTabTable.forEach((r) => {
-          if (!deptMap[r.department]) deptMap[r.department] = { department: r.department, sum_salary: 0, count: 0 };
-          deptMap[r.department].sum_salary += r.salary;
-          deptMap[r.department].count += 1;
-        });
-        columns = ['department', 'sum_salary', 'employees'];
-        rows = Object.values(deptMap).map((d) => [d.department, `$${d.sum_salary.toLocaleString()}`, d.count]);
-      } else if (/WHERE\s+salary\s*>\s*100000/i.test(query)) {
-        const filtered = dataTabTable.filter((r) => r.salary > 100000);
-        columns = ['department', 'role', 'salary', 'level'];
-        rows = filtered.map((r) => [r.department, r.role, `$${r.salary.toLocaleString()}`, r.level]);
+      const limitMatch = query.match(/\bLIMIT\s+(\d+)/i);
+      const limit = limitMatch ? Math.max(1, parseInt(limitMatch[1], 10)) : 200;
+
+      if (/SELECT\s+COUNT\s*\(\s*\*\s*\)/i.test(query)) {
+        columns = ['total_rows'];
+        rows = [[dataTabTable.length]];
       } else {
-        columns = ['department', 'role', 'salary', 'level'];
-        rows = dataTabTable.map((r) => [r.department, r.role, `$${r.salary.toLocaleString()}`, r.level]);
+        const groupMatch = query.match(/GROUP\s+BY\s+([a-zA-Z0-9_]+)/i);
+        if (groupMatch && allCols.includes(groupMatch[1])) {
+          const gCol = groupMatch[1];
+          const groups = {};
+          dataTabTable.forEach((r) => {
+            const key = String(r[gCol] ?? '');
+            groups[key] = (groups[key] || 0) + 1;
+          });
+          columns = [gCol, 'row_count'];
+          rows = Object.entries(groups).slice(0, limit);
+        } else {
+          rows = dataTabTable.slice(0, limit).map((r) => columns.map((c) => (r[c] == null ? '' : r[c])));
+        }
       }
 
-      if (titleEl) titleEl.textContent = `Query Results: ${query.slice(0, 40)}…`;
-      if (countEl) countEl.textContent = `${rows.length} records`;
+      if (titleEl) titleEl.textContent = dataTabFileName ? `Dataset: ${dataTabFileName}` : 'Query Results';
+      if (countEl) countEl.textContent = `${rows.length} of ${dataTabTable.length} rows`;
 
-      const thead = tableEl.querySelector('thead');
-      const tbody = tableEl.querySelector('tbody');
       if (thead) thead.innerHTML = `<tr>${columns.map((c) => `<th>${escapeHtml(c)}</th>`).join('')}</tr>`;
       if (tbody) tbody.innerHTML = rows.map((r) => `<tr>${r.map((v) => `<td>${escapeHtml(String(v))}</td>`).join('')}</tr>`).join('');
     } catch (err) {
@@ -1953,10 +2520,13 @@
   }
   if ($('data-tab-import-btn')) {
     $('data-tab-import-btn').addEventListener('click', async () => {
-      const picked = await api.invoke('file:pick');
-      if (picked && picked.path) {
-        $('data-tab-import-btn').textContent = '✓ Loaded file';
-        setTimeout(() => { $('data-tab-import-btn').textContent = 'Import CSV / JSON'; }, 2000);
+      const imported = await api.invoke('data:import-file').catch(() => null);
+      if (imported && imported.ok && Array.isArray(imported.rows)) {
+        dataTabTable = imported.rows;
+        dataTabFileName = imported.name || 'dataset';
+        $('data-tab-import-btn').textContent = `✓ ${dataTabFileName}`;
+        executeDataSql();
+        setTimeout(() => { $('data-tab-import-btn').textContent = 'Import CSV / JSON'; }, 2500);
       }
     });
   }
@@ -2171,6 +2741,135 @@
     }
   }
 
+  async function loadVcSettings() {
+    try {
+      const vc = await api.invoke('vc:get-status');
+      const badge = $('vc-settings-backend-badge');
+      if (badge && vc) {
+        const modeLabel = vc.backend || vc.mode || (vc.hypervisor ? 'Hyper-V / WSL2 Guest' : 'Native Isolated Sandbox');
+        badge.textContent = `${modeLabel} (${vc.ready !== false ? 'Active' : 'Initializing'})`;
+      }
+    } catch {}
+  }
+
+  function initVirtualComputerAndIntelligenceSettings() {
+    // Virtual Computer Sliders & Real Persistence
+    const cpuSlider = $('vc-settings-cpu');
+    const cpuVal = $('vc-settings-cpu-val');
+    const vcStatus = $('vc-settings-save-status');
+    const markVcSaved = () => {
+      if (!vcStatus) return;
+      vcStatus.className = 'status ok';
+      vcStatus.querySelector('.text').textContent = 'Saved';
+    };
+    if (cpuSlider && cpuVal) {
+      cpuSlider.value = s.vcCpuCores || 4;
+      cpuVal.textContent = `${cpuSlider.value} Cores`;
+      cpuSlider.addEventListener('input', () => { cpuVal.textContent = `${cpuSlider.value} Cores`; });
+      cpuSlider.addEventListener('change', async () => {
+        await update({ vcCpuCores: Number(cpuSlider.value) });
+        markVcSaved();
+      });
+    }
+
+    const ramSlider = $('vc-settings-ram');
+    const ramVal = $('vc-settings-ram-val');
+    if (ramSlider && ramVal) {
+      ramSlider.value = s.vcRamGb || 4;
+      ramVal.textContent = `${ramSlider.value}.0 GB`;
+      ramSlider.addEventListener('input', () => { ramVal.textContent = `${ramSlider.value}.0 GB`; });
+      ramSlider.addEventListener('change', async () => {
+        await update({ vcRamGb: Number(ramSlider.value) });
+        markVcSaved();
+      });
+    }
+
+    const hypervBtn = $('vc-settings-hyperv-btn');
+    if (hypervBtn) {
+      hypervBtn.addEventListener('click', () => {
+        alert('To enable hardware Hyper-V virtualization on Windows:\nRun "scripts/enable_hyperv_virtualization.ps1" as Administrator.\nMAVE currently uses its isolated guest sandbox without host interference.');
+      });
+    }
+
+    const openGuestDir = $('vc-settings-open-guest-dir');
+    if (openGuestDir) {
+      openGuestDir.addEventListener('click', async () => {
+        try {
+          if (api && api.invoke) {
+            const files = await api.invoke('vc:list-files', '');
+            alert(`Guest FS contains ${files.length} items in workspace root.`);
+          }
+        } catch (e) {
+          alert(`Guest FS: ${e.message}`);
+        }
+      });
+    }
+
+    const resetGuest = $('vc-settings-reset-guest');
+    if (resetGuest) {
+      resetGuest.addEventListener('click', async () => {
+        if (confirm('Reset guest workspace sandbox? This will clear temporary guest session files.')) {
+          resetGuest.textContent = 'Resetting...';
+          try {
+            if (api && api.invoke) {
+              await api.invoke('vc:execute-action', { action: 'reset_guest' });
+            }
+            resetGuest.textContent = '✓ Guest Reset';
+            setTimeout(() => { resetGuest.textContent = 'Reset Guest Sandbox'; }, 2000);
+          } catch {
+            resetGuest.textContent = 'Reset Failed';
+          }
+        }
+      });
+    }
+
+    // VRAM Quota Slider (Real Persisted Setting)
+    const vramSlider = $('models-settings-vram');
+    const vramVal = $('models-settings-vram-val');
+    if (vramSlider && vramVal) {
+      vramSlider.value = s.vramQuotaGb || 7;
+      vramVal.textContent = `${vramSlider.value}.0 GB`;
+      vramSlider.addEventListener('input', () => { vramVal.textContent = `${vramSlider.value}.0 GB`; });
+      vramSlider.addEventListener('change', () => update({ vramQuotaGb: Number(vramSlider.value) }));
+    }
+
+    // Agents & Swarm Real Persistence
+    const envSel = $('agents-exec-env-select');
+    if (envSel) {
+      envSel.value = s.defaultExecutionEnvironment || 'virtual_computer';
+      envSel.addEventListener('change', () => update({ defaultExecutionEnvironment: envSel.value }));
+    }
+    const appModeSel = $('agents-approval-mode-select');
+    if (appModeSel) {
+      appModeSel.value = s.approvalMode || 'risky';
+      appModeSel.addEventListener('change', () => {
+        update({ approvalMode: appModeSel.value });
+        updateFullAccess(appModeSel.value === 'auto', true);
+      });
+    }
+    const verSel = $('agents-verification-select');
+    if (verSel) {
+      verSel.value = s.verificationLevel || 'strict';
+      verSel.addEventListener('change', () => update({ verificationLevel: verSel.value }));
+    }
+    const missionToggle = $('agents-settings-mission-ctrl');
+    if (missionToggle) {
+      missionToggle.checked = s.missionControlEnabled !== false;
+      missionToggle.addEventListener('change', () => update({ missionControlEnabled: missionToggle.checked }));
+    }
+    const researchToggle = $('agents-settings-deep-research');
+    if (researchToggle) {
+      researchToggle.checked = s.deepResearchEnabled !== false;
+      researchToggle.addEventListener('change', () => update({ deepResearchEnabled: researchToggle.checked }));
+    }
+    const forgeToggle = $('agents-settings-skill-forge');
+    if (forgeToggle) {
+      forgeToggle.checked = s.skillForgeEnabled !== false;
+      forgeToggle.addEventListener('change', () => update({ skillForgeEnabled: forgeToggle.checked }));
+    }
+  }
+
+  initVirtualComputerAndIntelligenceSettings();
   initTunnelHandlers();
 
   show(new URLSearchParams(location.search).get('section') || 'home');

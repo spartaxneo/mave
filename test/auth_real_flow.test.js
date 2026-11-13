@@ -76,9 +76,9 @@ test('Ground Truth Telemetry: VorssaintManager uses real system stats without mo
   assert.ok(typeof tele.disk.totalGB === 'number' && tele.disk.totalGB > 0);
   assert.notEqual(tele.disk.totalGB, 953, 'Disk size is not hardcoded to 953 GB');
 
-  // Real agents status check
+  // Real agents status check (zero fabricated unconfigured providers)
   const agents = vm.getAgentsStatus();
   assert.notEqual(agents.local.tokensProcessed, 14820, 'Local tokens are not fabricated (14820)');
-  assert.notEqual(agents.claude.tokensProcessed, 28400, 'Claude tokens are not fabricated (28400)');
+  assert.equal(agents.claude, undefined, 'Does not fabricate unconfigured Claude quota entries');
   assert.equal(agents.local.cost, '$0.00 (Local Sovereign)');
 });

@@ -120,8 +120,19 @@ class PluginRegistry {
    * high-speed subset of relevant tools (~15-28 tools) rather than all 150+ tools,
    * preventing context size exhaustion and speeding up prefill from 30s to <1s.
    */
-  filterToolsForTask(task = '', allDefs = null) {
+  filterToolsForTask(task = '', allDefs = null, options = {}) {
     const defs = allDefs || this.definitions();
+    const opts = (options && typeof options === 'object') ? options : {};
+
+    // In conversational/Chat-only mode, strip all desktop, terminal, browser-launch,
+    // mouse/keyboard, and filesystem-mutation tools so the model can only answer in text
+    // (optionally with headless read-only web lookup when online factual verification applies).
+    if (opts.chatOnly) {
+      if (!opts.readOnlyWeb) return [];
+      const readOnlyWebTools = new Set(['web_search', 'read_webpage']);
+      return defs.filter((def) => readOnlyWebTools.has(def.name));
+    }
+
     const coreNames = new Set([
       'click_element', 'type_into', 'scroll_screen', 'drag_element', 'highlight_element',
       'read_screen', 'open_app', 'open_url', 'run_command', 'web_search', 'read_webpage',
@@ -201,10 +212,14 @@ class PluginRegistry {
     return selected;
   }
 
-  definitionsForTask(task = '', providerId = 'local') {
+  definitionsForTask(task = '', providerId = 'local', options = {}) {
     const all = this.definitions();
-    if (providerId === 'local' || providerId === 'ollama') {
-      return this.filterToolsForTask(task, all);
+    const opts = (options && typeof options === 'object') ? options : {};
+    if (opts.chatOnly) {
+      return this.filterToolsForTask(task, all, opts);
+    }
+    if (providerId === 'local' || providerId === 'ollama' || providerId === 'colibri' || providerId === 'airllm') {
+      return this.filterToolsForTask(task, all, opts);
     }
     return all;
   }

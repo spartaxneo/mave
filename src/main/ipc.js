@@ -16,6 +16,7 @@ const { userManager } = require('./users');
 const { backburnerMeshEngine } = require('./local/backburner_mesh');
 const { promptCacheManager } = require('./local/prompt_cache');
 const { meshDiscoveryManager } = require('./remote/mesh_discovery');
+const { getDistributedScheduler } = require('./mesh');
 const { AutonomousGoalDAG } = require('./autonomous/goal_graph');
 const { defaultAuditor } = require('./autonomous/fresh_auditor');
 const { reflexionEngine } = require('./autonomous/reflexion_engine');
@@ -74,10 +75,152 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return { id, label: llm.describe(settings, id), online };
   });
 
+  handle('dialog:openDirectory', async (event) => {
+    const win = event && event.sender ? BrowserWindow.fromWebContents(event.sender) : null;
+    const res = await dialog.showOpenDialog(win, {
+      title: 'Select Folder',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    if (res.canceled || !res.filePaths[0]) return null;
+    return res.filePaths[0];
+  });
+
+  handle('models:catalog', async () => {
+    const online = net.isOnline();
+    const hw = hardware.getCachedHardware();
+    const snap = local.snapshot ? local.snapshot() : {};
+    const rec = catalog.recommend(hw);
+    const activeProvider = llm.resolveProvider(settings, { online });
+    const activeLabel = llm.describe(settings, activeProvider);
+    const selectedProvider = settings.get('provider') || 'local';
+    const autoRouting = settings.get('autoModelRouting') !== false;
+    const installedSet = new Set(Array.isArray(snap.installedModels) ? snap.installedModels : (snap.installed ? [snap.installed] : []));
+
+    const items = [
+      {
+        id: 'auto',
+        provider: 'auto',
+        name: 'Auto Router (Task-Based Switching)',
+        badge: 'Auto',
+        desc: `Switches automatically between downloaded models (${hw.gpu || 'CPU'}) by task complexity.`,
+        ready: Boolean(activeProvider),
+        active: autoRouting,
+      },
+      ...(rec.options || [])
+        .filter((o) => installedSet.has(o.id) || o.id === (settings.get('localModel') || rec.pick))
+        .map((o) => ({
+          id: `local:${o.id}`,
+          provider: 'local',
+          model: o.id,
+          name: `${o.label} (On-Device)`,
+          badge: `${o.tokensPerSecMin || 0}–${o.tokensPerSecMax || 0} tok/s`,
+          desc: installedSet.has(o.id)
+            ? `${o.capabilities || 'On-device AI'} · ${o.gpuLabel || hw.gpu || 'Local'}`
+            : 'Configure/download in Settings → AI Models.',
+          ready: installedSet.has(o.id),
+          active: !autoRouting && selectedProvider === 'local' && (settings.get('localModel') || rec.pick) === o.id,
+        })),
+    ];
+
+    for (const cm of (rec.customOptions || [])) {
+      items.push({
+        id: `custom:${cm.id}`,
+        provider: 'local',
+        model: cm.id,
+        name: cm.label,
+        badge: cm.size || 'GGUF',
+        desc: cm.note || 'Custom local GGUF model.',
+        ready: Boolean(cm.available),
+        active: !autoRouting && selectedProvider === 'local' && settings.get('localModel') === cm.id,
+      });
+    }
+
+    for (const om of (rec.ollamaModels || []).slice(0, 4)) {
+      items.push({
+        id: `ollama:${om.rawModel}`,
+        provider: 'ollama',
+        model: om.rawModel,
+        name: om.label || `Ollama · ${om.rawModel}`,
+        badge: 'Ollama',
+        desc: 'Local Ollama runtime on http://127.0.0.1:11434.',
+        ready: true,
+        active: !autoRouting && selectedProvider === 'ollama' && settings.get('ollamaModel') === om.rawModel,
+      });
+    }
+
+    for (const cb of (rec.colibriModels || []).slice(0, 2)) {
+      items.push({
+        id: `colibri:${cb.rawModel}`,
+        provider: 'colibri',
+        model: cb.rawModel,
+        name: cb.label,
+        badge: 'Colibri MoE',
+        desc: cb.note || 'Local Colibri server on port 8000.',
+        ready: true,
+        active: !autoRouting && selectedProvider === 'colibri' && settings.get('colibriModel') === cb.rawModel,
+      });
+    }
+
+    for (const am of (rec.airllmModels || []).slice(0, 2)) {
+      items.push({
+        id: `airllm:${am.rawModel}`,
+        provider: 'airllm',
+        model: am.rawModel,
+        name: am.label,
+        badge: am.size || 'AirLLM',
+        desc: am.note || 'Layer-wise local GPU streaming.',
+        ready: true,
+        active: !autoRouting && selectedProvider === 'airllm' && settings.get('airllmModel') === am.rawModel,
+      });
+    }
+
+    const hasClaude = Boolean(settings.secret('anthropicKey'));
+    items.push({
+      id: 'anthropic',
+      provider: 'anthropic',
+      model: settings.get('model') || 'claude-opus-5-5',
+      name: `Claude · ${settings.get('model') || 'claude-opus-5-5'}`,
+      badge: hasClaude ? 'API Key Ready' : 'Key Required',
+      desc: hasClaude ? 'Anthropic Cloud reasoning enabled.' : 'Add Anthropic API key in Settings → AI Models.',
+      ready: hasClaude && online,
+      active: !autoRouting && selectedProvider === 'anthropic',
+    });
+
+    const hasOpenAi = Boolean(settings.secret('openaiKey'));
+    items.push({
+      id: 'openai',
+      provider: 'openai',
+      model: settings.get('openaiModel') || 'gpt-4o',
+      name: `OpenAI · ${settings.get('openaiModel') || 'gpt-4o'}`,
+      badge: hasOpenAi ? 'API Key Ready' : 'Key Required',
+      desc: hasOpenAi ? 'OpenAI / compatible endpoint ready.' : 'Add OpenAI API key in Settings → AI Models.',
+      ready: hasOpenAi && online,
+      active: !autoRouting && selectedProvider === 'openai',
+    });
+
+    return {
+      autoRouting,
+      activeProvider,
+      activeLabel,
+      selectedProvider,
+      online,
+      hardware: hw,
+      items,
+    };
+  });
+
   // local AI
-  handle('local:hardware', async () => {
+  handle('local:hardware', async (opts = {}) => {
+    const airllmEnabled = typeof opts?.airllmEnabled === 'boolean'
+      ? opts.airllmEnabled
+      : Boolean(settings.get('airllmEnabled'));
     const hw = await hardware.detect(app.getPath('userData'));
-    return { hardware: hw, ...catalog.recommend(hw) };
+    return {
+      hardware: hw,
+      ...catalog.recommend(hw, [], { airllmEnabled }),
+      compatibleCatalog: catalog.searchCompatibleModels('', hw, { airllmEnabled }),
+      capacitySummary: catalog.evaluateDeviceCapacity(hw),
+    };
   });
   handle('local:status', async () => {
     let colibriActive = false;
@@ -95,7 +238,7 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
       ollamaModel: settings.get('ollamaModel') || 'deepseek-r1:8b',
     };
   });
-  handle('local:start', async (id) => {
+  handle('local:start', async (id, opts = {}) => {
     if (id && id.startsWith('colibri-')) {
       const rawModel = id.replace(/^colibri-/, '');
       runtime.stop(); // free GPU / system RAM
@@ -110,6 +253,26 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
       settings.update({ provider: 'ollama', ollamaModel: rawModel });
       return { ok: true, provider: 'ollama', model: rawModel, status: 'ready' };
     }
+
+    const airllmEnabled = typeof opts?.airllmEnabled === 'boolean'
+      ? opts.airllmEnabled
+      : Boolean(settings.get('airllmEnabled'));
+    const mDef = catalog.modelById(id);
+    if (!mDef) throw new Error(`Unknown model: ${id}`);
+    const hw = await hardware.detect(app.getPath('userData'));
+    const compat = catalog.evaluateModelCompatibility(mDef, hw, { airllmEnabled });
+    if (!compat.canInstallNow) {
+      throw new Error(`Cannot install ${mDef.label || id} on this PC: ${compat.blockedReason}`);
+    }
+
+    if (mDef.airllmOnly || mDef.engine === 'airllm') {
+      const { airllmService } = require('./local/airllm');
+      runtime.stop();
+      settings.update({ provider: 'airllm', airllmEnabled: true, airllmModel: mDef.rawModel || mDef.repo });
+      await airllmService.start(mDef.rawModel || mDef.repo).catch(() => false);
+      return { ok: true, provider: 'airllm', model: mDef.rawModel || mDef.repo, status: 'ready' };
+    }
+
     try {
       const { colibriService } = require('./local/colibri');
       colibriService.stop();
@@ -121,35 +284,36 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('local:resume', () => local.resume());
   handle('local:cancel', () => local.cancel());
   handle('local:custom-scan', async () => catalog.scanCustomModels());
-  handle('local:pick-file', async (event) => {
-    const fs = require('fs');
-    const res = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
-      title: 'Select GGUF Model',
-      buttonLabel: 'Select Model',
-      properties: ['openFile'],
-      filters: [{ name: 'GGUF Models', extensions: ['gguf'] }],
-    });
-    if (res.canceled || !res.filePaths[0]) return null;
-    const modelPath = res.filePaths[0];
-    const stat = fs.statSync(modelPath);
-    const sizeGB = Math.round((stat.size / (1024 ** 3)) * 10) / 10;
-    const filename = path.basename(modelPath);
-    const baseId = filename.replace(/\.gguf$/i, '').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
-    const cleanLabel = filename.replace(/\.gguf$/i, '').replace(/[-_]/g, ' ');
-    const modelDef = {
-      id: `custom-${baseId}`,
-      size: `${sizeGB}GB`,
-      label: cleanLabel,
-      memoryGB: Math.max(4, Math.round(sizeGB * 1.25)),
-      custom: true,
-      modelPath,
-      bytes: stat.size,
-      available: true,
-    };
-    catalog.saveCustomModel(modelDef);
-    return modelDef;
-  });
+  handle('local:pick-file', async () => ({
+    ok: false,
+    error: 'Arbitrary external GGUF uploads are disabled for quality control. Choose a verified model from MAVE Compatible LLMs.',
+  }));
   handle('local:remove-custom', (id) => catalog.removeCustomModel(id));
+  handle('local:search-compatible', async (arg = '') => {
+    const query = typeof arg === 'string' ? arg : (arg?.query || '');
+    const airllmEnabled = typeof arg?.airllmEnabled === 'boolean'
+      ? arg.airllmEnabled
+      : Boolean(settings.get('airllmEnabled'));
+    const hw = await hardware.detect(app.getPath('userData'));
+    return {
+      ok: true,
+      results: catalog.searchCompatibleModels(query, hw, { airllmEnabled }),
+      capacitySummary: catalog.evaluateDeviceCapacity(hw),
+    };
+  });
+  handle('local:search-online', async (arg = '') => {
+    const query = typeof arg === 'string' ? arg : (arg?.query || '');
+    const airllmEnabled = typeof arg?.airllmEnabled === 'boolean'
+      ? arg.airllmEnabled
+      : Boolean(settings.get('airllmEnabled'));
+    const hw = await hardware.detect(app.getPath('userData'));
+    return {
+      ok: true,
+      results: catalog.searchCompatibleModels(query, hw, { airllmEnabled }),
+      capacitySummary: catalog.evaluateDeviceCapacity(hw),
+    };
+  });
+  handle('local:register-online', (entry) => catalog.registerOnlineModel(entry));
   handle('local:check-updates', async (autoInstall = true) => {
     if (global.__maveModelAutoUpdater) {
       return await global.__maveModelAutoUpdater.checkForUpdates({ autoInstall });
@@ -189,7 +353,7 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
 
     const tgToken = settings.secret('telegramBotToken') || process.env.TELEGRAM_BOT_TOKEN || tgConfig.token || '';
     const isTgConfigured = Boolean(tgToken);
-    const tgUsername = tgConfig.username || 'FromnearTaskManager_bot';
+    const tgUsername = tgConfig.username || 'MaveAssistant_bot';
 
     return {
       mobileLanUrl: lanUrl,
@@ -475,10 +639,14 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return getThreadManager().getThread(threadId);
   });
   handle('threads:create', (title = 'New Chat', device = 'desktop', projectId = null) => {
+    if (controller && controller.stopTask) controller.stopTask();
+    if (agent && agent.resetConversation) agent.resetConversation();
     const { getThreadManager } = require('./threads');
     return getThreadManager().createThread(title, device, projectId);
   });
   handle('threads:switch', (threadId) => {
+    if (controller && controller.stopTask) controller.stopTask();
+    if (agent && agent.resetConversation) agent.resetConversation();
     const { getThreadManager } = require('./threads');
     const tm = getThreadManager();
     tm.setActiveThread('desktop', threadId);
@@ -503,6 +671,10 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('threads:delete', (threadId) => {
     const { getThreadManager } = require('./threads');
     return getThreadManager().deleteThread(threadId);
+  });
+  handle('threads:export', async (threadId, format = 'markdown') => {
+    const { getThreadManager } = require('./threads');
+    return getThreadManager().exportThread(threadId, format);
   });
   handle('threads:archived', () => {
     const { getThreadManager } = require('./threads');
@@ -599,6 +771,15 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     const { getTroubleshooter } = require('./diagnostics/troubleshooter');
     return getTroubleshooter({ logger }).clearErrors();
   });
+  handle('diagnostics:heal-status', () => {
+    const { getSelfHealer } = require('./diagnostics/self_healer');
+    const healer = getSelfHealer({ controller, logger });
+    return {
+      active: true,
+      history: healer.getHistory(),
+      subsystem: 'Mave Autonomous Self-Healing Engine (Resilient & Active)'
+    };
+  });
 
   // windows & app
   handle('app:open-settings', (section) => { windows.openSettings(section); return true; });
@@ -626,6 +807,110 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('plugins:remove', async (file) => {
     await pluginManager.remove(String(file), (p) => shell.trashItem(p));
     return pluginManager.list();
+  });
+  handle('skills:catalog', async () => {
+    const fs = require('fs');
+    const os = require('os');
+    const skills = [];
+    const seen = new Set();
+    const skillDirs = [
+      path.resolve('c:/Users/ryzen/Documents/antigravity/claude-mods/skills'),
+      path.join(process.cwd(), '.agents', 'skills'),
+    ];
+    for (const dir of skillDirs) {
+      try {
+        if (!fs.existsSync(dir)) continue;
+        for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+          if (!ent.isDirectory() || ent.name.startsWith('_') || seen.has(ent.name)) continue;
+          let desc = '';
+          const md = path.join(dir, ent.name, 'SKILL.md');
+          if (fs.existsSync(md)) {
+            const raw = fs.readFileSync(md, 'utf8');
+            const m = raw.match(/description:\s*(?:"([^"]+)"|'([^']+)'|([^\n]+))/i);
+            if (m) desc = (m[1] || m[2] || m[3] || '').trim();
+          }
+          seen.add(ent.name);
+          skills.push({ id: ent.name, name: ent.name, desc: desc || 'Skill runbook & automation pack', source: 'local-skills' });
+        }
+      } catch {}
+    }
+    const coreSkills = [
+      { id: 'windows-ops', name: 'windows-ops', desc: 'Windows process triage, crash audit & system automation', source: 'builtin' },
+      { id: 'git-ops', name: 'git-ops', desc: 'Git workflows, commits, PR reviews & worktrees', source: 'builtin' },
+      { id: 'docker-ops', name: 'docker-ops', desc: 'Containers, Compose stacks & multi-service deployment', source: 'builtin' },
+      { id: 'debug-ops', name: 'debug-ops', desc: 'Root-cause debugging & test verification flows', source: 'builtin' },
+      { id: 'nas-file-sync', name: 'nas-file-sync', desc: 'Personal NAS folder sharing & encrypted sync across devices', source: 'builtin' },
+      { id: 'multi-agent-swarm', name: 'multi-agent-swarm', desc: 'Deploy coordinated multi-agent task workers', source: 'builtin' },
+      { id: 'vm-os-orchestrator', name: 'vm-os-orchestrator', desc: 'Spin up isolated Linux, Ubuntu & Windows sandboxes', source: 'builtin' },
+      { id: 'remote-tunnel-ops', name: 'remote-tunnel-ops', desc: 'Access MAVE securely from anywhere via Web/Tunnel/Phone', source: 'builtin' },
+    ];
+    for (const s of coreSkills) {
+      if (!seen.has(s.id)) {
+        seen.add(s.id);
+        skills.push(s);
+      }
+    }
+    let vaultDocsCount = 0;
+    try {
+      const { getKnowledgeVault } = require('./rag/knowledge_vault');
+      const idx = getKnowledgeVault().loadIndex();
+      vaultDocsCount = Array.isArray(idx.documents) ? idx.documents.length : 0;
+    } catch {}
+    const vaultDir = settings.get('knowledgeVaultDir') || path.join(os.homedir(), 'Documents');
+    const plg = pluginManager.list();
+    return {
+      ok: true,
+      skills,
+      customPlugins: plg.custom || [],
+      installed: settings.get('installedSkills') || [],
+      vaultDir,
+      vaultDocsCount,
+    };
+  });
+  handle('skills:lifecycle-status', () => {
+    const { getSkillLifecycleManager } = require('./evolution/skill_lifecycle');
+    return getSkillLifecycleManager({ settings }).getStats();
+  });
+  handle('skills:acquire', async ({ id, meta } = {}) => {
+    const { getSkillLifecycleManager } = require('./evolution/skill_lifecycle');
+    return getSkillLifecycleManager({ settings }).acquireSkill(id, meta);
+  });
+  handle('skills:release', async ({ id, force } = {}) => {
+    const { getSkillLifecycleManager } = require('./evolution/skill_lifecycle');
+    return getSkillLifecycleManager({ settings }).releaseSkill(id, { force });
+  });
+  handle('skills:prune-unused', () => {
+    const { getSkillLifecycleManager } = require('./evolution/skill_lifecycle');
+    return getSkillLifecycleManager({ settings }).pruneAllUnused();
+  });
+  handle('knowledge:pick-vault', async (event) => {
+    const fs = require('fs');
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const res = await dialog.showOpenDialog(win, {
+      title: 'Choose Knowledge Base / Personal NAS Folder',
+      buttonLabel: 'Select Folder',
+      properties: ['openDirectory'],
+    });
+    if (res.canceled || !res.filePaths[0]) return { ok: false, canceled: true };
+    const dir = res.filePaths[0];
+    settings.update({ knowledgeVaultDir: dir, notesVaultPath: dir });
+    let indexedCount = 0;
+    try {
+      const { getKnowledgeVault } = require('./rag/knowledge_vault');
+      const vault = getKnowledgeVault();
+      const exts = new Set(['.md', '.txt', '.json', '.csv', '.js', '.ts', '.py']);
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const ent of entries) {
+        if (indexedCount >= 40) break;
+        if (!ent.isFile()) continue;
+        if (!exts.has(path.extname(ent.name).toLowerCase())) continue;
+        try {
+          vault.indexFile(path.join(dir, ent.name), 'Onboarding Vault');
+          indexedCount += 1;
+        } catch {}
+      }
+    } catch {}
+    return { ok: true, dir, indexedCount };
   });
   handle('app:open-link', (which) => { if (LINKS[which]) shell.openExternal(LINKS[which]); });
 
@@ -680,16 +965,77 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   });
 
   // Firebase Auth & Cloud Firestore Database
+  const syncAuthToSettings = (user) => {
+    if (user && user.uid && !user.isAnonymous) {
+      settings.update({
+        userName: user.displayName || (user.email ? user.email.split('@')[0] : settings.get('userName')),
+        userEmail: user.email || '',
+        hostEmail: user.email || settings.get('hostEmail'),
+        authUser: {
+          uid: user.uid,
+          email: user.email || '',
+          displayName: user.displayName || '',
+          photoUrl: user.photoUrl || '',
+          providerId: user.providerId || 'google.com',
+          isAnonymous: false,
+        },
+      });
+    }
+  };
+
   handle('firebase:get-config', () => firebaseService.getConfig());
-  handle('firebase:sign-up', (data) => firebaseService.signUp(data || {}));
-  handle('firebase:sign-in', (data) => firebaseService.signIn(data || {}));
-  handle('firebase:sign-in-provider', (data) => firebaseService.signInWithProvider(data || {}, windows.main));
-  handle('firebase:google-oauth', () => firebaseService.signInWithGoogleOAuth(windows.main));
+  handle('firebase:sign-up', async (data) => {
+    const res = await firebaseService.signUp(data || {});
+    if (res && res.ok && res.user) syncAuthToSettings(res.user);
+    return res;
+  });
+  handle('firebase:sign-in', async (data) => {
+    const res = await firebaseService.signIn(data || {});
+    if (res && res.ok && res.user) syncAuthToSettings(res.user);
+    return res;
+  });
+  handle('firebase:sign-in-provider', async (data) => {
+    const res = await firebaseService.signInWithProvider(data || {}, windows.onboarding || windows.main);
+    if (res && res.ok && res.user) syncAuthToSettings(res.user);
+    return res;
+  });
+  handle('firebase:google-oauth', async () => {
+    const res = await firebaseService.signInWithGoogleOAuth(windows.onboarding || windows.main);
+    if (res && res.ok && res.user) syncAuthToSettings(res.user);
+    return res;
+  });
   handle('firebase:sign-in-anon', () => firebaseService.signInAnonymously());
-  handle('firebase:sign-out', () => firebaseService.signOut());
-  handle('firebase:get-user', () => firebaseService.getCurrentUser());
+  handle('firebase:sign-out', () => {
+    settings.update({ authUser: null, userEmail: '' });
+    return firebaseService.signOut();
+  });
+  handle('firebase:get-user', async () => {
+    const user = await firebaseService.getRestoredUser();
+    if (user && user.uid && !user.isAnonymous) {
+      syncAuthToSettings(user);
+      return user;
+    }
+    const saved = settings.get('authUser');
+    if (saved && saved.uid && !saved.isAnonymous) {
+      return saved;
+    }
+    return user || null;
+  });
   handle('firebase:update-profile', (patch) => firebaseService.updateUserProfile(null, patch));
-  handle('firebase:sync-device', (info) => firebaseService.syncDevice(null, info));
+  handle('firebase:sync-device', async (info = {}) => {
+    let enriched = { ...(info || {}) };
+    try {
+      if (!enriched.deviceCapabilities) {
+        const hw = await hardware.detect(app.getPath('userData'));
+        enriched.hardware = enriched.hardware || hw;
+        enriched.airllmEnabled = typeof enriched.airllmEnabled === 'boolean'
+          ? enriched.airllmEnabled
+          : Boolean(settings.get('airllmEnabled'));
+        enriched.deviceCapabilities = catalog.evaluateDeviceCapacity(hw);
+      }
+    } catch {}
+    return firebaseService.syncDevice(null, enriched);
+  });
   handle('firebase:get-devices', () => firebaseService.getDevices(null));
   handle('firebase:save-preferences', (prefs) => firebaseService.savePreferences(null, prefs));
   handle('firebase:get-preferences', () => firebaseService.getPreferences(null));
@@ -720,11 +1066,56 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
       lanAddress: `${ip}:${port}`,
     };
   });
-  // Backburner Co-Processing Mesh & Prompt Cache
-  handle('mesh:status', () => ({
-    mesh: backburnerMeshEngine.getMeshStatus(),
-    discovery: meshDiscoveryManager.getStatus(),
-  }));
+  // Backburner Co-Processing Mesh, Distributed Scheduler & Prompt Cache
+  handle('mesh:status', () => {
+    let topology = null;
+    try {
+      topology = getDistributedScheduler().getMeshTopology();
+    } catch {}
+    return {
+      mesh: backburnerMeshEngine.getMeshStatus(),
+      discovery: meshDiscoveryManager.getStatus(),
+      topology,
+    };
+  });
+  handle('mesh:get-topology', () => getDistributedScheduler().getMeshTopology());
+  handle('mesh:update-policy', (patch) => {
+    const scheduler = getDistributedScheduler();
+    const safePatch = patch || {};
+    if (safePatch.schedulingPolicy) {
+      scheduler.setSchedulingPolicy(safePatch.schedulingPolicy, safePatch);
+    }
+    if (scheduler.localPolicy && typeof scheduler.localPolicy.updateSettings === 'function') {
+      return scheduler.localPolicy.updateSettings(safePatch);
+    }
+    return scheduler.getSchedulingPolicy();
+  });
+  handle('mesh:set-primary-host', (opts) => {
+    const { isPrimary, deviceId } = opts || {};
+    return getDistributedScheduler().setPrimaryHost(isPrimary !== false, deviceId);
+  });
+  handle('mesh:dispatch-job', (taskDef) => {
+    return getDistributedScheduler().scheduleDistributedTask(taskDef || {});
+  });
+  handle('mesh:nl-command', (opts) => {
+    const { commandText, command, context } = opts || {};
+    return getDistributedScheduler().handleNaturalLanguageCommand(commandText || command || '', context || {});
+  });
+  handle('mesh:list-workers', () => {
+    const topo = getDistributedScheduler().getMeshTopology();
+    return topo.contributors || [];
+  });
+  handle('mesh:connect-worker', async (opts) => {
+    return await getDistributedScheduler().connectRemoteWorker(opts || {});
+  });
+  handle('mesh:disconnect-worker', (opts) => {
+    const { deviceId, workerId } = opts || {};
+    return getDistributedScheduler().disconnectDevice(deviceId || workerId);
+  });
+  handle('mesh:generate-pin', () => {
+    const crypto = require('crypto');
+    return String(crypto.randomInt(100000, 999999));
+  });
   handle('mesh:auto-join', (data) => meshDiscoveryManager.handleHttpAutoJoin(data || {}));
   handle('mesh:offload-page', (opts) => backburnerMeshEngine.offloadKvPage(opts || {}));
   handle('mesh:merge-attn', ({ hostAttn, satAttn }) => backburnerMeshEngine.mergeAttention(hostAttn, satAttn));
@@ -803,6 +1194,46 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     };
   });
 
+  handle('vorssaint:open-hub', () => {
+    windows.openVorssaintHub();
+    return true;
+  });
+
+  handle('vorssaint:set-volume', (val) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).setVolume(val);
+  });
+
+  handle('vorssaint:set-brightness', (val) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).setBrightness(val);
+  });
+
+  handle('vorssaint:toggle-keep-awake', (enabled) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).toggleKeepAwake(Boolean(enabled));
+  });
+
+  handle('vorssaint:sleep-display', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).sleepDisplay();
+  });
+
+  handle('vorssaint:open-cleaning', (seconds = 30) => {
+    if (windows && typeof windows.openCleaningModeWindow === 'function') {
+      windows.openCleaningModeWindow(seconds);
+    }
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).toggleCleaningMode(seconds);
+  });
+
+  handle('vorssaint:open-command-bar', () => {
+    if (windows && typeof windows.openCommandBarWindow === 'function') {
+      windows.openCommandBarWindow();
+    }
+    return true;
+  });
+
   // Vorssaint OS Modular Toolkit
   handle('vorssaint:telemetry', () => {
     const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
@@ -850,7 +1281,80 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   });
   handle('vorssaint:settings-update', (patch) => {
     const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).updateSettings(patch);
+    const updated = getVorssaintManager({ windows, settings }).updateSettings(patch);
+    Object.values(windows).forEach((w) => {
+      if (w && !w.isDestroyed() && w.webContents) {
+        w.webContents.send('vorssaint:mascot-config-changed', updated);
+      }
+    });
+    return updated;
+  });
+  handle('vorssaint:ports-get', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).getListeningPorts();
+  });
+  handle('vorssaint:port-kill', (portOrPid) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).killPort(portOrPid);
+  });
+  handle('vorssaint:snap-window', (action) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    const mgr = getVorssaintManager({ windows, settings });
+    return mgr.snapWindow(action, windows.main);
+  });
+  handle('vorssaint:mascot-moment', (moment) => {
+    Object.values(windows).forEach((w) => {
+      if (w && !w.isDestroyed() && w.webContents) {
+        w.webContents.send('vorssaint:mascot-moment-triggered', moment);
+      }
+    });
+    return true;
+  });
+  handle('vorssaint:open-panel', () => {
+    if (windows.openVorssaintMenuPanel) {
+      windows.openVorssaintMenuPanel();
+    }
+    return true;
+  });
+  handle('vorssaint:app-volumes-get', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).getAppVolumes();
+  });
+  handle('vorssaint:app-volume-set', ({ app, volumePct }) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).setAppVolume(app, volumePct);
+  });
+  handle('vorssaint:quick-toggles-get', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).getQuickToggles();
+  });
+  handle('vorssaint:quick-toggle-set', ({ id, val }) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).setQuickToggle(id, val);
+  });
+  handle('vorssaint:clean-url', (urlText) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).cleanUrl(urlText);
+  });
+  handle('vorssaint:snippets-get', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).getSnippets();
+  });
+  handle('vorssaint:snippet-save', ({ trigger, expansion, label }) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).saveSnippet(trigger, expansion, label);
+  });
+  handle('vorssaint:snippet-delete', (id) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).deleteSnippet(id);
+  });
+  handle('vorssaint:catalog-get', () => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).getFeatureCatalog();
+  });
+  handle('vorssaint:feature-toggle', ({ featureId, enabled }) => {
+    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
+    return getVorssaintManager({ windows, settings }).toggleFeatureAvailability(featureId, enabled);
   });
 
   // Jev (System 1 Reflex Decision) & CDM (Constrained Context Compression)
@@ -1074,6 +1578,12 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     const osTotal = os.totalmem();
     const sessionCosts = costs ? costs.session : { input: 0, output: 0, cost: 0, requests: 0 };
     const promptStats = promptCacheManager.getStats();
+    const resolvedId = llm.resolveProvider(settings, { online: net.isOnline() });
+    const hits = Number(promptStats.hits || 0);
+    const activeSlots = Number(promptStats.activeSlots || 0);
+    const hitRatePct = hits + activeSlots > 0
+      ? Math.round((hits / (hits + activeSlots)) * 1000) / 10
+      : 0;
 
     return {
       processRssMB: Math.round(mem.rss / (1024 * 1024)),
@@ -1083,8 +1593,8 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
       systemUsagePercent: Math.round(((osTotal - osFree) / osTotal) * 100),
       cpuCount: os.cpus().length,
       session: sessionCosts,
-      promptCache: promptStats,
-      activeModel: settings.get('provider') === 'local' ? (settings.get('localModel') || 'Qwen3-VL (Local GPU)') : settings.get('model'),
+      promptCache: { ...promptStats, hitRatePct },
+      activeModel: llm.describe(settings, resolvedId) || 'No model active',
     };
   });
 
@@ -1096,25 +1606,65 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return { ok: true };
   });
 
-  // Analytics & Interaction Trends
+  // Analytics & Interaction Trends (strictly authentic runtime telemetry, zero simulated defaults)
   handle('analytics:stats', () => {
     const summary = sentinel ? sentinel.getDailySummary() : null;
-    const workPercent = summary && summary.metrics ? summary.metrics.officeWorkPercent : 65;
-    const personalPercent = summary && summary.metrics ? summary.metrics.personalPercent : 35;
-    const activeSecs = summary && summary.metrics ? summary.metrics.totalActiveSeconds : 14400;
+    const metrics = summary && summary.metrics ? summary.metrics : null;
+    const workPercent = metrics && typeof metrics.officeWorkPercent === 'number' ? metrics.officeWorkPercent : 0;
+    const personalPercent = metrics && typeof metrics.personalPercent === 'number' ? metrics.personalPercent : 0;
+    const activeSecs = metrics && typeof metrics.totalActiveSeconds === 'number' ? metrics.totalActiveSeconds : 0;
+    const queriesToday = metrics && typeof metrics.maveInteractionsCount === 'number' ? metrics.maveInteractionsCount : 0;
+    const hasData = Boolean(metrics && (activeSecs > 0 || queriesToday > 0));
+    const focusScore = hasData ? Math.min(100, Math.max(0, Math.round(workPercent))) : 0;
 
     return {
+      hasData,
       workPercent,
       personalPercent,
       activeHours: (activeSecs / 3600).toFixed(1),
-      focusScore: Math.min(98, Math.max(50, Math.round(workPercent * 0.9 + 20))),
-      toolDistribution: [
-        { name: 'Terminal & Scripts', percent: 38 },
-        { name: 'Browser & Web Research', percent: 27 },
-        { name: 'Filesystem Editing', percent: 20 },
-        { name: 'Vision OCR & Screen', percent: 15 },
-      ],
-      queriesToday: summary && summary.metrics ? summary.metrics.maveInteractionsCount : 12,
+      focusScore,
+      toolDistribution: Array.isArray(metrics && metrics.toolDistribution) ? metrics.toolDistribution : [],
+      topApps: Array.isArray(summary && summary.topApps) ? summary.topApps : [],
+      queriesToday,
+    };
+  });
+
+  handle('data:import-file', async (event) => {
+    const win = event && event.sender ? BrowserWindow.fromWebContents(event.sender) : null;
+    const res = await dialog.showOpenDialog(win, {
+      title: 'Import CSV or JSON Dataset',
+      properties: ['openFile'],
+      filters: [{ name: 'Tabular Data', extensions: ['csv', 'json', 'tsv'] }],
+    });
+    if (res.canceled || !res.filePaths[0]) return { canceled: true };
+    const fp = res.filePaths[0];
+    const raw = fs.readFileSync(fp, 'utf8');
+    let rows = [];
+    if (fp.toLowerCase().endsWith('.json')) {
+      const parsed = JSON.parse(raw);
+      rows = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.data) ? parsed.data : [parsed]);
+    } else {
+      const sep = fp.toLowerCase().endsWith('.tsv') ? '\t' : ',';
+      const lines = raw.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length >= 1) {
+        const headers = lines[0].split(sep).map((h) => h.trim().replace(/^"|"$/g, ''));
+        rows = lines.slice(1).map((line) => {
+          const vals = line.split(sep).map((v) => v.trim().replace(/^"|"$/g, ''));
+          const obj = {};
+          headers.forEach((h, i) => {
+            const v = vals[i] ?? '';
+            const num = Number(v);
+            obj[h || `col_${i}`] = v !== '' && !Number.isNaN(num) ? num : v;
+          });
+          return obj;
+        });
+      }
+    }
+    return {
+      ok: true,
+      name: path.basename(fp),
+      path: fp,
+      rows: rows.slice(0, 5000),
     };
   });
 
@@ -1237,12 +1787,72 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('ghost:file-watcher-stats', () => ghostCore.fileWatcher.getStats());
   handle('ghost:file-watcher-crawl', async () => ghostCore.fileWatcher.crawlAll());
   handle('ghost:hardware-profile', () => ghostCore.hardwareProfiler.getProfile());
+  handle('ghost:workspace-tree', async (relSubdir = '') => {
+    const root = process.cwd();
+    const safeRel = typeof relSubdir === 'string' ? relSubdir.replace(/^[/\\]+/, '') : '';
+    const target = path.resolve(root, safeRel);
+    if (!target.startsWith(path.resolve(root)) || !fs.existsSync(target)) {
+      return { root: path.basename(root), rootPath: root, entries: [] };
+    }
+    const skip = new Set(['node_modules', '.git', 'dist', 'dist-vorssaint', 'build', '.next']);
+    try {
+      const dirents = fs.readdirSync(target, { withFileTypes: true })
+        .filter((d) => !skip.has(d.name))
+        .sort((a, b) => {
+          if (a.isDirectory() !== b.isDirectory()) return a.isDirectory() ? -1 : 1;
+          return a.name.localeCompare(b.name);
+        })
+        .slice(0, 150)
+        .map((d) => {
+          const fullPath = path.join(target, d.name);
+          const relPath = path.relative(root, fullPath).replace(/\\/g, '/');
+          return {
+            name: d.name,
+            relPath,
+            fullPath,
+            isDirectory: d.isDirectory(),
+            ext: d.isDirectory() ? '' : path.extname(d.name).slice(1).toLowerCase(),
+          };
+        });
+      return { root: path.basename(root), rootPath: root, currentRel: path.relative(root, target).replace(/\\/g, '/'), entries: dirents };
+    } catch {
+      return { root: path.basename(root), rootPath: root, entries: [] };
+    }
+  });
   handle('ghost:open-file', async (filePath) => {
     const { shell } = require('electron');
     if (filePath && typeof filePath === 'string') {
       return shell.openPath(filePath);
     }
     return '';
+  });
+  handle('ghost:read-file', async (filePath) => {
+    try {
+      if (!filePath || typeof filePath !== 'string') return { ok: false, error: 'Invalid path' };
+      const root = path.resolve(process.cwd());
+      const resolved = path.resolve(root, path.isAbsolute(filePath) ? path.relative(root, filePath) : filePath);
+      if (!resolved.startsWith(root) || !fs.existsSync(resolved)) {
+        return { ok: false, error: 'File outside workspace or missing' };
+      }
+      const stat = fs.statSync(resolved);
+      if (!stat.isFile()) return { ok: false, error: 'Not a file' };
+      const maxBytes = 256 * 1024;
+      const truncated = stat.size > maxBytes;
+      const buf = fs.readFileSync(resolved);
+      const text = (truncated ? buf.subarray(0, maxBytes) : buf).toString('utf8');
+      return {
+        ok: true,
+        name: path.basename(resolved),
+        relPath: path.relative(root, resolved).replace(/\\/g, '/'),
+        fullPath: resolved,
+        ext: path.extname(resolved).slice(1).toLowerCase(),
+        size: stat.size,
+        truncated,
+        content: text,
+      };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
   });
   handle('ghost:reveal-file', async (filePath) => {
     const { shell } = require('electron');
@@ -1332,6 +1942,147 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
   handle('terminal:get', () => activity.entries);
   handle('terminal:clear', () => { activity.clear(); return true; });
   handle('terminal:reveal', () => shell.showItemInFolder(logger.activityLog));
+
+  // MAVE Virtual Computer Subsystem IPC
+  try {
+    const { getVirtualComputerSession } = require('./virtual_computer');
+    const vcSession = getVirtualComputerSession();
+
+    handle('vc:get-status', () => vcSession.getStatus());
+    handle('vc:start-takeover', () => vcSession.startTakeover());
+    handle('vc:stop-takeover', () => vcSession.stopTakeover());
+    handle('vc:user-input', async (eventPayload) => vcSession.dispatchUserInput(eventPayload));
+    handle('vc:export-file', async ({ guestPath, hostPath }) => vcSession.executeGuestAction('export_file', { guestPath, hostPath }));
+    handle('vc:execute-action', async ({ action, input }) => vcSession.executeGuestAction(action, input));
+    handle('vc:list-files', async (path) => vcSession.desktopController.listGuestFiles(path));
+    handle('vc:set-task', async ({ task, env }) => {
+      vcSession.setActiveTask(task, env);
+      return vcSession.getStatus();
+    });
+
+    vcSession.on('display-frame', (frame) => {
+      windows.sendToAll('vc:frame', frame);
+    });
+    vcSession.on('task-updated', (data) => {
+      windows.sendToAll('vc:task-update', data);
+    });
+    vcSession.on('task-progress', (data) => {
+      windows.sendToAll('vc:task-progress', data);
+    });
+    vcSession.on('takeover-changed', (data) => {
+      windows.sendToAll('vc:takeover-update', data);
+    });
+
+    const { getResearchEngine } = require('./autonomous/research_engine');
+    const researchEngine = getResearchEngine({ session: vcSession });
+
+    handle('research:conduct', async ({ topic, options }) => researchEngine.conductResearch(topic, options));
+    handle('research:generate-artifact', async ({ type, name, content }) => researchEngine.generateArtifact(type, name, content));
+
+    researchEngine.on('artifact-created', (art) => {
+      windows.sendToAll('vc:artifact-created', art);
+    });
+  } catch (vcErr) {
+    if (logger) logger.error('Failed to bind Virtual Computer IPC:', vcErr.message);
+  }
+
+  // MAVE Brain V3 Cognitive Orchestration & Hands-Free Voice IPC
+  handle('orchestrator:handle', async (text, options) => {
+    const { getCognitiveOrchestrator } = require('./orchestrator');
+    return await getCognitiveOrchestrator().handleUserInteraction(text, options);
+  });
+  handle('orchestrator:active-task', () => {
+    const { getCognitiveOrchestrator } = require('./orchestrator');
+    const task = getCognitiveOrchestrator().getActiveTask();
+    return task ? task.toJSON() : null;
+  });
+  handle('orchestrator:pause-task', () => {
+    const { getCognitiveOrchestrator } = require('./orchestrator');
+    const task = getCognitiveOrchestrator().getActiveTask();
+    if (task) {
+      task.setStatus('paused', 'User paused task');
+      return { ok: true, status: 'paused' };
+    }
+    return { ok: false, message: 'No active task to pause.' };
+  });
+  handle('orchestrator:resume-task', () => {
+    const { getCognitiveOrchestrator } = require('./orchestrator');
+    const task = getCognitiveOrchestrator().getActiveTask();
+    if (task) {
+      task.setStatus('active', 'User resumed task');
+      return { ok: true, status: 'active' };
+    }
+    return { ok: false, message: 'No paused task to resume.' };
+  });
+  handle('orchestrator:stop-task', () => {
+    const { getCognitiveOrchestrator } = require('./orchestrator');
+    const task = getCognitiveOrchestrator().getActiveTask();
+    if (task) {
+      task.setStatus('cancelled', 'User stopped task');
+      getCognitiveOrchestrator().activeTask = null;
+      return { ok: true, status: 'cancelled' };
+    }
+    return { ok: false, message: 'No active task to stop.' };
+  });
+
+  handle('voice:hands-free:toggle', (enabled) => {
+    const { getHandsFreeVoicePipeline } = require('./audio/hands_free_voice');
+    const vp = getHandsFreeVoicePipeline();
+    const target = enabled !== undefined ? Boolean(enabled) : !vp.handsFreeEnabled;
+    vp.setHandsFree(target);
+    return { ok: true, handsFreeEnabled: vp.handsFreeEnabled, state: vp.state };
+  });
+  handle('voice:hands-free:status', () => {
+    const { getHandsFreeVoicePipeline } = require('./audio/hands_free_voice');
+    const vp = getHandsFreeVoicePipeline();
+    return { handsFreeEnabled: vp.handsFreeEnabled, state: vp.state };
+  });
+
+  handle('memory:query-scoped', (query, options) => {
+    const { MemoryPipeline } = require('./memory/memory_pipeline');
+    const pipeline = new MemoryPipeline(options && options.userId ? options.userId : 'default');
+    return pipeline.retrieveContext(query, options);
+  });
+  handle('memory:v2:stats', (options) => {
+    const { MemoryDatabase } = require('./memory/memory_database');
+    const uid = options && options.userId ? options.userId : 'default';
+    const db = MemoryDatabase.forUser(uid);
+    const episodes = db.queryEpisodes({ limit: 100 }).length;
+    const facts = db.querySemanticFacts('*', '', 1000).length;
+    const digests = db.getRecentDigests(30).length;
+    const workItems = db.queryWorkLearning({ limit: 100 }).length;
+    return { ok: true, episodesCount: episodes, factsCount: facts, digestsCount: digests, workCount: workItems };
+  });
+  handle('memory:learning:ingest-sensory', (payload, options) => {
+    const { ContinuousLearningEngine } = require('./memory/continuous_learning_engine');
+    const uid = options && options.userId ? options.userId : 'default';
+    const engine = ContinuousLearningEngine.forUser(uid);
+    return { ok: true, id: engine.ingestSensoryEvent(payload || {}) };
+  });
+  handle('memory:learning:record-work', (payload, options) => {
+    const { ContinuousLearningEngine } = require('./memory/continuous_learning_engine');
+    const uid = options && options.userId ? options.userId : 'default';
+    const engine = ContinuousLearningEngine.forUser(uid);
+    return { ok: true, id: engine.recordWork(payload || {}) };
+  });
+  handle('memory:learning:record-learning', (payload, options) => {
+    const { ContinuousLearningEngine } = require('./memory/continuous_learning_engine');
+    const uid = options && options.userId ? options.userId : 'default';
+    const engine = ContinuousLearningEngine.forUser(uid);
+    return { ok: true, id: engine.recordLearning(payload || {}) };
+  });
+  handle('memory:learning:consolidate', (payload, options) => {
+    const { ContinuousLearningEngine } = require('./memory/continuous_learning_engine');
+    const uid = options && options.userId ? options.userId : 'default';
+    const engine = ContinuousLearningEngine.forUser(uid);
+    return { ok: true, result: engine.consolidateMemories(payload || {}) };
+  });
+  handle('memory:learning:get-context', (query, options) => {
+    const { ContinuousLearningEngine } = require('./memory/continuous_learning_engine');
+    const uid = options && options.userId ? options.userId : 'default';
+    const engine = ContinuousLearningEngine.forUser(uid);
+    return { ok: true, ...engine.getGroundedContext(query, options || {}) };
+  });
 
   // fire-and-forget messages from renderers
   ipcMain.on('overlay:region', (event, rect) => controller.onRegionSelected(windows.displayIdOf(event.sender), rect));

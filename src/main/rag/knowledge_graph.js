@@ -12,13 +12,122 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+function defaultKnowledgeGraphPath(userIdOrOptions = null, options = {}) {
+  let uid = null;
+  let opts = options;
+
+  if (typeof userIdOrOptions === 'string') {
+    uid = userIdOrOptions.trim();
+  } else if (userIdOrOptions && typeof userIdOrOptions === 'object') {
+    opts = { ...userIdOrOptions, ...options };
+    if (opts.userId) uid = String(opts.userId).trim();
+  } else if (options && options.userId) {
+    uid = String(options.userId).trim();
+  }
+
+  if (opts && opts.baseDir) {
+    if (!uid || uid.toLowerCase() === 'default') {
+      return path.join(opts.baseDir, 'knowledge_graph.json');
+    }
+    const safeUid = uid.replace(/[/\\:*?"<>|]/g, '_');
+    return path.join(opts.baseDir, 'users', safeUid, 'knowledge_graph.json');
+  }
+
+  const baseDir = process.env.APPDATA
+    ? path.join(process.env.APPDATA, 'mave')
+    : path.join(os.homedir(), '.mave');
+
+  if (!uid || uid.toLowerCase() === 'default') {
+    return path.join(baseDir, 'knowledge_graph.json');
+  }
+
+  const safeUid = uid.replace(/[/\\:*?"<>|]/g, '_');
+  return path.join(baseDir, 'users', safeUid, 'knowledge_graph.json');
+}
+
 class PersonalKnowledgeGraph {
+  static _userInstances = new Map();
+
+  static forUser(userId = 'default', options = {}) {
+    const uid = (typeof userId === 'string' ? userId.trim() : null) || (options && options.userId ? String(options.userId).trim() : 'default');
+    const storagePath = options.storagePath || options.filePath || defaultKnowledgeGraphPath(uid, options);
+    const cacheKey = `${uid}:${storagePath}`;
+
+    if (!options.fresh && PersonalKnowledgeGraph._userInstances.has(cacheKey)) {
+      return PersonalKnowledgeGraph._userInstances.get(cacheKey);
+    }
+
+    const mergedOptions = { ...options, userId: uid, storagePath };
+    const instance = new PersonalKnowledgeGraph(mergedOptions);
+    if (!options.noCache) {
+      PersonalKnowledgeGraph._userInstances.set(cacheKey, instance);
+    }
+    return instance;
+  }
+
+  static purgeUserData(userId, options = {}) {
+    const uid = typeof userId === 'string' ? userId.trim() : (userId && userId.userId ? String(userId.userId).trim() : null);
+    if (!uid) throw new Error('userId is required to purge user data');
+
+    for (const [key, instance] of PersonalKnowledgeGraph._userInstances.entries()) {
+      if (key.startsWith(`${uid}:`)) {
+        instance.nodes.clear();
+        instance.edges = [];
+        PersonalKnowledgeGraph._userInstances.delete(key);
+      }
+    }
+
+    const filePath = options.storagePath || options.filePath || defaultKnowledgeGraphPath(uid, options);
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.rmSync(filePath, { force: true });
+      }
+      const userDir = path.dirname(filePath);
+      if (uid.toLowerCase() !== 'default' && fs.existsSync(userDir)) {
+        const remaining = fs.readdirSync(userDir);
+        if (remaining.length === 0) {
+          fs.rmdirSync(userDir);
+        }
+      }
+    } catch {}
+
+    return true;
+  }
+
+  purgeUserData() {
+    return PersonalKnowledgeGraph.purgeUserData(this.userId, this.options);
+  }
+
+  clear() {
+    this.nodes.clear();
+    this.edges = [];
+    this._save();
+  }
+
   constructor(options = {}) {
-    this.storagePath = options.storagePath || (
-      process.env.APPDATA 
-        ? path.join(process.env.APPDATA, 'Mave', 'knowledge_graph.json')
-        : path.join(os.homedir(), '.mave', 'knowledge_graph.json')
-    );
+    let resolvedOptions = {};
+    let resolvedUserId = 'default';
+    let resolvedPath = null;
+
+    if (typeof options === 'string') {
+      if (options.includes('/') || options.includes('\\') || options.endsWith('.json')) {
+        resolvedPath = options;
+      } else {
+        resolvedUserId = options || 'default';
+        resolvedPath = defaultKnowledgeGraphPath(resolvedUserId);
+      }
+    } else if (options && typeof options === 'object') {
+      resolvedOptions = options;
+      resolvedUserId = options.userId || 'default';
+      resolvedPath = options.storagePath || options.filePath || defaultKnowledgeGraphPath(resolvedUserId, options);
+    } else {
+      resolvedPath = defaultKnowledgeGraphPath('default');
+    }
+
+    this.userId = resolvedUserId;
+    this.storagePath = resolvedPath;
+    this.file = resolvedPath;
+    this.options = resolvedOptions;
 
     this.nodes = new Map(); // id -> { id, label, type, properties, createdAt }
     this.edges = [];        // [{ id, source, predicate, target, confidence, metadata, createdAt }]
@@ -45,6 +154,7 @@ class PersonalKnowledgeGraph {
       const dir = path.dirname(this.storagePath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       const payload = {
+        userId: this.userId,
         nodes: Array.from(this.nodes.values()),
         edges: this.edges,
         lastUpdated: new Date().toISOString()
@@ -259,11 +369,39 @@ class PersonalKnowledgeGraph {
 }
 
 let _kgInstance = null;
-function getKnowledgeGraph() {
+function getKnowledgeGraph(userIdOrOptions = null) {
+  if (typeof userIdOrOptions === 'string') {
+    if (userIdOrOptions.includes('/') || userIdOrOptions.includes('\\') || userIdOrOptions.endsWith('.json')) {
+      return new PersonalKnowledgeGraph({ storagePath: userIdOrOptions });
+    }
+    return PersonalKnowledgeGraph.forUser(userIdOrOptions);
+  }
+  if (userIdOrOptions && typeof userIdOrOptions === 'object') {
+    if (userIdOrOptions.userId) {
+      return PersonalKnowledgeGraph.forUser(userIdOrOptions.userId, userIdOrOptions);
+    }
+    if (userIdOrOptions.storagePath || userIdOrOptions.filePath) {
+      return new PersonalKnowledgeGraph(userIdOrOptions);
+    }
+  }
   if (!_kgInstance) {
-    _kgInstance = new PersonalKnowledgeGraph();
+    _kgInstance = PersonalKnowledgeGraph.forUser('default');
   }
   return _kgInstance;
 }
 
-module.exports = { PersonalKnowledgeGraph, getKnowledgeGraph };
+function purgeUserData(userId, options = {}) {
+  const kgPurged = PersonalKnowledgeGraph.purgeUserData(userId, options);
+  try {
+    const { MemoryStore } = require('../memory');
+    MemoryStore.purgeUserData(userId, options);
+  } catch {}
+  return kgPurged;
+}
+
+module.exports = {
+  PersonalKnowledgeGraph,
+  getKnowledgeGraph,
+  defaultKnowledgeGraphPath,
+  purgeUserData,
+};

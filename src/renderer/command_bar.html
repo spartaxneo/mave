@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vorssaint · Command Bar</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      background: transparent;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      color: #f4f4f5;
+    }
+
+    /* Floating Spotlight Container */
+    .cmd-bar-card {
+      width: 620px;
+      background: rgba(18, 18, 22, 0.95);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 18px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Top Input Bar */
+    .input-row {
+      display: flex;
+      align-items: center;
+      padding: 14px 18px;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .search-icon {
+      font-size: 18px;
+      color: #a1a1aa;
+    }
+    .cmd-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-size: 17px;
+      font-weight: 500;
+      color: #ffffff;
+      letter-spacing: -0.2px;
+    }
+    .cmd-input::placeholder {
+      color: #71717a;
+    }
+    .esc-hint {
+      font-size: 11px;
+      font-weight: 600;
+      color: #71717a;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 3px 7px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Dynamic Results Container */
+    .results-list {
+      display: flex;
+      flex-direction: column;
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 8px 10px;
+      gap: 4px;
+    }
+    .results-list::-webkit-scrollbar { width: 4px; }
+    .results-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+
+    .result-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13.5px;
+      transition: background 0.12s ease;
+    }
+    .result-item:hover, .result-item.selected {
+      background: rgba(56, 189, 248, 0.15);
+    }
+    .result-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .result-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cmd-bar-card">
+    <div class="input-row">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a command, calculation (e.g. 15*4), unit (50km to mi), or snippet..." autofocus />
+      <span class="esc-hint">esc</span>
+    </div>
+
+    <div class="results-list" id="results-list">
+      <!-- Default suggestions -->
+      <div class="result-item" data-action="math" data-copy="8">
+        <div class="result-left">
+          <span>✨ <strong>2 + 2 * 3</strong> = <span style="color:#38bdf8; font-weight:700;">8</span></span>
+        </div>
+        <span class="result-badge">CALCULATOR</span>
+      </div>
+      <div class="result-item" data-action="unit" data-copy="62.137 miles">
+        <div class="result-left">
+          <span>📏 <strong>100 km</strong> = <span style="color:#38bdf8; font-weight:700;">62.137 miles</span></span>
+        </div>
+        <span class="result-badge">UNIT CONVERSION</span>
+      </div>
+      <div class="result-item" data-action="snippet" data-copy="user@example.com">
+        <div class="result-left">
+          <span>📝 <strong>;email</strong> → user@example.com</span>
+        </div>
+        <span class="result-badge">TEXT SNIPPET</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const api = window.buddy;
+    const input = document.getElementById('cmd-input');
+    const results = document.getElementById('results-list');
+
+    function evaluateQuery(q) {
+      const trimmed = q.trim();
+      if (!trimmed) {
+        results.innerHTML = `
+          <div class="result-item" data-copy="8"><div class="result-left"><span>✨ <strong>2 + 2 * 3</strong> = <span style="color:#38bdf8; font-weight:700;">8</span></span></div><span class="result-badge">CALCULATOR</span></div>
+          <div class="result-item" data-copy="62.137 miles"><div class="result-left"><span>📏 <strong>100 km</strong> = <span style="color:#38bdf8; font-weight:700;">62.137 miles</span></span></div><span class="result-badge">UNIT CONVERSION</span></div>
+          <div class="result-item" data-copy="user@example.com"><div class="result-left"><span>📝 <strong>;email</strong> → user@example.com</span></div><span class="result-badge">TEXT SNIPPET</span></div>
+        `;
+        wireItems();
+        return;
+      }
+
+      // 1. Math calculation
+      if (/^[0-9+\-*/().\s^%]+$/.test(trimmed) && /[+\-*/^%]/.test(trimmed)) {
+        try {
+          const ans = Function(`'use strict'; return (${trimmed})`)();
+          if (typeof ans === 'number' && !isNaN(ans) && isFinite(ans)) {
+            results.innerHTML = `
+              <div class="result-item selected" data-copy="${ans}">
+                <div class="result-left">
+                  <span>✨ <strong>${trimmed}</strong> = <span style="color:#38bdf8; font-weight:700;">${ans}</span></span>
+                </div>
+                <span class="result-badge">CALCULATOR</span>
+              </div>
+            `;
+            wireItems();
+            return;
+          }
+        } catch {}
+      }
+
+      // 2. Unit conversion
+      const kmMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*km\s*(?:to\s*mi)?$/i);
+      if (kmMatch) {
+        const km = parseFloat(kmMatch[1]);
+        const mi = (km * 0.621371).toFixed(3);
+        results.innerHTML = `
+          <div class="result-item selected" data-copy="${mi} miles">
+            <div class="result-left">
+              <span>📏 <strong>${km} km</strong> = <span style="color:#38bdf8; font-weight:700;">${mi} miles</span></span>
+            </div>
+            <span class="result-badge">UNIT CONVERSION</span>
+          </div>
+        `;
+        wireItems();
+        return;
+      }
+
+      // 3. Emojis
+      const emojis = {
+        fire: '🔥 Fire', rocket: '🚀 Rocket', coffee: '☕ Coffee', heart: '❤️ Heart',
+        star: '⭐ Star', check: '✅ Check', wave: '👋 Wave', cat: '🐱 Cat', smile: '😊 Smile'
+      };
+      const emoKey = trimmed.replace(/^:+|:+$/g, '').toLowerCase();
+      if (emojis[emoKey]) {
+        const glyph = emojis[emoKey].split(' ')[0];
+        results.innerHTML = `
+          <div class="result-item selected" data-copy="${glyph}">
+            <div class="result-left">
+              <span>${emojis[emoKey]}</span>
+            </div>
+            <span class="result-badge">EMOJI</span>
+          </div>
+        `;
+        wireItems();
+        return;
+      }
+
+      // 4. Default: Search or open
+      results.innerHTML = `
+        <div class="result-item selected" data-action="search">
+          <div class="result-left">
+            <span>🔍 Search web for "<strong>${trimmed}</strong>"</span>
+          </div>
+          <span class="result-badge">WEB SEARCH</span>
+        </div>
+      `;
+      wireItems();
+    }
+
+    function wireItems() {
+      document.querySelectorAll('.result-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const copyVal = item.dataset.copy;
+          if (copyVal && navigator.clipboard) {
+            navigator.clipboard.writeText(copyVal);
+            item.style.background = 'rgba(56, 189, 248, 0.35)';
+            setTimeout(() => window.close(), 250);
+          } else if (item.dataset.action === 'search') {
+            const q = encodeURIComponent(input.value.trim());
+            window.open(`https://duckduckgo.com/?q=${q}`, '_blank');
+            window.close();
+          }
+        });
+      });
+    }
+
+    input.addEventListener('input', () => evaluateQuery(input.value));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        window.close();
+      } else if (e.key === 'Enter') {
+        const selected = document.querySelector('.result-item.selected') || document.querySelector('.result-item');
+        if (selected) selected.click();
+      }
+    });
+
+    wireItems();
+  </script>
+</body>
+</html>

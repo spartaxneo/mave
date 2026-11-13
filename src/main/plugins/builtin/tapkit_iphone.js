@@ -12,7 +12,7 @@ const DEFAULT_TAPKIT_ENDPOINT = 'http://localhost:8088';
 module.exports = [
   {
     name: 'tapkit_list_phones',
-    description: 'Enumerate physical Apple iPhones connected via the TapKit companion app over USB or local Wi-Fi.',
+    description: '[SIMULATED PROTOCOL / DEMO] Enumerate physical Apple iPhones connected via the TapKit companion app over USB or local Wi-Fi.',
     input_schema: {
       type: 'object',
       properties: {
@@ -38,7 +38,7 @@ module.exports = [
         return `📱 **CONNECTED PHYSICAL iPHONES DETECTED** (${livePhones.devices.length}):\n\n${list}\n\n*Use \`tapkit_phone_action\` or \`tapkit_phone_screenshot\` to interact hands-free.*`;
       }
 
-      return `📱 **TAPKIT iOS AUTOMATION ENGINE STATUS**:
+      return `📱 **TAPKIT iOS AUTOMATION ENGINE STATUS [SIMULATED PROTOCOL / DEMO]**:
 • **Bridge Endpoint**: \`${endpoint}\`
 • **Daemon Status**: Offline / Standby (No active TapKit bridge detected on port 8088)
 • **Hardware Target**: Physical Apple iPhone (Resolution: 1320 x 2868 px or USB-connected iOS device)
@@ -49,7 +49,7 @@ module.exports = [
   },
   {
     name: 'tapkit_phone_screenshot',
-    description: 'Capture a real-time high-resolution screenshot from the connected physical iPhone for OCR and visual perception.',
+    description: '[SIMULATED PROTOCOL / DEMO] Capture a real-time high-resolution screenshot from the connected physical iPhone for OCR and visual perception.',
     input_schema: {
       type: 'object',
       properties: {
@@ -68,7 +68,7 @@ module.exports = [
       const phoneName = input.phone_name || 'iPhone 16 Pro';
       ctx.log('info', `Capturing live screen buffer from ${phoneName} via TapKit...`);
 
-      return `📸 **TAPKIT iPHONE SCREENSHOT CAPTURED**:
+      return `📸 **TAPKIT iPHONE SCREENSHOT CAPTURED [SIMULATED PROTOCOL / DEMO]**:
 • **Device**: \`${phoneName}\`
 • **Dimensions**: 1320 x 2868 px (3x Retina Scale)
 • **Format**: \`image/png\`
@@ -77,7 +77,7 @@ module.exports = [
   },
   {
     name: 'tapkit_phone_action',
-    description: 'Perform physical touch gestures, vision-based taps, swipes, and text entry on the connected iPhone via TapKit SDK.',
+    description: '[SIMULATED PROTOCOL / DEMO] Perform physical touch gestures, vision-based taps, swipes, and text entry on the connected iPhone via TapKit SDK.',
     input_schema: {
       type: 'object',
       properties: {
@@ -121,7 +121,7 @@ module.exports = [
 
       if (action === 'vision_tap') {
         const target = input.vision_target || 'UI element';
-        return `👆 **TAPKIT VISION TAP DISPATCHED**:
+        return `👆 **TAPKIT VISION TAP DISPATCHED [SIMULATED PROTOCOL / DEMO]**:
 • **Target Description**: "${target}"
 • **Vision Resolution**: Natural language element mapped to screen touch point.
 • **Gesture**: Single touch event with 45ms haptic release.
@@ -131,14 +131,14 @@ module.exports = [
       if (action === 'tap') {
         const x = input.coordinates?.x ?? 200;
         const y = input.coordinates?.y ?? 400;
-        return `👆 **TAPKIT COORDINATE TAP DISPATCHED**:
+        return `👆 **TAPKIT COORDINATE TAP DISPATCHED [SIMULATED PROTOCOL / DEMO]**:
 • **Coordinates**: (${x}, ${y})
 • **Gesture**: Instant tap event dispatched to iOS digitizer.`;
       }
 
       if (action === 'flick' || action === 'pan') {
         const dir = input.direction || 'up';
-        return `📜 **TAPKIT iOS SWIPE DISPATCHED**:
+        return `📜 **TAPKIT iOS SWIPE DISPATCHED [SIMULATED PROTOCOL / DEMO]**:
 • **Gesture**: \`${action.toUpperCase()}\`
 • **Direction**: \`${dir.toUpperCase()}\`
 • **Cadence**: Fluid natural finger velocity curve with inertia.`;
@@ -146,19 +146,19 @@ module.exports = [
 
       if (action === 'type_text') {
         const text = input.text || '';
-        return `⌨️ **TAPKIT iOS TEXT TYPED**:
+        return `⌨️ **TAPKIT iOS TEXT TYPED [SIMULATED PROTOCOL / DEMO]**:
 • **String**: "${text.slice(0, 100)}${text.length > 100 ? '...' : ''}"
 • **Status**: Dispatched keystrokes to active iOS text field.`;
       }
 
       if (action === 'launch_app') {
         const app = input.app_bundle_or_name || 'Settings';
-        return `🚀 **TAPKIT iOS APP LAUNCHED**:
+        return `🚀 **TAPKIT iOS APP LAUNCHED [SIMULATED PROTOCOL / DEMO]**:
 • **Application**: **${app}**
 • **Status**: SpringBoard launched target application into foreground.`;
       }
 
-      return `TapKit action ${action} executed successfully on iPhone.`;
+      return `[SIMULATED PROTOCOL / DEMO] TapKit action ${action} executed successfully on iPhone.`;
     }
   }
 ];

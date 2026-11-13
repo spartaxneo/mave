@@ -62,6 +62,7 @@ class AutonomousSentinel extends EventEmitter {
     this.checkConnectivity();
     // Non-blocking poll every 4 seconds
     this.networkTimer = setInterval(() => this.checkConnectivity(), 4000);
+    if (this.networkTimer.unref) this.networkTimer.unref();
   }
 
   async checkConnectivity() {
@@ -185,6 +186,7 @@ class AutonomousSentinel extends EventEmitter {
     if (this.activityTimer) clearInterval(this.activityTimer);
     // Track every 15 seconds
     this.activityTimer = setInterval(() => this.trackActiveSession(), 15000);
+    if (this.activityTimer.unref) this.activityTimer.unref();
   }
 
   async trackActiveSession() {
@@ -500,6 +502,11 @@ $p = Get-Process -Id $pid -ErrorAction SilentlyContinue
       }
     } catch {}
     return this._newDayTemplate(this.todayDate);
+  }
+
+  stop() {
+    if (this.networkTimer) { clearInterval(this.networkTimer); this.networkTimer = null; }
+    if (this.activityTimer) { clearInterval(this.activityTimer); this.activityTimer = null; }
   }
 
   _saveTodayActivity() {
