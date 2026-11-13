@@ -48,10 +48,6 @@ class WindowManager {
     this.cancelApproval = null;
     this.petWindow = null;
     this.islandWindow = null;
-    this.vorssaintHubWindow = null;
-    this.vorssaintMenuPanelWindow = null;
-    this.vorssaintCleaningWindow = null;
-    this.vorssaintCommandBarWindow = null;
   }
 
   send(win, channel, payload) { send(win, channel, payload); }
@@ -249,18 +245,6 @@ class WindowManager {
     if (this.petWindow && !this.petWindow.isDestroyed()) {
       try { this.petWindow.destroy(); this.petWindow = null; } catch {}
     }
-    if (this.vorssaintHubWindow && !this.vorssaintHubWindow.isDestroyed()) {
-      try { this.vorssaintHubWindow.destroy(); this.vorssaintHubWindow = null; } catch {}
-    }
-    if (this.vorssaintMenuPanelWindow && !this.vorssaintMenuPanelWindow.isDestroyed()) {
-      try { this.vorssaintMenuPanelWindow.destroy(); this.vorssaintMenuPanelWindow = null; } catch {}
-    }
-    if (this.vorssaintCleaningWindow && !this.vorssaintCleaningWindow.isDestroyed()) {
-      try { this.vorssaintCleaningWindow.destroy(); this.vorssaintCleaningWindow = null; } catch {}
-    }
-    if (this.vorssaintCommandBarWindow && !this.vorssaintCommandBarWindow.isDestroyed()) {
-      try { this.vorssaintCommandBarWindow.destroy(); this.vorssaintCommandBarWindow = null; } catch {}
-    }
     for (const [, win] of this.overlays) {
       if (win && !win.isDestroyed()) {
         try { win.destroy(); } catch {}
@@ -448,7 +432,7 @@ class WindowManager {
     }
   }
 
-  // Standalone Device Extension Dynamic Island (Vorssaint macOS-style)
+  // Standalone Device Extension Dynamic Island
   createIslandWindow() {
     if (this.islandWindow && !this.islandWindow.isDestroyed()) return this.islandWindow;
     const { workArea: wa } = screen.getPrimaryDisplay();
@@ -461,7 +445,7 @@ class WindowManager {
       frame: false, transparent: true, resizable: true, alwaysOnTop: true, show: false,
       minWidth: 200, minHeight: 32,
       skipTaskbar: true, fullscreenable: false, minimizable: false, maximizable: false,
-      backgroundColor: '#00000000', title: 'Vorssaint · Dynamic Island',
+      backgroundColor: '#00000000', title: 'Mave · Dynamic Island',
       hasShadow: false,
       webPreferences: webPreferences(),
     });
@@ -523,159 +507,6 @@ class WindowManager {
       send(this.islandWindow, 'island:update', payload);
     }
   }
-
-  openVorssaintHub() {
-    if (this.vorssaintHubWindow && !this.vorssaintHubWindow.isDestroyed()) {
-      this.vorssaintHubWindow.show();
-      this.vorssaintHubWindow.focus();
-      return this.vorssaintHubWindow;
-    }
-    const win = new BrowserWindow({
-      width: 840, height: 620,
-      minWidth: 700, minHeight: 500,
-      title: 'Vorssaint · Features Hub',
-      backgroundColor: '#09090b',
-      frame: true,
-      webPreferences: webPreferences(),
-    });
-    win.loadFile(path.join(RENDERER, 'vorssaint_hub.html'));
-    this.vorssaintHubWindow = win;
-    win.on('closed', () => { this.vorssaintHubWindow = null; });
-    return win;
-  }
-
-  openVorssaintMenuPanel(trayBounds = null) {
-    if (this.vorssaintMenuPanelWindow && !this.vorssaintMenuPanelWindow.isDestroyed()) {
-      if (this.vorssaintMenuPanelWindow.isVisible()) {
-        this.vorssaintMenuPanelWindow.hide();
-      } else {
-        if (trayBounds) {
-          const W = 360;
-          const H = 600;
-          const primaryDisplay = screen.getPrimaryDisplay();
-          const { workArea: wa } = primaryDisplay;
-          let x = Math.round(trayBounds.x + (trayBounds.width / 2) - (W / 2));
-          let y = trayBounds.y > (wa.height / 2) ? Math.round(trayBounds.y - H - 8) : Math.round(trayBounds.y + trayBounds.height + 8);
-          x = Math.max(wa.x + 8, Math.min(x, wa.x + wa.width - W - 8));
-          y = Math.max(wa.y + 8, Math.min(y, wa.y + wa.height - H - 8));
-          this.vorssaintMenuPanelWindow.setBounds({ x, y, width: W, height: H });
-        }
-        this.vorssaintMenuPanelWindow.show();
-        this.vorssaintMenuPanelWindow.focus();
-      }
-      return this.vorssaintMenuPanelWindow;
-    }
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const { workArea: wa } = primaryDisplay;
-    const W = 360;
-    const H = 600;
-    let x = Math.round(wa.x + wa.width - W - 20);
-    let y = Math.round(wa.y + 10);
-    if (trayBounds) {
-      x = Math.round(trayBounds.x + (trayBounds.width / 2) - (W / 2));
-      y = trayBounds.y > (wa.height / 2) ? Math.round(trayBounds.y - H - 8) : Math.round(trayBounds.y + trayBounds.height + 8);
-      x = Math.max(wa.x + 8, Math.min(x, wa.x + wa.width - W - 8));
-      y = Math.max(wa.y + 8, Math.min(y, wa.y + wa.height - H - 8));
-    }
-
-    const win = new BrowserWindow({
-      width: W,
-      height: H,
-      x,
-      y,
-      frame: false,
-      transparent: true,
-      resizable: false,
-      alwaysOnTop: true,
-      skipTaskbar: true,
-      title: 'Vorssaint · Menu Panel',
-      backgroundColor: '#00000000',
-      webPreferences: webPreferences(),
-    });
-    protect(win);
-    win.loadFile(path.join(RENDERER, 'vorssaint_menu_panel.html'));
-    this.vorssaintMenuPanelWindow = win;
-    win.on('closed', () => { this.vorssaintMenuPanelWindow = null; });
-    win.on('blur', () => {
-      if (win && !win.isDestroyed() && win.isVisible()) {
-        win.hide();
-      }
-    });
-    return win;
-  }
-
-  openCleaningModeWindow(seconds = 30) {
-    if (this.vorssaintCleaningWindow && !this.vorssaintCleaningWindow.isDestroyed()) {
-      this.vorssaintCleaningWindow.destroy();
-      this.vorssaintCleaningWindow = null;
-      return null;
-    }
-    const prim = screen.getPrimaryDisplay();
-    const { bounds } = prim;
-    const win = new BrowserWindow({
-      x: bounds.x,
-      y: bounds.y,
-      width: bounds.width,
-      height: bounds.height,
-      frame: false,
-      transparent: true,
-      alwaysOnTop: true,
-      fullscreen: true,
-      skipTaskbar: true,
-      backgroundColor: '#00000000',
-      webPreferences: webPreferences(),
-    });
-    protect(win);
-    win.setAlwaysOnTop(true, 'screen-saver');
-    win.loadFile(path.join(RENDERER, 'cleaning_mode.html'));
-    this.vorssaintCleaningWindow = win;
-    win.on('closed', () => { this.vorssaintCleaningWindow = null; });
-    return win;
-  }
-
-  openCommandBarWindow() {
-    if (this.vorssaintCommandBarWindow && !this.vorssaintCommandBarWindow.isDestroyed()) {
-      if (this.vorssaintCommandBarWindow.isVisible()) {
-        this.vorssaintCommandBarWindow.hide();
-      } else {
-        this.vorssaintCommandBarWindow.show();
-        this.vorssaintCommandBarWindow.focus();
-      }
-      return this.vorssaintCommandBarWindow;
-    }
-    const prim = screen.getPrimaryDisplay();
-    const { workArea: wa } = prim;
-    const W = 620;
-    const H = 340;
-    const x = Math.round(wa.x + (wa.width - W) / 2);
-    const y = Math.round(wa.y + wa.height * 0.18);
-
-    const win = new BrowserWindow({
-      width: W,
-      height: H,
-      x,
-      y,
-      frame: false,
-      transparent: true,
-      alwaysOnTop: true,
-      skipTaskbar: true,
-      resizable: false,
-      title: 'Vorssaint · Command Bar',
-      backgroundColor: '#00000000',
-      webPreferences: webPreferences(),
-    });
-    protect(win);
-    win.loadFile(path.join(RENDERER, 'command_bar.html'));
-    this.vorssaintCommandBarWindow = win;
-    win.on('closed', () => { this.vorssaintCommandBarWindow = null; });
-    win.on('blur', () => {
-      if (win && !win.isDestroyed() && win.isVisible()) {
-        win.hide();
-      }
-    });
-    return win;
-  }
 }
-
 
 module.exports = { WindowManager, send };

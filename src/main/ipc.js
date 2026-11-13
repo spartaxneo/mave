@@ -1172,7 +1172,7 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     });
   });
 
-  // Vorssaint-Style System Dynamic Island (OS Device Extension)
+  // Mave System Dynamic Island (OS Device Extension)
   handle('island:expand', () => {
     windows.resizeIsland(true);
     return true;
@@ -1192,169 +1192,6 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     return {
       active: Boolean(windows.islandWindow && !windows.islandWindow.isDestroyed() && windows.islandWindow.isVisible()),
     };
-  });
-
-  handle('vorssaint:open-hub', () => {
-    windows.openVorssaintHub();
-    return true;
-  });
-
-  handle('vorssaint:set-volume', (val) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).setVolume(val);
-  });
-
-  handle('vorssaint:set-brightness', (val) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).setBrightness(val);
-  });
-
-  handle('vorssaint:toggle-keep-awake', (enabled) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).toggleKeepAwake(Boolean(enabled));
-  });
-
-  handle('vorssaint:sleep-display', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).sleepDisplay();
-  });
-
-  handle('vorssaint:open-cleaning', (seconds = 30) => {
-    if (windows && typeof windows.openCleaningModeWindow === 'function') {
-      windows.openCleaningModeWindow(seconds);
-    }
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).toggleCleaningMode(seconds);
-  });
-
-  handle('vorssaint:open-command-bar', () => {
-    if (windows && typeof windows.openCommandBarWindow === 'function') {
-      windows.openCommandBarWindow();
-    }
-    return true;
-  });
-
-  // Vorssaint OS Modular Toolkit
-  handle('vorssaint:telemetry', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings, costs, local, runtime }).getTelemetry();
-  });
-  handle('vorssaint:agents', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings, costs, local, runtime }).getAgentsStatus();
-  });
-  handle('vorssaint:clipboard-history', (query) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).getClipboardHistory(query);
-  });
-  handle('vorssaint:clipboard-copy', (id) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).copyClipboardItem(id);
-  });
-  handle('vorssaint:clipboard-clear', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).clearClipboardHistory();
-  });
-  handle('vorssaint:scratchpad-get', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).getScratchpad();
-  });
-  handle('vorssaint:scratchpad-save', (content) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).saveScratchpad(content);
-  });
-  handle('vorssaint:keep-awake-set', (mode) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).setKeepAwake(mode);
-  });
-  handle('vorssaint:keep-awake-get', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).getKeepAwakeStatus();
-  });
-  handle('vorssaint:cleaning-toggle', (seconds) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).toggleCleaningMode(seconds);
-  });
-  handle('vorssaint:settings-get', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).getSettings();
-  });
-  handle('vorssaint:settings-update', (patch) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    const updated = getVorssaintManager({ windows, settings }).updateSettings(patch);
-    Object.values(windows).forEach((w) => {
-      if (w && !w.isDestroyed() && w.webContents) {
-        w.webContents.send('vorssaint:mascot-config-changed', updated);
-      }
-    });
-    return updated;
-  });
-  handle('vorssaint:ports-get', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).getListeningPorts();
-  });
-  handle('vorssaint:port-kill', (portOrPid) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).killPort(portOrPid);
-  });
-  handle('vorssaint:snap-window', (action) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    const mgr = getVorssaintManager({ windows, settings });
-    return mgr.snapWindow(action, windows.main);
-  });
-  handle('vorssaint:mascot-moment', (moment) => {
-    Object.values(windows).forEach((w) => {
-      if (w && !w.isDestroyed() && w.webContents) {
-        w.webContents.send('vorssaint:mascot-moment-triggered', moment);
-      }
-    });
-    return true;
-  });
-  handle('vorssaint:open-panel', () => {
-    if (windows.openVorssaintMenuPanel) {
-      windows.openVorssaintMenuPanel();
-    }
-    return true;
-  });
-  handle('vorssaint:app-volumes-get', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).getAppVolumes();
-  });
-  handle('vorssaint:app-volume-set', ({ app, volumePct }) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).setAppVolume(app, volumePct);
-  });
-  handle('vorssaint:quick-toggles-get', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).getQuickToggles();
-  });
-  handle('vorssaint:quick-toggle-set', ({ id, val }) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).setQuickToggle(id, val);
-  });
-  handle('vorssaint:clean-url', (urlText) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).cleanUrl(urlText);
-  });
-  handle('vorssaint:snippets-get', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).getSnippets();
-  });
-  handle('vorssaint:snippet-save', ({ trigger, expansion, label }) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).saveSnippet(trigger, expansion, label);
-  });
-  handle('vorssaint:snippet-delete', (id) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).deleteSnippet(id);
-  });
-  handle('vorssaint:catalog-get', () => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).getFeatureCatalog();
-  });
-  handle('vorssaint:feature-toggle', ({ featureId, enabled }) => {
-    const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-    return getVorssaintManager({ windows, settings }).toggleFeatureAvailability(featureId, enabled);
   });
 
   // Jev (System 1 Reflex Decision) & CDM (Constrained Context Compression)
@@ -1794,7 +1631,7 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     if (!target.startsWith(path.resolve(root)) || !fs.existsSync(target)) {
       return { root: path.basename(root), rootPath: root, entries: [] };
     }
-    const skip = new Set(['node_modules', '.git', 'dist', 'dist-vorssaint', 'build', '.next']);
+    const skip = new Set(['node_modules', '.git', 'dist', 'build', '.next']);
     try {
       const dirents = fs.readdirSync(target, { withFileTypes: true })
         .filter((d) => !skip.has(d.name))
@@ -2082,6 +1919,26 @@ function registerIpc({ controller, windows, settings, agent, audio, activity, pl
     const uid = options && options.userId ? options.userId : 'default';
     const engine = ContinuousLearningEngine.forUser(uid);
     return { ok: true, ...engine.getGroundedContext(query, options || {}) };
+  });
+
+  handle('network:status', async () => {
+    let isCellular = false;
+    let connType = 'wifi';
+    try {
+      if (process.platform === 'win32') {
+        const { execSync } = require('child_process');
+        const output = execSync('powershell -NoProfile -Command "Get-NetAdapter | Where-Object { $_.Status -eq \'Up\' } | Select-Object -ExpandProperty PhysicalMediaType"', { timeout: 2000, encoding: 'utf8' }).toLowerCase();
+        if (output.includes('wwan') || output.includes('cellular') || output.includes('mobile')) {
+          isCellular = true;
+          connType = 'cellular';
+        } else if (output.includes('native 802.11')) {
+          connType = 'wifi';
+        } else if (output.includes('802.3')) {
+          connType = 'ethernet';
+        }
+      }
+    } catch {}
+    return { ok: true, isCellular, connType };
   });
 
   // fire-and-forget messages from renderers

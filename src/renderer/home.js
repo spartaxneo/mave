@@ -1637,37 +1637,6 @@
       api.invoke('app:open-settings');
     });
   }
-  if ($('titlebar-vorssaint-btn')) {
-    $('titlebar-vorssaint-btn').addEventListener('click', () => {
-      if (api && api.invoke) api.invoke('vorssaint:open-panel');
-    });
-  }
-  if ($('upm-vorssaint')) {
-    $('upm-vorssaint').addEventListener('click', () => {
-      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
-      if (api && api.invoke) api.invoke('vorssaint:open-panel');
-    });
-  }
-  if ($('upm-vorssaint-hub')) {
-    $('upm-vorssaint-hub').addEventListener('click', () => {
-      if ($('user-profile-menu')) $('user-profile-menu').hidden = true;
-      if (api && api.invoke) api.invoke('vorssaint:open-hub');
-    });
-  }
-  if ($('nav-item-vorssaint')) {
-    $('nav-item-vorssaint').addEventListener('click', () => {
-      const nmd = $('nav-more-dropdown');
-      if (nmd) nmd.hidden = true;
-      if (api && api.invoke) api.invoke('vorssaint:open-panel');
-    });
-  }
-  if ($('nav-item-vorssaint-hub')) {
-    $('nav-item-vorssaint-hub').addEventListener('click', () => {
-      const nmd = $('nav-more-dropdown');
-      if (nmd) nmd.hidden = true;
-      if (api && api.invoke) api.invoke('vorssaint:open-hub');
-    });
-  }
   if ($('nav-item-island')) {
     $('nav-item-island').addEventListener('click', () => {
       const nmd = $('nav-more-dropdown');
@@ -2280,7 +2249,7 @@
   });
 
   // ==========================================================
-  // Vorssaint Cute Little Dot Avatar (Official Face of Mave)
+  // Mave Cute Little Dot Avatar (Official Face of Mave)
   // ==========================================================
   const EYE_PATHS = {
     idle: {
@@ -2464,7 +2433,7 @@
   }
 
   // ==========================================================
-  // Vorssaint Dynamic Island Controller
+  // Mave Dynamic Island Controller
   // ==========================================================
   class DynamicIslandController {
     constructor(avatar) {

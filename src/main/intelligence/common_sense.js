@@ -121,7 +121,7 @@ class CommonSenseEngine extends EventEmitter {
       this.registerPerson({
         name: 'Shivam',
         title: 'Founder & CEO',
-        company: 'Vorssaint Technologies',
+        company: 'Mave Technologies',
         relation: 'Key Pitch Prospect / Colleague',
         importance: 'high',
         linkedin: 'https://linkedin.com/in/shivam-tech',

@@ -1,22 +1,11 @@
 'use strict';
 
 /**
- * Vorssaint Authentic Companion Mascot Rig
- * 1:1 Implementation of macOS Swift NotchMascotView.swift & NotchMascotSupport.swift
- * 
- * Features:
- * - Styles: Minimal vs Robot
- * - Shapes: Ball, Egg, Squircle, Pill
- * - Palettes: Pearl, Lemon, Peach, Rose, Lilac, Sky, Mint
- * - Layers: Hopper, Squasher, Tilter, Visor, Antenna, Bulb, Shine, Eyes
- * - Physics: Squash & stretch, jump hop, head tilt, natural blinks (2.5-6s)
- * - Gaze Tracking: Eyes follow pointer with smooth spring damping
- * - Expressions: idle, celebrate (hop + crescent eyes ^ ^), love (heartbeat + floating hearts),
- *   sleepy (closed drooped eyes - - + floating z Z), groove (tempo bobbing),
- *   think (tilted inquiring gaze), surprised (wide pop), wink (playful wink), alert
+ * Mave Companion Mascot Rig
+ * Interactive Desktop & Dynamic Island Avatar Rig
  */
 
-class VorssaintMascotRig {
+class MaveMascotRig {
   constructor(container, options = {}) {
     this.container = typeof container === 'string' && typeof document !== 'undefined'
       ? document.getElementById(container)
@@ -63,7 +52,7 @@ class VorssaintMascotRig {
   initDOM() {
     if (!this.container) return;
     this.container.innerHTML = '';
-    this.container.classList.add('vorssaint-mascot-root');
+    this.container.classList.add('mave-mascot-root', 'vorssaint-mascot-root');
 
     this.root = document.createElement('div');
     this.root.className = 'mascot-root';
@@ -610,10 +599,13 @@ class VorssaintMascotRig {
   }
 }
 
+const VorssaintMascotRig = MaveMascotRig;
+
 // Export for Node/Electron and Browser environments
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { VorssaintMascotRig };
+  module.exports = { MaveMascotRig, VorssaintMascotRig };
 }
 if (typeof window !== 'undefined') {
-  window.VorssaintMascotRig = VorssaintMascotRig;
+  window.MaveMascotRig = MaveMascotRig;
+  window.VorssaintMascotRig = MaveMascotRig;
 }

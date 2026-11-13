@@ -14,7 +14,6 @@ test('Zero dummy marketing banners, fake models, or mock telemetry remain in ren
     'src/renderer/app.html',
     'src/renderer/app.js',
     'src/renderer/home.js',
-    'src/renderer/vorssaint_hub.html',
     'src/main/ipc.js',
   ];
   const forbidden = [
@@ -181,8 +180,6 @@ test('Square corners, smooth animations, in-window loader, Vorssaint notch click
   const mascotRig = fs.readFileSync(path.join(ROOT, 'src/renderer/mascot_rig.js'), 'utf8');
   const islandHtml = fs.readFileSync(path.join(ROOT, 'src/renderer/island.html'), 'utf8');
   const islandJs = fs.readFileSync(path.join(ROOT, 'src/renderer/island.js'), 'utf8');
-  const menuPanelHtml = fs.readFileSync(path.join(ROOT, 'src/renderer/vorssaint_menu_panel.html'), 'utf8');
-  const hubHtml = fs.readFileSync(path.join(ROOT, 'src/renderer/vorssaint_hub.html'), 'utf8');
 
   // 1. Square window corners (no outer black triangular gaps) & no idle float animation
   assert.ok(stylesCss.includes('--r-window: 0px'), 'Root window radius is 0px');
@@ -201,18 +198,14 @@ test('Square corners, smooth animations, in-window loader, Vorssaint notch click
   assert.ok(windowsJs.includes('setResizable(true)'), 'Island window enables resizing so notch expansion succeeds on Windows');
   assert.ok(islandJs.includes("api.on('island:blur'"), 'Expanded island collapses cleanly when focus leaves');
 
-  // 4. Zero dummy Vorssaint music/app-mixer/calendar/quota strings or Math.random sparklines
+  // 4. Zero dummy music/app-mixer/calendar/quota strings or Math.random sparklines
   for (const forbidden of ['Lo-Fi Deep Focus', 'Architecture Review', 'GitHub Copilot CLI', 'reacts to your Mac']) {
     assert.equal(islandHtml.includes(forbidden), false, `island.html must not contain dummy string: ${forbidden}`);
   }
   assert.equal(islandJs.includes('Lo-Fi Deep Focus'), false, 'island.js must not contain dummy lyrics/track copy');
-  for (const forbidden of ['1,850 RPM', 'Math.random()', 'vorssaint-utils.git', 'chk-switcher']) {
-    assert.equal(menuPanelHtml.includes(forbidden), false, `vorssaint_menu_panel.html must not contain dummy placeholder: ${forbidden}`);
-  }
-  assert.equal(hubHtml.includes('paid Mac apps'), false, 'vorssaint_hub.html uses Windows-accurate copy');
 
   // 5. Clean shutdown tears down all singletons & background workers
-  for (const svc of ['getVorssaintManager().stop()', 'getJarvisButler().stop()', 'getJarvisTelemetry().stopMonitoring()', 'getAutonomousSentinel().stop()', 'audio.stop()']) {
+  for (const svc of ['getJarvisButler().stop()', 'getJarvisTelemetry().stopMonitoring()', 'getAutonomousSentinel().stop()', 'audio.stop()']) {
     assert.ok(mainJs.includes(svc), `Clean shutdown stops ${svc}`);
   }
 

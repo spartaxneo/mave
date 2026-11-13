@@ -109,7 +109,7 @@
     voice: {
       title: 'Voice & Companion',
       subs: [
-        { pane: 'companion', title: 'Vorssaint Notch & Companion', desc: 'Top notch capsule behavior, mascot style, and palette' },
+        { pane: 'companion', title: 'Face & Dynamic Island', desc: 'Top notch capsule behavior, mascot style, and palette' },
       ],
     },
     billing: {

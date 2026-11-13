@@ -1071,7 +1071,7 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
     /* ============================================================
-       Vorssaint Dynamic Island & Cute Dot Avatar (Face of Mave)
+       Mave Dynamic Island & Cute Dot Avatar (Face of Mave)
        ============================================================ */
     .dynamic-island-wrapper {
       position: fixed;
@@ -1301,7 +1301,7 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
   </style>
 </head>
 <body>
-  <!-- Vorssaint Dynamic Island & Cute Dot Avatar (Mobile & Web Parity) -->
+  <!-- Mave Dynamic Island & Cute Dot Avatar (Mobile & Web Parity) -->
   <div class="dynamic-island-wrapper" id="dynamic-island-wrapper">
     <div class="dynamic-island" id="dynamic-island">
       <div class="island-compact" id="island-compact">
@@ -4821,7 +4821,7 @@ function getDesktopWebHtml(lanUrl, httpsUrl = '') {
     }
 
     // ==========================================================
-    // Vorssaint Cute Little Dot Avatar & Dynamic Island (Mobile & Web)
+    // Mave Cute Little Dot Avatar & Dynamic Island (Mobile & Web)
     // ==========================================================
     const EYE_PATHS = {
       idle: {
@@ -5318,43 +5318,7 @@ class MobileWebServer {
       return res.end(getDesktopWebHtml(this.getUrl(), this.getHttpsUrl()));
     }
 
-    // --- Vorssaint OS Mobile Web Companion & Desktop Suite ---
-    if (req.method === 'GET' && (url.pathname === '/vorssaint' || url.pathname === '/vorssaint/')) {
-      try {
-        const mobileHtmlPath = path.resolve(__dirname, '..', '..', '..', 'vorssaint', 'android', 'mobile_web', 'index.html');
-        if (fs.existsSync(mobileHtmlPath)) {
-          const html = fs.readFileSync(mobileHtmlPath, 'utf8');
-          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-          return res.end(html);
-        }
-      } catch (vErr) {
-        if (this.logger) this.logger.warn('Vorssaint mobile web serve error:', vErr.message);
-      }
-    }
-
-    if (req.method === 'GET' && url.pathname === '/vorssaint/menu') {
-      try {
-        const menuPath = path.resolve(__dirname, '..', '..', 'renderer', 'vorssaint_menu_panel.html');
-        if (fs.existsSync(menuPath)) {
-          const html = fs.readFileSync(menuPath, 'utf8');
-          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-          return res.end(html);
-        }
-      } catch {}
-    }
-
-    if (req.method === 'GET' && url.pathname === '/vorssaint/hub') {
-      try {
-        const hubPath = path.resolve(__dirname, '..', '..', 'renderer', 'vorssaint_hub.html');
-        if (fs.existsSync(hubPath)) {
-          const html = fs.readFileSync(hubPath, 'utf8');
-          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-          return res.end(html);
-        }
-      } catch {}
-    }
-
-    if (req.method === 'GET' && (url.pathname === '/mascot_rig.js' || url.pathname === '/vorssaint/mascot_rig.js')) {
+    if (req.method === 'GET' && (url.pathname === '/mascot_rig.js' || url.pathname === '/assets/mascot_rig.js')) {
       try {
         const jsPath = path.resolve(__dirname, '..', '..', 'renderer', 'mascot_rig.js');
         if (fs.existsSync(jsPath)) {
@@ -5365,35 +5329,13 @@ class MobileWebServer {
       } catch {}
     }
 
-    if (req.method === 'GET' && (url.pathname === '/mascot_rig.css' || url.pathname === '/vorssaint/mascot_rig.css')) {
+    if (req.method === 'GET' && url.pathname === '/mascot_rig.css') {
       try {
         const cssPath = path.resolve(__dirname, '..', '..', 'renderer', 'mascot_rig.css');
         if (fs.existsSync(cssPath)) {
           const css = fs.readFileSync(cssPath, 'utf8');
           res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
           return res.end(css);
-        }
-      } catch {}
-    }
-
-    if (req.method === 'GET' && (url.pathname === '/manifest.json' || url.pathname === '/vorssaint/manifest.json')) {
-      try {
-        const manifestPath = path.resolve(__dirname, '..', '..', '..', 'vorssaint', 'android', 'mobile_web', 'manifest.json');
-        if (fs.existsSync(manifestPath)) {
-          const manifest = fs.readFileSync(manifestPath, 'utf8');
-          res.writeHead(200, { 'Content-Type': 'application/manifest+json; charset=utf-8' });
-          return res.end(manifest);
-        }
-      } catch {}
-    }
-
-    if (req.method === 'GET' && (url.pathname === '/sw.js' || url.pathname === '/vorssaint/sw.js')) {
-      try {
-        const swPath = path.resolve(__dirname, '..', '..', '..', 'vorssaint', 'android', 'mobile_web', 'sw.js');
-        if (fs.existsSync(swPath)) {
-          const sw = fs.readFileSync(swPath, 'utf8');
-          res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
-          return res.end(sw);
         }
       } catch {}
     }
@@ -8197,133 +8139,6 @@ echo "      Web Console: ${hostUrl}/product"
         const result = await firebaseService.getPreferences(uid);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify(result));
-      } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: false, error: err.message }));
-      }
-    }
-
-    // --- Vorssaint Live Telemetry & Actions API (Mobile & Cloud Parity) ---
-    if (req.method === 'GET' && url.pathname === '/api/vorssaint/telemetry') {
-      try {
-        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
-        const telemetry = getVorssaintManager().getTelemetry();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify(telemetry));
-      } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: false, error: err.message }));
-      }
-    }
-
-    if (req.method === 'POST' && url.pathname === '/api/vorssaint/keep-awake') {
-      try {
-        const body = await parseBody(req);
-        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
-        const result = getVorssaintManager().setKeepAwake(body.mode || 'off');
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify(result));
-      } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: false, error: err.message }));
-      }
-    }
-
-    if (req.method === 'GET' && url.pathname === '/api/vorssaint/ports') {
-      try {
-        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
-        const ports = getVorssaintManager().getListeningPorts();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify(ports));
-      } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: false, error: err.message }));
-      }
-    }
-
-    if (req.method === 'POST' && url.pathname === '/api/vorssaint/port-kill') {
-      try {
-        const body = await parseBody(req);
-        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
-        const result = getVorssaintManager().killPort(body.port || body.pid);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify(result));
-      } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: false, error: err.message }));
-      }
-    }
-
-    if (req.method === 'GET' && url.pathname === '/api/vorssaint/scratchpad') {
-      try {
-        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
-        const pad = getVorssaintManager().getScratchpad();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify(pad));
-      } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: false, error: err.message }));
-      }
-    }
-
-    if (req.method === 'POST' && url.pathname === '/api/vorssaint/scratchpad') {
-      try {
-        const body = await parseBody(req);
-        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
-        const result = getVorssaintManager().saveScratchpad(body.text || body.content || '');
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify(result));
-      } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: false, error: err.message }));
-      }
-    }
-
-    if (req.method === 'POST' && url.pathname === '/api/vorssaint/mascot') {
-      try {
-        const body = await parseBody(req);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: true, moment: body.moment }));
-      } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: false, error: err.message }));
-      }
-    }
-
-    if (req.method === 'GET' && url.pathname === '/api/vorssaint/matrix') {
-      try {
-        const { getPlatformDetector } = require('../vorssaint/platform_detector');
-        const matrix = getPlatformDetector().getMatrix();
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        return res.end(JSON.stringify(matrix));
-      } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: false, error: err.message }));
-      }
-    }
-
-    if (req.method === 'GET' && url.pathname === '/api/vorssaint/platform-profile') {
-      try {
-        const { getPlatformDetector } = require('../vorssaint/platform_detector');
-        const explicit = url.searchParams.get('platform');
-        const ua = req.headers['user-agent'] || '';
-        const detected = getPlatformDetector().detectPlatform(ua, explicit);
-        const profile = getPlatformDetector().getPlatformProfile(detected);
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        return res.end(JSON.stringify(profile));
-      } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: false, error: err.message }));
-      }
-    }
-
-    if (req.method === 'POST' && url.pathname === '/api/vorssaint/clean-url') {
-      try {
-        const body = await parseBody(req);
-        const { getVorssaintManager } = require('../vorssaint/vorssaint_manager');
-        const cleaned = getVorssaintManager().cleanUrl(body.url || '');
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        return res.end(JSON.stringify({ ok: true, original: body.url, cleaned }));
       } catch (err) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ ok: false, error: err.message }));

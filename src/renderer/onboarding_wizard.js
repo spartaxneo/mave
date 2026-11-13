@@ -106,7 +106,7 @@ const FEATURE_FOOTPRINTS = {
     storageGB: 0.0, ramGB: 0.1, cpuNote: 'Minimal',
   },
   voiceAndHud: {
-    label: 'Voice & Vorssaint Top Notch',
+    label: 'Voice & Dynamic Island Notch',
     desc: 'Offline Whisper speech, neural voices & macOS-style Dynamic Notch.',
     storageGB: 0.26, ramGB: 0.3, cpuNote: 'Low CPU',
   },
@@ -152,11 +152,11 @@ class OnboardingWizard {
       resourceSavingGoal: 'storage', // 'storage' | 'network' | 'compute' | 'electricity'
       voice: 'nova',
       deviceRole: 'host', // 'host' | 'companion'
-      selectedModels: ['qwen3-vl-8b'],
+      selectedModels: ['phi-4-mini'],
       autoModelRouting: true,
       airllmEnabled: false,
       cloudFallback: true,
-      localModel: 'qwen3-vl-8b',
+      localModel: 'phi-4-mini',
       features: {
         personalNas: true,
         multiOsHost: true,
@@ -195,6 +195,14 @@ class OnboardingWizard {
     this.installDone = false;
     this.installError = '';
     this.downloadPct = 0;
+    this.downloadDetail = '';
+    this.isCellular = false;
+    this.cellularChoice = null; // null | 'wait_wifi' | 'download_now'
+    this.waitingForWifi = false;
+    this.bgDownloadStarted = false;
+    this.bgDownloadStatus = '';
+    this._wifiListenerActive = false;
+    this._wifiInterval = null;
   }
 
   _isSignedIn(u = this.user) {
@@ -223,8 +231,9 @@ class OnboardingWizard {
           this.user = activeUser;
           this.state.email = activeUser.email || (s && s.userEmail) || '';
           if (!this.state.userName) this.state.userName = activeUser.displayName || (this.state.email ? this.state.email.split('@')[0] : '');
-          // Already logged in: skip intro and login screens, jump straight to setup
-          this.stepId = 'device_role';
+          // Already logged in: skip intro and role/model steps, jump straight to calibrating & background setup
+          this.stepId = 'calibrating';
+          this._startBackgroundModelCalibration();
         }
       } catch {}
     }
@@ -240,7 +249,8 @@ class OnboardingWizard {
   }
 
   _progressIndex() {
-    if (['device_role', 'connect_host', 'device_models'].includes(this.stepId)) return 1;
+    if (this.stepId === 'account') return 0;
+    if (['calibrating', 'device_role', 'connect_host', 'device_models'].includes(this.stepId)) return 1;
     if (this.stepId === 'personalize') return 2;
     if (['voice', 'installing'].includes(this.stepId)) return 3;
     return 0;
@@ -248,12 +258,18 @@ class OnboardingWizard {
 
   _go(nextStepId) {
     if (this._isSignedIn() && (nextStepId === 'account' || nextStepId.startsWith('intro_'))) {
-      nextStepId = 'device_role';
+      nextStepId = 'calibrating';
+    }
+    // Streamlined flow: skip manual model picker & device role steps
+    if (nextStepId === 'device_role' || nextStepId === 'device_models') {
+      nextStepId = 'calibrating';
     }
     this._stopCamera();
     this.stepId = nextStepId;
-    if (nextStepId === 'device_models' && !this.hwScan) {
-      this._scanDevice();
+    if (nextStepId === 'calibrating') {
+      this._startBackgroundModelCalibration();
+      this.render();
+      return;
     }
     if (nextStepId === 'connect_host') {
       this._loadAuthorizedHosts();
@@ -264,6 +280,156 @@ class OnboardingWizard {
       return;
     }
     this.render();
+  }
+
+  async _detectCellularConnection() {
+    if (typeof window !== 'undefined' && typeof window.__MAVE_SIMULATE_CELLULAR__ === 'boolean') {
+      return window.__MAVE_SIMULATE_CELLULAR__;
+    }
+    if (typeof this.simulateCellular === 'boolean') {
+      return this.simulateCellular;
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.connection) {
+      const conn = navigator.connection;
+      if (
+        conn.type === 'cellular' ||
+        Boolean(conn.saveData) ||
+        (conn.effectiveType && ['2g', '3g', 'slow-2g'].includes(conn.effectiveType))
+      ) {
+        return true;
+      }
+    }
+
+    if (this.api && this.api.invoke) {
+      try {
+        const netStatus = await this.api.invoke('network:status');
+        if (netStatus && netStatus.isCellular) {
+          return true;
+        }
+      } catch {}
+    }
+
+    return false;
+  }
+
+  async _startBackgroundModelCalibration() {
+    if (!this.hwScan) {
+      await this._scanDevice();
+    }
+
+    // Select single certified core brain (Phi-4-mini 3.8B or tier-matched model)
+    const opts = (this.hwScan && Array.isArray(this.hwScan.options)) ? this.hwScan.options : [];
+    const bestModel = opts.find((o) => o.id === 'phi-4-mini') || opts[0] || {
+      id: 'phi-4-mini',
+      label: 'Phi-4-mini 3.8B Sovereign Brain',
+      bytes: 2.49 * (1024 ** 3),
+      memoryGB: 4.2,
+    };
+    this.state.selectedModels = [bestModel.id];
+    this.state.localModel = bestModel.id;
+    this.state.autoModelRouting = true;
+    this.state.deviceRole = 'host';
+
+    // Check if already installed
+    const installed = new Set(
+      Array.isArray(this.localStatus?.installedModels)
+        ? this.localStatus.installedModels
+        : (this.localStatus?.installed ? [this.localStatus.installed] : [])
+    );
+    if (installed.has(bestModel.id)) {
+      this.bgDownloadStatus = 'Installed on disk';
+      this.downloadPct = 100;
+      this.downloadDetail = 'Brain verified and ready locally.';
+      this.render();
+      return;
+    }
+
+    // Cellular internet check before downloading
+    const isCell = await this._detectCellularConnection();
+    this.isCellular = isCell;
+
+    if (isCell && !this.cellularChoice) {
+      this.render();
+      return;
+    }
+
+    if (this.cellularChoice === 'wait_wifi') {
+      this.waitingForWifi = true;
+      this.bgDownloadStatus = 'Waiting for Wi-Fi connection...';
+      this._setupWifiListener();
+      this.render();
+      return;
+    }
+
+    this._triggerModelDownload(bestModel.id);
+  }
+
+  _setupWifiListener() {
+    if (this._wifiListenerActive) return;
+    this._wifiListenerActive = true;
+
+    const checkWifiAndResume = async () => {
+      if (!this.waitingForWifi) return;
+      const isCell = await this._detectCellularConnection();
+      if (!isCell) {
+        this.waitingForWifi = false;
+        this.cellularChoice = 'download_now';
+        const bestModelId = this.state.selectedModels[0] || 'phi-4-mini';
+        this._triggerModelDownload(bestModelId);
+        this.render();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', checkWifiAndResume);
+      if (typeof navigator !== 'undefined' && navigator.connection) {
+        navigator.connection.addEventListener('change', checkWifiAndResume);
+      }
+      this._wifiInterval = setInterval(checkWifiAndResume, 2500);
+    }
+  }
+
+  async _triggerModelDownload(modelId) {
+    if (this.bgDownloadStarted) return;
+    this.bgDownloadStarted = true;
+    this.bgDownloadStatus = `Downloading MAVE Core Brain (${modelId})...`;
+    if (this.downloadPct < 5) this.downloadPct = 5;
+    this.downloadDetail = 'Connecting to model repository (~2.5 GB)...';
+    this.render();
+
+    if (this.api && this.api.on) {
+      this.api.on('local:progress', (st) => {
+        if (st && (!st.modelId || st.modelId === modelId) && typeof st.percent === 'number') {
+          this.downloadPct = Math.max(0, Math.min(100, Math.round(st.percent)));
+          const bytesStr = st.downloadedBytes && st.totalBytes
+            ? `${(st.downloadedBytes / (1024 ** 2)).toFixed(0)} MB / ${(st.totalBytes / (1024 ** 2)).toFixed(0)} MB`
+            : `${this.downloadPct}%`;
+          this.downloadDetail = st.installed ? 'Installed and verified on disk' : `Downloading: ${bytesStr}`;
+          this.bgDownloadStatus = st.installed ? 'Core Brain ready' : `Downloading ${modelId} (${this.downloadPct}%)`;
+          this._updateProgressDOM();
+        }
+      });
+    }
+
+    if (this.api && this.api.invoke) {
+      await this.api.invoke('local:start', modelId, { airllmEnabled: Boolean(this.state.airllmEnabled) }).catch(() => {
+        this.bgDownloadStatus = 'Download queued';
+      });
+    }
+  }
+
+  _updateProgressDOM() {
+    const fill = document.getElementById('onb-calib-fill');
+    if (fill) fill.style.width = `${this.downloadPct}%`;
+    const fillBg = document.getElementById('onb-bg-fill');
+    if (fillBg) fillBg.style.width = `${this.downloadPct}%`;
+    const pct = document.getElementById('onb-calib-pct');
+    if (pct) pct.textContent = `${this.downloadPct}%`;
+    const det = document.getElementById('onb-calib-detail');
+    if (det) det.textContent = this.downloadDetail;
+    const bgText = document.getElementById('onb-bg-text');
+    if (bgText) bgText.textContent = `Installing MAVE Brain in background: ${this.downloadPct}%`;
   }
 
   async _scanDevice() {
@@ -471,6 +637,9 @@ class OnboardingWizard {
           </footer>
         `;
 
+      case 'calibrating':
+        return '';
+
       case 'voice':
         return `
           <footer class="onb-bottom-dock">
@@ -632,6 +801,22 @@ class OnboardingWizard {
             <h1 class="onb-h1">Make MAVE yours</h1>
             <p class="onb-sub">Customize how MAVE speaks, behaves, and manages your computer's resources.</p>
 
+            ${(this.bgDownloadStarted || this.waitingForWifi) ? `
+              <div class="onb-bg-install-bar">
+                <div class="onb-bg-install-info">
+                  <span class="onb-bg-install-icon">${this.waitingForWifi ? '📶' : '🧠'}</span>
+                  <span id="onb-bg-text">
+                    ${this.waitingForWifi
+                      ? 'Waiting for Wi-Fi to install MAVE Brain (~2.5 GB) · Auto-downloads on Wi-Fi'
+                      : `Installing MAVE Brain in background: ${this.downloadPct || 0}%`}
+                  </span>
+                </div>
+                <div class="onb-bg-install-track">
+                  <div class="onb-bg-install-fill" id="onb-bg-fill" style="width:${this.waitingForWifi ? 0 : (this.downloadPct || 0)}%;"></div>
+                </div>
+              </div>
+            ` : ''}
+
             <label class="onb-label" for="onb-call-name" style="margin-top:4px;">What should MAVE call you?</label>
             <input type="text" class="onb-input" id="onb-call-name" placeholder="Your name" value="${escapeHtml(this.state.userName)}">
 
@@ -696,6 +881,22 @@ class OnboardingWizard {
           <div class="onb-page">
             <h1 class="onb-h1">Pick a voice</h1>
             <p class="onb-sub">Tap play to hear each one. MAVE uses it in voice mode and when it reads aloud.</p>
+
+            ${(this.bgDownloadStarted || this.waitingForWifi) ? `
+              <div class="onb-bg-install-bar">
+                <div class="onb-bg-install-info">
+                  <span class="onb-bg-install-icon">${this.waitingForWifi ? '📶' : '🧠'}</span>
+                  <span id="onb-bg-text">
+                    ${this.waitingForWifi
+                      ? 'Waiting for Wi-Fi to install MAVE Brain (~2.5 GB) · Auto-downloads on Wi-Fi'
+                      : `Installing MAVE Brain in background: ${this.downloadPct || 0}%`}
+                  </span>
+                </div>
+                <div class="onb-bg-install-track">
+                  <div class="onb-bg-install-fill" id="onb-bg-fill" style="width:${this.waitingForWifi ? 0 : (this.downloadPct || 0)}%;"></div>
+                </div>
+              </div>
+            ` : ''}
 
             <div class="onb-stack">
               ${VOICE_OPTIONS.map((v) => `
@@ -815,6 +1016,85 @@ class OnboardingWizard {
             <div class="onb-status-msg" id="onb-connect-err"></div>
           </div>
         `;
+
+      case 'calibrating': {
+        const hw = this.hwScan?.hardware || {};
+        const gpuName = (hw.gpu || 'Hardware').replace(/^NVIDIA\s+GeForce\s+/i, '');
+        const vram = hw.dedicated ? `${hw.vramGB || 0} GB VRAM` : 'Shared RAM';
+        const bestModel = (this.hwScan?.options || []).find((o) => o.id === 'phi-4-mini') || (this.hwScan?.options || [])[0] || {
+          id: 'phi-4-mini',
+          label: 'Phi-4-mini 3.8B Sovereign Brain',
+          bytes: 2.49 * (1024 ** 3),
+        };
+        const sizeGB = ((bestModel.bytes || 0) / (1024 ** 3)).toFixed(1) || '2.5';
+
+        return `
+          <div class="onb-hero-stage" style="max-width:480px; margin:0 auto; text-align:center;">
+            <div class="onb-orb pulsing" style="width:104px; height:104px; margin:0 auto 22px auto;"></div>
+            <h1 class="onb-h1" style="font-size:24px; margin-bottom:8px;">Calibrating MAVE Intelligence…</h1>
+            <p class="onb-sub" style="margin-bottom:18px;">
+              ${this.waitingForWifi
+                ? 'MAVE is paused and waiting for Wi-Fi connection to download the core brain.'
+                : 'Configuring your dedicated 25-year-old sovereign brain and specialist delegation network.'}
+            </p>
+
+            <div class="onb-calib-hw-pill">
+              <span>⚡ ${escapeHtml(gpuName)} (${escapeHtml(vram)})</span>
+              <span>·</span>
+              <span>🧠 ${escapeHtml(bestModel.label || 'Phi-4-mini 3.8B')} (~${sizeGB} GB)</span>
+            </div>
+
+            ${this.isCellular && !this.cellularChoice ? `
+              <div class="onb-cellular-alert">
+                <div class="onb-cellular-icon">📶</div>
+                <div class="onb-cellular-content">
+                  <div class="onb-cellular-title">Cellphone / Mobile Internet Detected</div>
+                  <div class="onb-cellular-desc">
+                    To install MAVE's brain locally on your device, it will need <strong>~${sizeGB} GB</strong> of internet data.
+                  </div>
+                  <div class="onb-cellular-actions">
+                    <button type="button" class="onb-btn onb-btn-primary" id="onb-wifi-wait-btn">
+                      Install when I connect to Wi-Fi
+                    </button>
+                    <button type="button" class="onb-btn onb-btn-secondary" id="onb-cellular-continue-btn">
+                      Download now on mobile data
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ` : this.waitingForWifi ? `
+              <div class="onb-wifi-waiting-card">
+                <div class="onb-wifi-waiting-head">
+                  <span class="onb-pulse-dot" style="background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,0.25);"></span>
+                  <span style="font-weight:600; font-size:13px; color:#d97706;">Waiting for Wi-Fi Connection</span>
+                </div>
+                <div style="font-size:12px; color:var(--onb-muted); margin-top:6px; line-height:1.45;">
+                  MAVE will automatically start downloading the local brain as soon as this device connects to Wi-Fi. In the meantime, you can customize your preferences!
+                </div>
+              </div>
+              <button type="button" class="onb-btn onb-btn-primary" id="onb-calib-continue-btn" style="width:100%; margin-top:18px;">
+                Continue to Make MAVE Yours →
+              </button>
+            ` : `
+              <div class="onb-calib-progress-card">
+                <div class="onb-calib-progress-meta">
+                  <span class="onb-calib-progress-title">Installing MAVE Core Brain in Background</span>
+                  <span class="onb-calib-progress-pct" id="onb-calib-pct">${this.downloadPct || 0}%</span>
+                </div>
+                <div class="onb-progress-bar">
+                  <div class="onb-progress-fill" id="onb-calib-fill" style="width:${this.downloadPct || 0}%;"></div>
+                </div>
+                <div class="onb-calib-progress-detail" id="onb-calib-detail">
+                  ${escapeHtml(this.downloadDetail || 'Downloading ~2.5 GB · Zero cloud dependency once installed')}
+                </div>
+              </div>
+              <button type="button" class="onb-btn onb-btn-primary" id="onb-calib-continue-btn" style="width:100%; margin-top:18px;">
+                Continue to Make MAVE Yours →
+              </button>
+            `}
+          </div>
+        `;
+      }
 
       case 'device_models': {
         if (!this.hwScan) {
@@ -1138,7 +1418,15 @@ class OnboardingWizard {
             setTask(tKey, 'done', 'Installed');
             continue;
           }
-          setTask(tKey, 'running', 'Starting download…');
+          if (this.waitingForWifi) {
+            setTask(tKey, 'done', 'Queued for Wi-Fi (auto-downloads on Wi-Fi)');
+            continue;
+          }
+          if (this.bgDownloadStarted && this.downloadPct >= 100) {
+            setTask(tKey, 'done', 'Installed');
+            continue;
+          }
+          setTask(tKey, 'running', this.downloadPct > 0 ? `${this.downloadPct}%` : 'Starting download…');
           if (this.api && this.api.invoke) {
             let activeUnSub = null;
             if (this.api.on) {
@@ -1152,13 +1440,15 @@ class OnboardingWizard {
                 }
               });
             }
-            await this.api.invoke('local:start', mId, { airllmEnabled: Boolean(this.state.airllmEnabled) }).catch(() => {});
+            if (!this.bgDownloadStarted) {
+              await this.api.invoke('local:start', mId, { airllmEnabled: Boolean(this.state.airllmEnabled) }).catch(() => {});
+            }
             if (activeUnSub) activeUnSub();
           }
           const tDone = this.installLog.find((x) => x.key === tKey);
           if (tDone && tDone.state !== 'done') {
             tDone.state = 'done';
-            tDone.detail = 'Queued / downloading';
+            tDone.detail = this.downloadPct >= 100 ? 'Installed' : 'Downloading in background';
             this.render();
           }
         }
@@ -1214,10 +1504,11 @@ class OnboardingWizard {
           intro_private: 'intro_think',
           intro_keep: 'intro_private',
           account: 'intro_keep',
+          calibrating: 'account',
           device_role: 'account',
           connect_host: 'device_role',
           device_models: 'device_role',
-          personalize: this.state.deviceRole === 'companion' ? 'connect_host' : 'device_models',
+          personalize: 'calibrating',
           voice: 'personalize',
         }[this.stepId];
         if (prev) this._go(prev);
@@ -1240,16 +1531,15 @@ class OnboardingWizard {
       $('onb-intro-next').onclick = () => {
         const nextIntro = {
           intro_think: 'intro_private',
-          intro_private: 'intro_keep',
           intro_keep: 'account',
         }[this.stepId] || 'account';
         this._go(nextIntro);
       };
     }
 
-    // Account Step (Gmail Only)
+    // Account Step (Gmail Only) -> goes straight to calibrating and background installation
     if ($('onb-auth-continue')) {
-      $('onb-auth-continue').onclick = () => this._go('device_role');
+      $('onb-auth-continue').onclick = () => this._go('calibrating');
     }
     if ($('onb-auth-switch')) {
       $('onb-auth-switch').onclick = async () => {
@@ -1319,7 +1609,7 @@ class OnboardingWizard {
                 },
               }).catch(() => {});
             }
-            this._go('device_role');
+            this._go('calibrating');
           } else {
             this.authStatus = { type: 'error', message: res?.error || res?.message || 'Google sign-in did not complete.' };
             this.render();
@@ -1370,7 +1660,7 @@ class OnboardingWizard {
                 },
               }).catch(() => {});
             }
-            this._go('device_role');
+            this._go('calibrating');
           } else {
             this.authStatus = { type: 'error', message: res?.error || 'Could not sign in with that Gmail account.' };
             this.render();
@@ -1379,6 +1669,30 @@ class OnboardingWizard {
           this.authStatus = { type: 'error', message: err.message || 'Authentication failed.' };
           this.render();
         }
+      };
+    }
+
+    // Calibrating & Cellular Wi-Fi events
+    if ($('onb-wifi-wait-btn')) {
+      $('onb-wifi-wait-btn').onclick = () => {
+        this.cellularChoice = 'wait_wifi';
+        this.waitingForWifi = true;
+        this._setupWifiListener();
+        this.render();
+      };
+    }
+    if ($('onb-cellular-continue-btn')) {
+      $('onb-cellular-continue-btn').onclick = () => {
+        this.cellularChoice = 'download_now';
+        this.waitingForWifi = false;
+        const bestModelId = this.state.selectedModels[0] || 'phi-4-mini';
+        this._triggerModelDownload(bestModelId);
+        this.render();
+      };
+    }
+    if ($('onb-calib-continue-btn')) {
+      $('onb-calib-continue-btn').onclick = () => {
+        this._go('personalize');
       };
     }
 

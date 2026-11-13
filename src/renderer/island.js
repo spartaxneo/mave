@@ -1,11 +1,10 @@
 'use strict';
 
-// Standalone Vorssaint Dynamic Island & Companion Controller
-// 100% Authentic to vorssaint/vorssaint-utils (macOS Swift Dynamic Island)
+// Standalone Mave Dynamic Island & Companion Controller
 
 const api = window.buddy;
 
-class VorssaintIslandController {
+class MaveIslandController {
   constructor() {
     this.container = document.getElementById('island-container');
     this.notch = document.getElementById('island-notch');
@@ -55,11 +54,12 @@ class VorssaintIslandController {
 
   // --- 1. Authentic Mascot Rigs ---
   initMascots() {
-    if (typeof window.VorssaintMascotRig !== 'function') return;
+    const RigClass = window.MaveMascotRig || window.VorssaintMascotRig;
+    if (typeof RigClass !== 'function') return;
 
     // Notch Compact Mascot (22px)
     if (this.mascotHost) {
-      this.notchMascot = new window.VorssaintMascotRig(this.mascotHost, {
+      this.notchMascot = new RigClass(this.mascotHost, {
         size: 22,
         style: 'minimal',
         shape: 'ball',
@@ -70,7 +70,7 @@ class VorssaintIslandController {
 
     // Expanded Companion Stage Mascot (48px)
     if (this.stageMascotHost) {
-      this.stageMascot = new window.VorssaintMascotRig(this.stageMascotHost, {
+      this.stageMascot = new RigClass(this.stageMascotHost, {
         size: 48,
         style: 'minimal',
         shape: 'ball',
@@ -115,7 +115,7 @@ class VorssaintIslandController {
     });
 
     if (api && api.invoke) {
-      api.invoke('vorssaint:mascot-moment', moment).catch(() => {});
+      api.invoke('island:mascot-moment', moment).catch(() => {});
     }
   }
 
@@ -162,7 +162,7 @@ class VorssaintIslandController {
     if (btnSettings) {
       btnSettings.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (api && api.invoke) api.invoke('vorssaint:open-hub');
+        if (api && api.invoke) api.invoke('island:open-main', 'settings');
       });
     }
 
@@ -201,14 +201,14 @@ class VorssaintIslandController {
   async refreshLiveStatus() {
     if (!api || !api.invoke) return;
     try {
-      const [telemetry, agents] = await Promise.all([
-        api.invoke('vorssaint:telemetry').catch(() => null),
-        api.invoke('vorssaint:agents').catch(() => null),
+      const [telemetry, activePersona] = await Promise.all([
+        api.invoke('jarvis:telemetry').catch(() => null),
+        api.invoke('personas:get-active').catch(() => null),
       ]);
       const modelEl = document.getElementById('island-active-model');
       const telEl = document.getElementById('island-live-telemetry');
-      if (modelEl && agents && agents.activeAgent) {
-        modelEl.textContent = agents.activeAgent;
+      if (modelEl && activePersona && activePersona.name) {
+        modelEl.textContent = activePersona.name;
       }
       if (telEl && telemetry) {
         const cpu = telemetry.cpu ? `${telemetry.cpu.loadPercent ?? telemetry.cpu.usagePct ?? 0}%` : '—';
@@ -253,14 +253,14 @@ class VorssaintIslandController {
     if (btnCmdBar) {
       btnCmdBar.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (api && api.invoke) api.invoke('vorssaint:open-command-bar').catch(() => {});
+        if (api && api.invoke) api.invoke('island:open-main', 'home').catch(() => {});
       });
     }
     const btnMenuTop = document.getElementById('btn-island-menu-top');
     if (btnMenuTop) {
       btnMenuTop.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (api && api.invoke) api.invoke('vorssaint:open-panel').catch(() => {});
+        if (api && api.invoke) api.invoke('island:open-main', 'home').catch(() => {});
       });
     }
     if (api && api.on) {
@@ -299,14 +299,14 @@ class VorssaintIslandController {
     if (this.volTrack) {
       handleSlider(this.volTrack, this.volFill, this.volLabel, (val) => {
         this.volume = val;
-        if (api && api.invoke) api.invoke('vorssaint:set-volume', val).catch(() => {});
+        if (api && api.invoke) api.invoke('system:set-volume', val).catch(() => {});
       });
     }
 
     if (this.brightTrack) {
       handleSlider(this.brightTrack, this.brightFill, this.brightLabel, (val) => {
         this.brightness = val;
-        if (api && api.invoke) api.invoke('vorssaint:set-brightness', val).catch(() => {});
+        if (api && api.invoke) api.invoke('system:set-brightness', val).catch(() => {});
       });
     }
   }
@@ -328,7 +328,7 @@ class VorssaintIslandController {
         this.isAwakeActive = !this.isAwakeActive;
         btnAwake.classList.toggle('active', this.isAwakeActive);
         if (api && api.invoke) {
-          api.invoke('vorssaint:keep-awake-set', this.isAwakeActive ? 'indefinite' : 'off');
+          api.invoke('system:keep-awake-set', this.isAwakeActive ? 'indefinite' : 'off').catch(() => {});
         }
         if (this.isAwakeActive) this.triggerMoment('wakeUp');
       });
@@ -376,7 +376,7 @@ class VorssaintIslandController {
     if (btnOpenMenuPanel) {
       btnOpenMenuPanel.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (api && api.invoke) api.invoke('vorssaint:open-panel');
+        if (api && api.invoke) api.invoke('island:open-main', 'home');
       });
     }
   }
@@ -510,7 +510,7 @@ class VorssaintIslandController {
     if (!api || !api.on) return;
 
     // Listen for Mascot appearance/style updates from Settings Hub
-    api.on('vorssaint:mascot-config-changed', (cfg) => {
+    api.on('island:mascot-config-changed', (cfg) => {
       if (!cfg) return;
       const opts = {
         style: cfg.mascotStyle || 'minimal',
@@ -522,7 +522,7 @@ class VorssaintIslandController {
     });
 
     // Listen for moment triggers
-    api.on('vorssaint:mascot-moment-triggered', (moment) => {
+    api.on('island:mascot-moment-triggered', (moment) => {
       this.triggerMoment(moment);
     });
 
@@ -548,7 +548,7 @@ class VorssaintIslandController {
 
     // Fetch initial settings
     if (api.invoke) {
-      api.invoke('vorssaint:settings-get').then((cfg) => {
+      api.invoke('settings:get').then((cfg) => {
         if (!cfg) return;
         const opts = {
           style: cfg.mascotStyle || 'minimal',
@@ -563,5 +563,5 @@ class VorssaintIslandController {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  window.vorssaintIsland = new VorssaintIslandController();
+  window.maveIsland = new MaveIslandController();
 });

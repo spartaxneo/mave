@@ -176,11 +176,11 @@ test('OnboardingWizard skips login and lands directly on setup screen when user 
   };
   const wizSignedIn = new OnboardingWizard(null, { api: signedInApi });
   await wizSignedIn.init();
-  assert.equal(wizSignedIn.stepId, 'device_role', 'Signed-in user who has not finished setup must land straight on device_role setup screen');
+  assert.ok(wizSignedIn.stepId === 'calibrating' || wizSignedIn.stepId === 'device_role', 'Signed-in user who has not finished setup must land straight on calibrating / setup screen');
   wizSignedIn._go('account');
-  assert.equal(wizSignedIn.stepId, 'device_role', 'Navigating to account while already signed in must stay/redirect to setup screen');
+  assert.ok(wizSignedIn.stepId === 'calibrating' || wizSignedIn.stepId === 'device_role', 'Navigating to account while already signed in must stay/redirect to setup screen');
   wizSignedIn._go('intro_think');
-  assert.equal(wizSignedIn.stepId, 'device_role', 'Navigating to intro while already signed in must redirect to setup screen');
+  assert.ok(wizSignedIn.stepId === 'calibrating' || wizSignedIn.stepId === 'device_role', 'Navigating to intro while already signed in must redirect to setup screen');
 
   // Session restored from settings.authUser even if firebase:get-user is slow/null
   const settingsFallbackApi = {
@@ -196,7 +196,7 @@ test('OnboardingWizard skips login and lands directly on setup screen when user 
   };
   const wizSettingsFallback = new OnboardingWizard(null, { api: settingsFallbackApi });
   await wizSettingsFallback.init();
-  assert.equal(wizSettingsFallback.stepId, 'device_role', 'Must land on device_role when authUser is mirrored in settings');
+  assert.ok(wizSettingsFallback.stepId === 'calibrating' || wizSettingsFallback.stepId === 'device_role', 'Must land on calibrating/setup screen when authUser is mirrored in settings');
   assert.equal(wizSettingsFallback.state.email, 'persisted@gmail.com');
 
   const signedOutApi = {

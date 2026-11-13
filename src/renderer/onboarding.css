@@ -1036,3 +1036,170 @@ html, body {
 [data-theme="dark"] .onb-specialist-desc {
   color: #9ca3af;
 }
+
+/* Calibrating & Background Install Presentation */
+.onb-calib-hw-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--onb-surface);
+  border: 1px solid var(--onb-border);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--onb-muted);
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.onb-cellular-alert {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 16px 18px;
+  text-align: left;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-top: 14px;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.08);
+}
+[data-theme="dark"] .onb-cellular-alert {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.28);
+}
+.onb-cellular-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+.onb-cellular-content {
+  flex: 1;
+}
+.onb-cellular-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 4px;
+}
+[data-theme="dark"] .onb-cellular-title {
+  color: #fcd34d;
+}
+.onb-cellular-desc {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #78350f;
+  margin-bottom: 12px;
+}
+[data-theme="dark"] .onb-cellular-desc {
+  color: #fef3c7;
+}
+.onb-cellular-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.onb-cellular-actions .onb-btn {
+  padding: 8px 14px;
+  font-size: 12.5px;
+  border-radius: 8px;
+}
+
+.onb-wifi-waiting-card {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: left;
+  margin-top: 14px;
+}
+[data-theme="dark"] .onb-wifi-waiting-card {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.28);
+}
+.onb-wifi-waiting-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.onb-calib-progress-card {
+  background: var(--onb-surface);
+  border: 1px solid var(--onb-border);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: left;
+  margin-top: 14px;
+}
+.onb-calib-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.onb-calib-progress-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--onb-ink);
+}
+.onb-calib-progress-pct {
+  font-size: 13px;
+  font-weight: 700;
+  color: #059669;
+}
+.onb-calib-progress-detail {
+  font-size: 11.5px;
+  color: var(--onb-muted);
+  margin-top: 8px;
+}
+.onb-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--onb-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.onb-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  transition: width 0.3s ease;
+  border-radius: 999px;
+}
+
+.onb-bg-install-bar {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+[data-theme="dark"] .onb-bg-install-bar {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+.onb-bg-install-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 6px;
+}
+[data-theme="dark"] .onb-bg-install-info {
+  color: #86efac;
+}
+.onb-bg-install-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.onb-bg-install-fill {
+  height: 100%;
+  background: #22c55e;
+  transition: width 0.3s ease;
+  border-radius: 999px;
+}

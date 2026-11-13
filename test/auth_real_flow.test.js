@@ -67,18 +67,14 @@ test('Sanitization Check: No hardcoded dummy emails or fake identities in render
   assert.ok(!appHtml.includes('+ Pair Test Phone'), 'app.html does not have fake test phone button');
 });
 
-test('Ground Truth Telemetry: VorssaintManager uses real system stats without mock formulas', async () => {
-  const { getVorssaintManager } = require('../src/main/vorssaint/vorssaint_manager');
-  const vm = getVorssaintManager();
-  const tele = vm.getTelemetry();
+test('Ground Truth Telemetry: JarvisTelemetry uses real system stats without mock formulas', async () => {
+  const { getJarvisTelemetry } = require('../src/main/jarvis/telemetry');
+  const jt = getJarvisTelemetry();
+  const tele = await jt.getSnapshot();
 
-  // Real disk stats check
-  assert.ok(typeof tele.disk.totalGB === 'number' && tele.disk.totalGB > 0);
-  assert.notEqual(tele.disk.totalGB, 953, 'Disk size is not hardcoded to 953 GB');
-
-  // Real agents status check (zero fabricated unconfigured providers)
-  const agents = vm.getAgentsStatus();
-  assert.notEqual(agents.local.tokensProcessed, 14820, 'Local tokens are not fabricated (14820)');
-  assert.equal(agents.claude, undefined, 'Does not fabricate unconfigured Claude quota entries');
-  assert.equal(agents.local.cost, '$0.00 (Local Sovereign)');
+  // Real CPU and RAM stats check
+  assert.ok(typeof tele.ram.totalGB === 'number' && tele.ram.totalGB > 0);
+  assert.ok(typeof tele.cpu.cores === 'number' && tele.cpu.cores > 0);
+  assert.ok(tele.system.hostname.length > 0);
+  assert.equal(tele.system.platform, process.platform);
 });

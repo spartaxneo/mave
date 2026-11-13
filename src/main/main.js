@@ -376,12 +376,12 @@ async function start() {
     else windows.openMain('home');
   }
 
-  // Mount the System Dynamic Island as an OS Device Extension (Vorssaint-style)
+  // Mount the System Dynamic Island as an OS Device Extension
   if (settings.get('showDynamicIsland') !== false) {
     try { windows.showIsland(); } catch (err) { logger.warn('Dynamic island launch:', err.message); }
   }
 
-  // OS Device Extension Global Shortcuts (Vorssaint-style system integration)
+  // OS Device Extension Global Shortcuts
   try {
     globalShortcut.register('Alt+Space', () => {
       windows.toggleMain();
@@ -391,18 +391,6 @@ async function start() {
     });
     globalShortcut.register('Alt+I', () => {
       windows.toggleIsland();
-    });
-    globalShortcut.register('Alt+V', () => {
-      windows.openVorssaintMenuPanel();
-    });
-    globalShortcut.register('Alt+Shift+H', () => {
-      windows.openVorssaintHub();
-    });
-    globalShortcut.register('Alt+K', () => {
-      if (windows.openCommandBarWindow) windows.openCommandBarWindow();
-    });
-    globalShortcut.register('Alt+Shift+C', () => {
-      if (windows.openCleaningModeWindow) windows.openCleaningModeWindow(30);
     });
     globalShortcut.register('Alt+Shift+V', () => {
       windows.openMain('home');
@@ -450,11 +438,7 @@ async function start() {
       if (meshDiscoveryManager) meshDiscoveryManager.stop();
     } catch {}
 
-    // Stop background managers, sentinels, butler telemetry, Vorssaint timers, and local inference workers
-    try {
-      const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-      getVorssaintManager().stop();
-    } catch {}
+    // Stop background managers, sentinels, butler telemetry, and local inference workers
     try {
       const { getJarvisButler } = require('./jarvis/proactive_butler');
       getJarvisButler().stop();

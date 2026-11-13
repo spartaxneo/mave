@@ -13,10 +13,7 @@ __pycache__/
 vault.enc
 vault.key
 .env
-vorssaint_scratchpad.md
-dist-vorssaint/
 temp/
 mave_flutter/build/
 mave_flutter/.dart_tool/
 mave_flutter/.idea/
-vorssaint/macos/

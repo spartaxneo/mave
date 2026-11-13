@@ -104,7 +104,7 @@ class JevEngine {
       };
     }
 
-    // B. System Utilities & Vorssaint Controls
+    // B. System Utilities & Mave Controls
     for (const util of this.systemUtilityPatterns) {
       const match = util.regex.exec(clean);
       if (match) {
@@ -297,7 +297,7 @@ class JevEngine {
       {
         regex: /^(?:check\s+telemetry|system\s+(?:status|vitals|hardware)|cpu\s+and\s+ram|hardware\s+stats)$/i,
         action: 'system_telemetry',
-        reply: () => 'Retrieving live hardware telemetry from Vorssaint OS.',
+        reply: () => 'Retrieving live hardware telemetry from Mave System.',
         confidence: 0.95,
       },
       {
@@ -322,7 +322,7 @@ class JevEngine {
         regex: /^(?:save\s+note|add\s+to\s+scratchpad|note\s+down)\s*[:]\s*(.+)$/i,
         action: 'scratchpad_append',
         extractParams: (m) => ({ text: m[1] }),
-        reply: () => 'Appended note to Vorssaint scratchpad.',
+        reply: () => 'Appended note to Mave scratchpad.',
         confidence: 0.95,
       },
       {

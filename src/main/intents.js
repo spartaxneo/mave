@@ -88,23 +88,6 @@ function matchIntent(text) {
       if (jIntent.category === 'web_search' && jIntent.params && jIntent.params.query) {
         return { calls: [{ name: 'open_url', input: { url: `https://www.google.com/search?q=${enc(jIntent.params.query)}` } }], reply: jIntent.reply };
       }
-      if (jIntent.category === 'system_utility') {
-        const { getVorssaintManager } = require('./vorssaint/vorssaint_manager');
-        const vorssaint = getVorssaintManager();
-        if (jIntent.action === 'keep_awake') {
-          vorssaint.setKeepAwake(jIntent.params.mode || '1h');
-          return { calls: [], reply: jIntent.reply };
-        }
-        if (jIntent.action === 'cleaning_mode') {
-          vorssaint.toggleCleaningMode(10);
-          return { calls: [], reply: jIntent.reply };
-        }
-        if (jIntent.action === 'scratchpad_append' && jIntent.params.text) {
-          const current = vorssaint.getScratchpad().text || '';
-          vorssaint.saveScratchpad(current + '\n- ' + jIntent.params.text);
-          return { calls: [], reply: jIntent.reply };
-        }
-      }
     }
   } catch {
     // Jev evaluation non-fatal
